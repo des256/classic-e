@@ -51,22 +51,13 @@ fn main() {
         Ok(ui) => ui,
         Err(_) => { panic!("Cannot open UI."); },
     };
-    let first_app = app.clone();
+    let cloned_app = app.clone();
     ui.create_window(
         &isize_r::new(isize_2::new(50,50),isize_2::new(640,360)),
-        "First Window",
+        "Test Window",
         move |event| {
-            let mut app = first_app.borrow_mut();
-            handler("First Window",event,&mut *app);
-        }
-    );
-    let second_app = app.clone();
-    ui.create_window(
-        &isize_r::new(isize_2::new(100,100),isize_2::new(640,360)),
-        "Second Window",
-        move |event| {
-            let mut app = second_app.borrow_mut();
-            handler("Second Window",event,&mut *app);
+            let mut app = cloned_app.borrow_mut();
+            handler("Test Window",event,&mut *app);
         }
     );
     while app.borrow().running {
