@@ -1,0 +1,82 @@
+* winit
+* for now GLES2 context
+- research flutter and that other talk by that other guy
+- setup UI system like that
+
+
+
+
+Accordeon
+    vector of Widgets
+Actarator = Action or separator
+Action
+    string
+    callback
+BreadCrumb
+    vector of Strimages
+Button
+    Strimage
+Card
+    Document
+Carousel
+    vector of Strimages
+CheckBox
+    Strimage
+ComboBox
+    InputField
+    Dropdown
+DatePicker
+    <complex>
+Dropdown
+    vector of Strimages
+FilePicker
+    <complex>
+InputField
+    string
+Label
+    Strimage
+ListBox
+    <complex>
+Menactarator = MenuBox, Action or separator
+MenuBox
+    vector of Actions
+MenuBar
+    vector of Menactarator
+MessageBox
+    <complex>
+Modal
+    <complex?>
+Pagination = accesses huge chunks of content
+DatePicker
+    <complex>
+ProgressBar
+RadioButton
+    Strimage
+Slider
+Splitter
+    Widget
+    Widget
+Stepper
+Strimage = string, image or both
+TabBar
+    vector of Strimages
+TimePicker
+    <complex>
+ToolTip
+    Document
+Toggle
+TreeBox
+    <complex>
+Border
+    Widget
+GroupBox
+    Strimage
+    Widget
+Row
+    vector of Widgets
+Column
+    vector of Widgets
+Paragraph
+    bunch of text with images?
+Document
+    vector of Paragraphs
