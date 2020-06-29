@@ -287,7 +287,7 @@ impl<'a> UI<'a> {
         })
     }
 
-    pub fn create_window(&mut self,r: &isize_r,title: &str,handler: impl FnMut(Event) + 'static) {
+    pub fn create_window(&mut self,r: &isize_r,title: &str,handler: impl FnMut(Event) + 'a) -> bool {
         let window = self.connection.generate_id() as XID;
         let values = [
             (CW_EVENT_MASK,
@@ -343,6 +343,7 @@ impl<'a> UI<'a> {
                 handler: Box::new(handler),
             }
         );
+        true
     }
 
     fn handle_event(&mut self,xcb_event: GenericEvent) {
@@ -357,7 +358,10 @@ impl<'a> UI<'a> {
                 let id = expose.window() as XID;
                 for window in &mut self.windows {
                     if window.window == id {
+                        // glXMakeCurrent
                         (window.handler)(Event::Paint(r));
+                        // glFlush
+                        // glSwapBuffers
                     }
                 }
             },
