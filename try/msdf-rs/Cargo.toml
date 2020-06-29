@@ -1,0 +1,9 @@
+[package]
+name = "msdf-rs"
+version = "0.1.0"
+authors = ["Desmond Germans <desmond@germansmedia.nl>"]
+edition = "2018"
+
+[dependencies]
+bitflags = "1.0.4"
+roxmltree = "*"
