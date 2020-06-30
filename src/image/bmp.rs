@@ -3,6 +3,7 @@
 
 use crate::Image;
 use crate::Pixel;
+use crate::usize_2;
 
 #[derive(Clone,Copy)]
 enum Type {
@@ -673,7 +674,7 @@ pub fn decode<T: Pixel>(src: &[u8]) -> Option<Image<T>> {
             _ => { },
         }
     }
-    let mut image = Image::<T>::new(width as u32,height as u32);
+    let mut image = Image::<T>::new(usize_2 { x: width,y: height, });
     decode_pixels(&mut image.data,&src[offset as usize..],width,height,bottom_up,itype,&palette,redmask,greenmask,bluemask,alphamask);
     Some(image)
 }
@@ -710,7 +711,7 @@ impl WriteTypes for Vec<u8> {
 
 pub fn encode<T: Pixel>(image: &Image<T>) -> Option<Vec<u8>> {
     let headersize = 108;
-    let stride = image.width * 4;
+    let stride = image.size.x * 4;
     let palettesize = 0;
     let bpp = 32;
     let compression = 3;
@@ -719,7 +720,7 @@ pub fn encode<T: Pixel>(image: &Image<T>) -> Option<Vec<u8>> {
     let greenmask: u32 = 0x0000FF00;
     let bluemask: u32 = 0x000000FF;
     let alphamask: u32 = 0xFF000000;
-    let imagesize = stride * image.height;
+    let imagesize = stride * image.size.y;
     let offset = 14 + headersize + palettesize;
     let filesize = offset + imagesize;
     let mut dst: Vec<u8> = Vec::new();
@@ -728,8 +729,8 @@ pub fn encode<T: Pixel>(image: &Image<T>) -> Option<Vec<u8>> {
     dst.push32(0);  // 6
     dst.push32(offset as u32);  // 10
     dst.push32(headersize as u32);  // 14
-    dst.push32(image.width as u32);  // 18
-    dst.push32(-(image.height as i32) as u32);  // 22
+    dst.push32(image.size.x as u32);  // 18
+    dst.push32(-(image.size.y as i32) as u32);  // 22
     dst.push16(1);  // 26
     dst.push16(bpp);  // 28
     dst.push32(compression);  // 30
@@ -755,9 +756,9 @@ pub fn encode<T: Pixel>(image: &Image<T>) -> Option<Vec<u8>> {
     dst.push32(0);  // 110
     dst.push32(0);  // 114
     dst.push32(0);  // 118
-    for y in 0..image.height {
-        for x in 0..image.width {
-            let p = image.pixel(x as i32,(image.height - y - 1) as i32);
+    for y in 0..image.size.y {
+        for x in 0..image.size.x {
+            let p = image.pixel(usize_2 { x: x,y: y, });
             let r = p.r() as u32;
             let g = p.g() as u32;
             let b = p.b() as u32;

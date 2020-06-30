@@ -1,5 +1,8 @@
-// G - OpenGL
+// E - OpenGL
 // Desmond Germans, 2020
+
+mod graphics;
+pub use graphics::*;
 
 mod shader;
 pub use shader::*;
@@ -10,5 +13,8 @@ pub use texture2d::*;
 mod framebuffer;
 pub use framebuffer::*;
 
-mod layer;
-pub use layer::*;
+mod vertexbuffer;
+pub use vertexbuffer::*;
+
+mod font;
+pub use font::*;

@@ -1,4 +1,4 @@
-// G - System - MacOS
+// E - System - MacOS
 // Desmond Germans, 2020
 
 pub struct Video {

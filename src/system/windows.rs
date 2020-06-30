@@ -1,4 +1,4 @@
-// G - System - Windows
+// E - System - Windows
 // Desmond Germans, 2020
 
 use winapi::shared::windef::*;

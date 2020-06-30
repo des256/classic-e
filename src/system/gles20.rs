@@ -1,4 +1,4 @@
-// G - OpenGL ES 2.0
+// E - OpenGL ES 2.0
 // Desmond Germans, 2020
 
 pub struct Video {

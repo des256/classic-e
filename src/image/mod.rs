@@ -4,30 +4,29 @@
 use crate::Pixel;
 use std::marker::PhantomData;
 use crate::Zero;
+use crate::usize_2;
 
 pub struct Image<T> {
-    pub width: u32,
-    pub height: u32,
+    pub size: usize_2,
     pub data: Box<[T]>,
     phantom: PhantomData<T>,
 }
 
 impl<T: Clone + Copy + Zero> Image<T> {
-    pub fn new(width: u32,height: u32) -> Image<T> {
+    pub fn new(size: usize_2) -> Image<T> {
         Image {
-            width: width,
-            height: height,
-            data: vec![T::zero(); (width * height) as usize].into_boxed_slice(),
+            size: size,
+            data: vec![T::zero(); (size.x * size.y) as usize].into_boxed_slice(),
             phantom: PhantomData,
         }
     }
 
-    pub fn pixel(&self,x: i32,y: i32) -> T {
-        self.data[(y * self.width as i32 + x) as usize]
+    pub fn pixel(&self,p: usize_2) -> T {
+        self.data[(p.y * self.size.x + p.x) as usize]
     }
 
-    pub fn set_pixel(&mut self,x: i32,y: i32,p: T) {
-        self.data[(y * self.width as i32 + x) as usize] = p;
+    pub fn set_pixel(&mut self,p: usize_2,v: T) {
+        self.data[(p.y * self.size.x + p.x) as usize] = v;
     }
 }
 

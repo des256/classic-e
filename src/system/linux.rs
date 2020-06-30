@@ -28,6 +28,10 @@ use libc::epoll_event;
 use libc::EPOLLIN;
 use std::os::unix::io::AsRawFd;
 use libc::epoll_wait;
+use crate::usize_2;
+use crate::Framebuffer;
+use gl::types::GLuint;
+use crate::Graphics;
 
 type GlXCreateContextAttribsARBProc = unsafe extern "C" fn(
     dpy: *mut Display,
@@ -52,6 +56,7 @@ fn load_function(name: &str) -> *mut c_void {
 
 struct Window<'a> {
     window: XID,
+    size: usize_2,
     handler: Box<dyn FnMut(Event) + 'a>,
 }
 
@@ -73,6 +78,7 @@ pub struct UI<'a> {
     wm_net_state_above: u32,
     windows: Vec<Window<'a>>,
     epfd: c_int,
+    graphics: Graphics,
 }
 
 impl<'a> UI<'a> {
@@ -259,6 +265,11 @@ impl<'a> UI<'a> {
             }
             unsafe { glXMakeCurrent(connection.get_raw_dpy(),window,context) };
             gl::load_with(|symbol| load_function(&symbol));
+            let mut vao: GLuint = 0;
+            unsafe {
+                gl::GenVertexArrays(1,&mut vao);
+                gl::BindVertexArray(vao);
+            }
             context
         };
 
@@ -284,6 +295,7 @@ impl<'a> UI<'a> {
             wm_net_state_above: wm_net_state_above,
             windows: Vec::new(),
             epfd: epfd,
+            graphics: Graphics::new(),
         })
     }
 
@@ -340,6 +352,7 @@ impl<'a> UI<'a> {
         self.windows.push(
             Window {
                 window: window,
+                size: usize_2 { x: r.s.x as usize,y: r.s.y as usize, },
                 handler: Box::new(handler),
             }
         );
@@ -358,9 +371,12 @@ impl<'a> UI<'a> {
                 let id = expose.window() as XID;
                 for window in &mut self.windows {
                     if window.window == id {
-                        // glXMakeCurrent
-                        (window.handler)(Event::Paint(r));
-                        // glFlush
+                        unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),window.window,self.context) };
+                        unsafe { gl::Viewport(0,0,window.size.x as i32,window.size.y as i32) };
+                        unsafe { gl::Scissor(0,0,window.size.x as i32,window.size.y as i32) };
+                        (window.handler)(Event::Paint(&mut self.graphics,r));
+                        unsafe { gl::Flush() };
+                        unsafe { glXSwapBuffers(self.connection.get_raw_dpy(),window.window) };
                         // glSwapBuffers
                     }
                 }
@@ -437,6 +453,7 @@ impl<'a> UI<'a> {
                 let id = configure_notify.event() as XID;
                 for window in &mut self.windows {
                     if window.window == id {
+                        window.size = usize_2 { x: s.x as usize,y: s.y as usize, };
                         (window.handler)(Event::Resize(s));
                     }
                 }
@@ -467,6 +484,10 @@ impl<'a> UI<'a> {
     pub fn wait(&self) {
         let mut epe = [epoll_event { events: EPOLLIN as u32,u64: 0, }];
         unsafe { epoll_wait(self.epfd,epe.as_mut_ptr(),1,-1) };
+    }
+
+    pub fn graphics(&self) -> &Graphics {
+        &self.graphics
     }
 }
 

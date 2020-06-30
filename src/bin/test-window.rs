@@ -35,7 +35,7 @@ fn handler(name: &str,event: Event,app: &mut App) {
         Event::Resize(s) => {
             println!("{}: Resize {}",name,s);
         },
-        Event::Paint(r) => {
+        Event::Paint(_,r) => {
             println!("{}: Paint {}",name,r);
         },
         Event::Close => {

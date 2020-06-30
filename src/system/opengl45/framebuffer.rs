@@ -1,17 +1,28 @@
-// G - OpenGL - Framebuffer
+// E - OpenGL - Framebuffer
 // Desmond Germans, 2020
 
+use crate::Graphics;
 use gl::types::GLuint;
+use crate::usize_2;
+use crate::UIError;
 
 pub struct Framebuffer {
     fbo: GLuint,
     pub tex: GLuint,
-    pub width: usize,
-    pub height: usize,
+    pub size: usize_2,
 }
 
-impl Framebuffer {
-    pub fn new(width: usize,height: usize) -> Option<Framebuffer> {
+impl Drop for Framebuffer {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteFramebuffers(1,&self.fbo);
+            gl::DeleteTextures(1,&self.tex);
+        }
+    }
+}
+
+impl Graphics {
+    pub fn create_framebuffer(&self,size: usize_2) -> Result<Framebuffer,UIError> {
         let mut fbo: GLuint = 0;
         let mut tex: GLuint = 0;
         unsafe {
@@ -23,40 +34,24 @@ impl Framebuffer {
             gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_WRAP_T,gl::CLAMP_TO_EDGE as i32);
             gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_MIN_FILTER,gl::NEAREST as i32);
             gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_MAG_FILTER,gl::NEAREST as i32);
-            gl::TexStorage2D(gl::TEXTURE_2D,1,gl::RGBA8,width as i32,height as i32);
+            gl::TexStorage2D(gl::TEXTURE_2D,1,gl::RGBA8,size.x as i32,size.y as i32);
             gl::FramebufferTexture(gl::FRAMEBUFFER,gl::COLOR_ATTACHMENT0,tex,0);
             if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
-                return None;
+                return Err(UIError::Generic);
             }
         }
-        Some(Framebuffer {
+        Ok(Framebuffer {
             fbo: fbo,
             tex: tex,
-            width: width,
-            height: height,
+            size: size,
         })
     }
 
-    pub fn bind(&self) {
+    pub fn bind_framebuffer(&self,framebuffer: &Framebuffer) {
         unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER,self.fbo);
-            gl::Viewport(0,0,self.width as i32,self.height as i32);
-            gl::Scissor(0,0,self.width as i32,self.height as i32);
-        }
-    }
-
-    pub fn unbind(&self) {
-        unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER,0);
-        }
-    }
-}
-
-impl Drop for Framebuffer {
-    fn drop(&mut self) {
-        unsafe {
-            gl::DeleteFramebuffers(1,&self.fbo);
-            gl::DeleteTextures(1,&self.tex);
+            gl::BindFramebuffer(gl::FRAMEBUFFER,framebuffer.fbo);
+            gl::Viewport(0,0,framebuffer.size.x as i32,framebuffer.size.y as i32);
+            gl::Scissor(0,0,framebuffer.size.x as i32,framebuffer.size.y as i32);
         }
     }
 }

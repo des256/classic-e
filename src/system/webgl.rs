@@ -1,2 +1,2 @@
-// G - WebGL
+// E - WebGL
 // Desmond Germans, 2020

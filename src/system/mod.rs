@@ -1,9 +1,9 @@
 // E - System
 // Desmond Germans, 2020
 
+use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
-use std::fmt::Result;
 use crate::isize_2;
 use crate::isize_r;
 
@@ -14,7 +14,17 @@ pub enum Button {
 }
 
 impl Display for Button {
-    fn fmt(&self,f: &mut Formatter) -> Result {
+    fn fmt(&self,f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Button::Left => { write!(f,"left") },
+            Button::Middle => { write!(f,"middle") },
+            Button::Right => { write!(f,"right") },
+        }
+    }
+}
+
+impl Debug for Button {
+    fn fmt(&self,f: &mut Formatter) -> std::fmt::Result {
         match self {
             Button::Left => { write!(f,"left") },
             Button::Middle => { write!(f,"middle") },
@@ -31,7 +41,7 @@ pub enum Wheel {
 }
 
 impl Display for Wheel {
-    fn fmt(&self,f: &mut Formatter) -> Result {
+    fn fmt(&self,f: &mut Formatter) -> std::fmt::Result {
         match self {
             Wheel::Up => { write!(f,"up") },
             Wheel::Down => { write!(f,"down") },
@@ -41,8 +51,19 @@ impl Display for Wheel {
     }
 }
 
-pub enum Event {
-    Paint(isize_r),
+impl Debug for Wheel {
+    fn fmt(&self,f: &mut Formatter) -> std::fmt::Result {
+        match self {
+            Wheel::Up => { write!(f,"up") },
+            Wheel::Down => { write!(f,"down") },
+            Wheel::Left => { write!(f,"left") },
+            Wheel::Right => { write!(f,"right") },
+        }
+    }
+}
+
+pub enum Event<'a> {
+    Paint(&'a mut Graphics,isize_r),
     KeyPress(u8),
     KeyRelease(u8),
     MousePress(isize_2,Button),
@@ -55,6 +76,12 @@ pub enum Event {
 
 pub enum UIError {
     Generic,
+}
+
+impl Debug for UIError {
+    fn fmt(&self,f: &mut Formatter) -> std::fmt::Result {
+        write!(f,"generic error")
+    }
 }
 
 #[cfg(target_os="linux")]

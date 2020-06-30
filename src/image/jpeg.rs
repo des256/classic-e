@@ -3,6 +3,7 @@
 
 use crate::Image;
 use crate::Pixel;
+use crate::usize_2;
 
 #[derive(Copy,Clone)]
 enum Type {
@@ -704,7 +705,7 @@ fn draw_rgb<T: Pixel>(image: &mut Image<T>,px: usize,py: usize,r: i32,g: i32,b: 
 	let r = if r < 0 { 0 } else { if r > 255 { 255 } else { r as u8 } };
 	let g = if g < 0 { 0 } else { if g > 255 { 255 } else { g as u8 } };
 	let b = if b < 0 { 0 } else { if b > 255 { 255 } else { b as u8 } };
-	image.set_pixel(px as i32,py as i32,T::new_rgb(r,g,b));
+	image.set_pixel(usize_2 { x: px,y: py, },T::new_rgb(r,g,b));
 }
 
 fn draw_yuv<T: Pixel>(image: &mut Image<T>,px: usize,py: usize,y: i32,u: i32,v: i32) {
@@ -941,7 +942,7 @@ pub fn decode<T: Pixel>(src: &[u8]) -> Option<Image<T>> {
 			},
 			0xFFD9 => {  // image end
 				//println!("end");
-				let mut image = Image::new(width as u32,height as u32);
+				let mut image = Image::new(usize_2 { x: width,y: height, });
 				match itype {
 					Type::Y => { convert_blocks(&mut coeffs,mbtotal,Type::Y,&qtable,&qt); },
 					Type::YUV420 => { convert_blocks(&mut coeffs,mbtotal * 6,Type::YUV420,&qtable,&qt); },
