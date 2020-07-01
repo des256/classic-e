@@ -412,14 +412,22 @@ impl<'a> UI<'a> {
                 unsafe { gl::Viewport(0,0,size.x as i32,size.y as i32) };
                 unsafe { gl::Scissor(0,0,size.x as i32,size.y as i32) };
                 self.graphics.set_window_size(size);
-                (window.handler)(Event::Paint(&self.graphics,rect!(paintstruct.rcPaint.left as isize,paintstruct.rcPaint.top as isize,paintstruct.rcPaint.right as isize - paintstruct.rcPaint.left as isize,paintstruct.rcPaint.bottom as isize - paintstruct.rcPaint.top as isize)));
+                (window.handler)(Event::Paint(&self.graphics,rect!(
+                    paintstruct.rcPaint.left as isize,
+                    paintstruct.rcPaint.top as isize,
+                    paintstruct.rcPaint.right as isize - paintstruct.rcPaint.left as isize,
+                    paintstruct.rcPaint.bottom as isize - paintstruct.rcPaint.top as isize
+                )));
                 unsafe { wglMakeCurrent(hidden_hdc,hglrc) };
                 unsafe { SwapBuffers(window.hdc) };
                 unsafe { EndPaint(hwnd,&paintstruct) };
             },
             WM_SIZE => {
-                window.size.set(vec2!lparam_lo as usize,lparam_hi as usize));
-                (window.handler)(Event::Resize(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
+                window.size.set(vec2!(lparam_lo as usize,lparam_hi as usize));
+                (window.handler)(Event::Resize(vec2!(
+                    lparam_lo as i16 as isize,
+                    lparam_hi as i16 as isize
+                )));
             },
             WM_CLOSE => {
                 (window.handler)(Event::Close);
@@ -469,7 +477,7 @@ impl<'a> UI<'a> {
         let window = Window {
             hwnd: hwnd,
             hdc: hdc,
-            size: Cell::new(vec2!(rc.right - rc.left) as usize,(rc.bottom - rc.top) as usize)),
+            size: Cell::new(vec2!((rc.right - rc.left) as usize,(rc.bottom - rc.top) as usize)),
             handler: Box::new(handler),
         };
         unsafe { SetPixelFormat(hdc,self.pfid,&self.pfd) };
