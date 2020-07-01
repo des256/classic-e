@@ -80,7 +80,7 @@ impl Graphics {
         })
     }
 
-    pub fn draw_text(&mut self,p: f32_2,text: &str,font: &Font,font_size: f32_2,font_spacing: f32) {
+    pub fn draw_text(&self,p: f32_2,text: &str,font: &Font,font_size: f32_2,font_spacing: f32) {
         let mut vertices: Vec<f32_4> = Vec::new();
         let mut lp = f32_2 { x: p.x as f32,y: p.y as f32, };
         let mut count = 0;
@@ -125,13 +125,16 @@ impl Graphics {
         self.bind_vertexbuffer(&vertexbuffer);
         self.bind_msdf_shader();
         self.bind_texture2d(0,&font.texture);
-        self.set_uniform("scale",f32_2 { x: self.scale.x / (self.size.x as f32),y: self.scale.y / (self.size.y as f32), });
+        let scale = self.scale.get();
+        let size = self.size.get();
+        let color = self.color.get();
+        self.set_uniform("scale",f32_2 { x: scale.x / (size.x as f32),y: scale.y / (size.y as f32), });
         self.set_uniform("font_texture",0);
         self.set_uniform("color",f32_4 {
-            x: (self.color.r() as f32) / 255.0,
-            y: (self.color.g() as f32) / 255.0,
-            z: (self.color.b() as f32) / 255.0,
-            w: (self.color.a() as f32) / 255.0,
+            x: (color.r() as f32) / 255.0,
+            y: (color.g() as f32) / 255.0,
+            z: (color.b() as f32) / 255.0,
+            w: (color.a() as f32) / 255.0,
         });
         self.draw_triangles(6 * count);
         self.unbind_vertexbuffer();

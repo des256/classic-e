@@ -63,7 +63,7 @@ impl Debug for Wheel {
 }
 
 pub enum Event<'a> {
-    Paint(&'a mut Graphics,isize_r),
+    Paint(&'a Graphics,isize_r),
     KeyPress(u8),
     KeyRelease(u8),
     MousePress(isize_2,Button),

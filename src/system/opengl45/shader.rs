@@ -157,19 +157,19 @@ impl Graphics {
         Self::_create_shader(vertex_src,geometry_src,fragment_src)
     }
 
-    pub fn bind_shader(&mut self,shader: &Shader) {
+    pub fn bind_shader(&self,shader: &Shader) {
         unsafe { gl::UseProgram(shader.sp); }
-        self.sp = shader.sp;
+        self.sp.set(shader.sp);
     }
 
-    pub fn unbind_shader(&mut self) {
+    pub fn unbind_shader(&self) {
         unsafe { gl::UseProgram(0); }
-        self.sp = 0;
+        self.sp.set(0);
     }
 
-    pub fn set_uniform<T: OpenGLUniform>(&mut self,name: &str,value: T) {
+    pub fn set_uniform<T: OpenGLUniform>(&self,name: &str,value: T) {
         let cname = CString::new(name).unwrap();
-        let res = unsafe { gl::GetUniformLocation(self.sp,cname.as_ptr() as *const GLchar) };
+        let res = unsafe { gl::GetUniformLocation(self.sp.get(),cname.as_ptr() as *const GLchar) };
         T::set_uniform(res,value);
     }
 }

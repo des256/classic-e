@@ -43,7 +43,7 @@ impl Vertex for f32_4 {
 }
 
 pub struct VertexBuffer<T: Vertex> {
-    vertices: Vec<T>,
+    _vertices: Vec<T>,
     vbo: GLuint,
 }
 
@@ -64,23 +64,23 @@ impl Graphics {
             gl::BufferData(gl::ARRAY_BUFFER,T::len() * vertices.len() as isize,vertices.as_ptr() as *const c_void,gl::STATIC_DRAW);
         }
         Ok(VertexBuffer {
-            vertices: vertices,
+            _vertices: vertices,
             vbo: vbo,
         })
     }
 
-    pub fn bind_vertexbuffer<T: Vertex>(&mut self,vertexbuffer: &VertexBuffer<T>) {
+    pub fn bind_vertexbuffer<T: Vertex>(&self,vertexbuffer: &VertexBuffer<T>) {
         unsafe { gl::BindBuffer(gl::ARRAY_BUFFER,vertexbuffer.vbo) };
-        self.vaas = T::bind();
+        self.vaas.set(T::bind());
     }
 
-    pub fn unbind_vertexbuffer(&mut self) {
+    pub fn unbind_vertexbuffer(&self) {
+        let vaas = self.vaas.replace(Vec::new());
         unsafe {
-            for n in &self.vaas {
+            for n in &vaas {
                 gl::DisableVertexAttribArray(*n);
             }
             gl::BindBuffer(gl::ARRAY_BUFFER,0);
         }
-        self.vaas.clear();
     }
 }

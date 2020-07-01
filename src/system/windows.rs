@@ -59,7 +59,7 @@ type WglCreateContextAttribsARBProc = unsafe extern "C" fn(
 struct Window<'a> {
     hwnd: HWND,
     hdc: HDC,
-    handler: Box<dyn FnMut(Event) + 'a>,
+    handler: Box<dyn Fn(Event) + 'a>,
 }
 
 pub struct UI<'a> {
@@ -330,22 +330,25 @@ impl<'a> UI<'a> {
         })
     }
 
+    fn find_window(&self,hwnd: HWND) -> Option<&Window<'a>> {
+        for window in &self.windows {
+            if window.hwnd == hwnd {
+                return Some(window);
+            }
+        }
+        None
+    }
+
     fn handle_event(&mut self,hwnd: HWND,message: UINT,wparam: WPARAM,lparam: LPARAM) -> LRESULT {
 
         let hglrc = self.hglrc;
         let hidden_hdc = self.hidden_hdc;
 
-        let mut found_i = -1i32;
-        for i in 0..self.windows.len() {
-            if self.windows[i].hwnd == hwnd {
-                found_i = i as i32;
-                break;
-            }
-        }
-        if found_i == -1 {
+        let window = self.find_window(hwnd);
+        if let None = window {
             return unsafe { DefWindowProcW(hwnd,message,wparam,lparam) };
         }
-        let n = found_i as usize;
+        let window = window.unwrap();
 
         let wparam_hi = (wparam >> 16) as u16;
         let wparam_lo = (wparam & 0x0000FFFF) as u16;
@@ -353,38 +356,38 @@ impl<'a> UI<'a> {
         let lparam_lo = (lparam & 0x0000FFFF) as u16;
         match message {
             WM_KEYDOWN => {
-                (self.windows[n].handler)(Event::KeyPress(wparam_lo as u8));
+                (window.handler)(Event::KeyPress(wparam_lo as u8));
             },
             WM_KEYUP => {
-                (self.windows[n].handler)(Event::KeyRelease(wparam_lo as u8));
+                (window.handler)(Event::KeyRelease(wparam_lo as u8));
             },
             WM_LBUTTONDOWN => {
-                (self.windows[n].handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
+                (window.handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
             },
             WM_LBUTTONUP => {
-                (self.windows[n].handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
+                (window.handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
             },
             WM_MBUTTONDOWN => {
-                (self.windows[n].handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
+                (window.handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
             },
             WM_MBUTTONUP => {
-                (self.windows[n].handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
+                (window.handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
             },
             WM_RBUTTONDOWN => {
-                (self.windows[n].handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
+                (window.handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
             },
             WM_RBUTTONUP => {
-                (self.windows[n].handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
+                (window.handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
             },
             WM_MOUSEWHEEL => {
                 if wparam_hi >= 0x8000 {
-                    (self.windows[n].handler)(Event::MouseWheel(Wheel::Down));
+                    (window.handler)(Event::MouseWheel(Wheel::Down));
                 } else {
-                    (self.windows[n].handler)(Event::MouseWheel(Wheel::Up));
+                    (window.handler)(Event::MouseWheel(Wheel::Up));
                 }
             },
             WM_MOUSEMOVE => {
-                (self.windows[n].handler)(Event::MouseMove(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
+                (window.handler)(Event::MouseMove(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
             },
             WM_PAINT => {
                 let mut paintstruct = PAINTSTRUCT {
@@ -401,20 +404,20 @@ impl<'a> UI<'a> {
                     rgbReserved: [0; 32],
                 };
                 unsafe { BeginPaint(hwnd,&mut paintstruct) };
-                unsafe { wglMakeCurrent(self.windows[n].hdc,hglrc) };
-                (self.windows[n].handler)(Event::Paint(&mut self.graphics,isize_r::new(
+                unsafe { wglMakeCurrent(window.hdc,hglrc) };
+                (window.handler)(Event::Paint(&self.graphics,isize_r::new(
                     isize_2::new(paintstruct.rcPaint.left as isize,paintstruct.rcPaint.top as isize),
                     isize_2::new(paintstruct.rcPaint.right as isize - paintstruct.rcPaint.left as isize,paintstruct.rcPaint.bottom as isize - paintstruct.rcPaint.top as isize)
                 )));
                 unsafe { wglMakeCurrent(hidden_hdc,hglrc) };
-                unsafe { SwapBuffers(self.windows[n].hdc) };
+                unsafe { SwapBuffers(window.hdc) };
                 unsafe { EndPaint(hwnd,&paintstruct) };
             },
             WM_SIZE => {
-                (self.windows[n].handler)(Event::Resize(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
+                (window.handler)(Event::Resize(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
             },
             WM_CLOSE => {
-                (self.windows[n].handler)(Event::Close);
+                (window.handler)(Event::Close);
             },
             _ => {
                 return unsafe { DefWindowProcW(hwnd,message,wparam,lparam) };
@@ -423,7 +426,7 @@ impl<'a> UI<'a> {
         0    
     }
 
-    pub fn create_window(&mut self,r: &isize_r,title: &str,handler: impl FnMut(Event) + 'a) -> bool {
+    pub fn create_window(&mut self,r: &isize_r,title: &str,handler: impl Fn(Event) + 'a) -> bool {
         let window_style = WS_OVERLAPPEDWINDOW;
         let window_exstyle = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
         let mut rect = RECT {
@@ -499,6 +502,10 @@ impl<'a> UI<'a> {
         unsafe {
             WaitMessage();
         }
+    }
+
+    pub fn graphics(&'a self) -> &'a Graphics {
+        &self.graphics
     }
 }
 

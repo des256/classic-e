@@ -5,17 +5,17 @@ use gl::types::GLuint;
 use crate::Shader;
 use crate::f32_2;
 use crate::usize_2;
-use crate::Font;
 use crate::ARGB8;
 use crate::Pixel;
+use std::cell::Cell;
 
 pub struct Graphics {
-    pub(crate) sp: GLuint,
-    pub(crate) vaas: Vec<GLuint>,
+    pub(crate) sp: Cell<GLuint>,
+    pub(crate) vaas: Cell<Vec<GLuint>>,
     pub(crate) msdf_shader: Shader,
-    pub(crate) size: usize_2,
-    pub(crate) scale: f32_2,
-    pub(crate) color: ARGB8,
+    pub(crate) size: Cell<usize_2>,
+    pub(crate) scale: Cell<f32_2>,
+    pub(crate) color: Cell<ARGB8>,
 }
 
 const SCREEN: f32_2 = f32_2 { x: 2.0,y: 2.0, };  // pixels per GU
@@ -70,44 +70,44 @@ impl Graphics {
         let msdf_shader = Graphics::_create_shader(vs,None,fs).expect("what?");
 
         Graphics {
-            sp: 0,
-            vaas: Vec::new(),
+            sp: Cell::new(0),
+            vaas: Cell::new(Vec::new()),
             msdf_shader: msdf_shader,
-            size: usize_2 { x: 1,y: 1, },
-            scale: SCREEN,
-            color: ARGB8::new_rgb(255,0,0),
+            size: Cell::new(usize_2 { x: 1,y: 1, }),
+            scale: Cell::new(SCREEN),
+            color: Cell::new(ARGB8::new_rgb(255,0,0)),
         }
     }
 
-    pub fn set_scale(&mut self,scale: f32_2) {
-        self.scale = f32_2 { x: scale.x * SCREEN.x,y: scale.y * SCREEN.y, };
+    pub fn set_scale(&self,scale: f32_2) {
+        self.scale.set(f32_2 { x: scale.x * SCREEN.x,y: scale.y * SCREEN.y, });
     }
 
-    pub fn set_window_size(&mut self,size: usize_2) {
-        self.size = size;
+    pub fn set_window_size(&self,size: usize_2) {
+        self.size.set(size);
     }
 
-    pub fn bind_msdf_shader(&mut self) {
+    pub fn bind_msdf_shader(&self) {
         unsafe { gl::UseProgram(self.msdf_shader.sp); }
-        self.sp = self.msdf_shader.sp;
+        self.sp.set(self.msdf_shader.sp);
     }
 
-    pub fn clear(&mut self,r: f32,g: f32,b: f32,a: f32) {
+    pub fn clear(&self,r: f32,g: f32,b: f32,a: f32) {
         unsafe {
             gl::ClearColor(r,g,b,a);
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
     }
 
-    pub fn draw_triangle_fan(&mut self,n: i32) {
+    pub fn draw_triangle_fan(&self,n: i32) {
         unsafe { gl::DrawArrays(gl::TRIANGLE_FAN,0,n) };
     }
 
-    pub fn draw_triangles(&mut self,n: i32) {
+    pub fn draw_triangles(&self,n: i32) {
         unsafe { gl::DrawArrays(gl::TRIANGLES,0,n) };
     }
 
-    pub fn set_blend(&mut self,mode: BlendMode) {
+    pub fn set_blend(&self,mode: BlendMode) {
         match mode {
             BlendMode::Replace => unsafe { gl::Disable(gl::BLEND); },
             _ => unsafe { gl::Enable(gl::BLEND); },
@@ -118,7 +118,7 @@ impl Graphics {
         }
     }
 
-    pub fn set_color(&mut self,color: ARGB8) {
-        self.color = color;
+    pub fn set_color(&self,color: ARGB8) {
+        self.color.set(color);
     }
 }
