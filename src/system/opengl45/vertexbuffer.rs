@@ -7,6 +7,7 @@ use crate::Graphics;
 use std::ffi::c_void;
 use crate::f32_2;
 use gl::types::GLvoid;
+use crate::f32_4;
 
 pub trait Vertex {
     fn bind() -> Vec<GLuint>;
@@ -15,8 +16,6 @@ pub trait Vertex {
 
 impl Vertex for f32_2 {
     fn bind() -> Vec<GLuint> {
-        //let mut vaas: Vec<GLuint> = Vec::new();
-        //vaas.push(0);
         unsafe {
             gl::EnableVertexAttribArray(0);
             gl::VertexAttribPointer(0,2,gl::FLOAT,gl::FALSE,0,0 as *const GLvoid);
@@ -26,6 +25,20 @@ impl Vertex for f32_2 {
 
     fn len() -> isize {
         8
+    }
+}
+
+impl Vertex for f32_4 {
+    fn bind() -> Vec<GLuint> {
+        unsafe {
+            gl::EnableVertexAttribArray(0);
+            gl::VertexAttribPointer(0,4,gl::FLOAT,gl::FALSE,0,0 as *const GLvoid);
+        }
+        vec![0]
+    }
+
+    fn len() -> isize {
+        16
     }
 }
 

@@ -13,24 +13,27 @@ use e::decode;
 use e::bmp;
 use e::usize_2;
 use e::Zero;
-use e::isize_r;
 use e::i32_r;
 use e::isize_2;
-use e::Pixel;
 
-static CHARACTERS: [char; 95] = [
-    'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z',
-    'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
-    '0','1','2','3','4','5','6','7','8','9',
-    ' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/',':',';','<','=','>','?','@','[','\\',']','^','_','`','{','|','}','~',
-];
-
-static TSIZES: [usize_2; 5] = [
-    usize_2 { x: 64,y: 64, },
-    usize_2 { x: 128,y: 128, },
-    usize_2 { x: 256,y: 256, },
-    usize_2 { x: 512,y: 512, },
-    usize_2 { x: 1024,y: 1024, },
+static CHARACTERS: &[(u32,u32)] = &[
+    (0x0020,0x0080),  // ASCII
+    (0x00A0,0x0100),  // Latin-1 Supplement
+    (0x0100,0x0180),  // Latin Extended-A
+    (0x0180,0x0250),  // Latin Extended-B
+    //(0x0250,0x02B0),  // IPA Extensions
+    //(0x02B0,0x0300),  // Spacing Modifier Letters
+    //(0x0300,0x0370),  // Combining Diacritical Marks
+    (0x0370,0x0400),  // Greek and Coptic
+    (0x0400,0x0500),  // Cyrillic
+    (0x0500,0x0530),  // Cyrillic Supplement
+    //(0x0530,0x0590),  // Armenian
+    //(0x0590,0x0600),  // Hebrew
+    //(0x0600,0x0700),  // Arabic
+    //(0x0700,0x0750),  // Syriac
+    //(0x0750,0x0780),  // Arabic Supplement
+    //(0x3040,0x30A0),  // Hiragana
+    //(0x30A0,0x3100),  // Katakana
 ];
 
 struct ImageCharacter {
@@ -65,6 +68,8 @@ fn exit_help() {
     println!();
     println!("OPTIONS:");
     println!("    -s, --scale <scale>  Font size multiplier");
+    println!("    -2, --pot            Output power-of-two texture instead of div-by-64");
+    println!("    -t, --texcoord       Use f32 texture coordinates instead of u32 pixel coordinates");
     std::process::exit(-1);
 }
 
@@ -73,23 +78,72 @@ fn exit_version() {
     std::process::exit(-1);
 }
 
-pub fn rect_empty(image: &Image<ARGB8>,r: isize_r) -> bool {
-    for wy in 0..r.s.y {
-        let y = r.o.y + wy;
-        if (y < 0) || (y >= image.size.y as isize) {
-            return false;
-        }
-        for wx in 0..r.s.x {
-            let x = r.o.x + wx;
-            if (x < 0) || (x >= image.size.x as isize) {
-                return false;
+fn find_empty(size: &usize_2,haystack: &Image<ARGB8>,p: &mut isize_2) -> bool {
+    for hy in 0..haystack.size.y - size.y as usize {
+        for hx in 0..haystack.size.x - size.x as usize {
+            let mut found = true;
+            for y in 0..size.y {
+                for x in 0..size.x {
+                    if haystack.pixel(usize_2 { x: hx + x,y: hy + y, }) != ARGB8::zero() {
+                        found = false;
+                        break;
+                    }
+                }
+                if !found {
+                    break;
+                }
             }
-            if image.pixel(usize_2 { x: x as usize,y: y as usize, }) != ARGB8::new_rgb(0,0,0) {
-                return false;
+            if found {
+                p.x = hx as isize;
+                p.y = hy as isize;
+                return true;
             }
         }
     }
-    true
+    false
+}
+
+fn find_rect(needle: &Image<ARGB8>,haystack: &Image<ARGB8>,p: &mut isize_2) -> bool {
+    for hy in 0..haystack.size.y - needle.size.y {
+        for hx in 0..haystack.size.x - needle.size.x {
+            let mut found = true;
+            for y in 0..needle.size.y {
+                for x in 0..needle.size.x {
+                    if haystack.pixel(usize_2 { x: hx + x,y: hy + y, }) != needle.pixel(usize_2 { x: x,y: y, }) {
+                        found = false;
+                        break;
+                    }
+                }
+                if !found {
+                    break;
+                }
+            }
+            if found {
+                p.x = hx as isize;
+                p.y = hy as isize;
+                return true;
+            }
+        }
+    }
+    false
+}
+
+fn is_pot(v: usize) -> bool {
+    (v == 1) || (v == 2) || (v == 4) || (v == 8) ||
+    (v == 16) || (v == 32) || (v == 64) || (v == 128) ||
+    (v == 256) || (v == 512) || (v == 1024) || (v == 2048) ||
+    (v == 4096) || (v == 8192) || (v == 16384) || (v == 32768)
+}
+
+fn push_u32(buf: &mut Vec<u8>,v: u32) {
+    buf.push((v & 255) as u8);
+    buf.push(((v >> 8) & 255) as u8);
+    buf.push(((v >> 16) & 255) as u8);
+    buf.push((v >> 24) as u8);
+}
+
+fn push_i32(buf: &mut Vec<u8>,v: i32) {
+    push_u32(buf,v as u32);
 }
 
 fn main() {
@@ -109,6 +163,7 @@ fn main() {
     let outfile_temp = String::from(outfile_wrap.unwrap());
     let outfile = Path::new(&outfile_temp);
     let mut scale: i32 = 1;
+    let mut options_pot = false;
     while let Some(arg) = args.next() {
         match &arg[..] {
             "-h" | "--help" => { exit_help(); },
@@ -123,81 +178,79 @@ fn main() {
                     }
                 }
             },
+            "-2" | "--pot" => {
+                options_pot = true;
+            }
             _ => { exit_help(); },
         }
     }
 
     // standard parameters
-    let gensize = i32_2 { x: 48 * scale,y: 48 * scale, };
-    let translate = i32_2 { x: 8 * scale,y: 8 * scale, };
+    let gensize = i32_2 { x: 64 * scale,y: 64 * scale, };
+    let translate = i32_2 { x: 16 * scale,y: 16 * scale, };
     let border = i32_2 { x: 2,y: 2, };
     println!("gensize {}x{}, translate {},{}; border {}x{}",gensize.x,gensize.y,translate.x,translate.y,border.x,border.y);
 
     // convert and load all characters
     let mut image_characters: Vec<ImageCharacter> = Vec::new();
     let mut empty_characters: Vec<EmptyCharacter> = Vec::new();
-    for c in CHARACTERS.iter() {
-        let n = *c as u32;
-        let cmd = format!("msdfgen msdf -printmetrics -scale {} -size {} {} -translate 8 8 -font {} {}",scale,gensize.x,gensize.y,infile.file_name().unwrap().to_str().unwrap(),n);
-        let output = Command::new("sh").arg("-c").arg(cmd).output().expect("unable to run command");
-        if output.status.code().expect("what?") != 0 {
-            panic!("Error running msdfgen.");
-        }
-        let text = String::from_utf8(output.stdout).expect("what?");
-        let chunks: Vec<&str> = text.split_whitespace().collect();
-        if chunks[0] == "bounds" {
-            let bx0 = chunks[2].trim().trim_matches(',').trim().parse::<f32>().expect("what?") * scale as f32;
-            let by0 = chunks[3].trim().trim_matches(',').trim().parse::<f32>().expect("what?") * scale as f32;
-            let bx1 = chunks[4].trim().trim_matches(',').trim().parse::<f32>().expect("what?") * scale as f32;
-            let by1 = chunks[5].trim().trim_matches(',').trim().parse::<f32>().expect("what?") * scale as f32;
-            let badv = chunks[8].trim().trim_matches(',').trim().parse::<f32>().expect("what?") * scale as f32;
-            println!("{:05}: {},{} - {},{}; {} (msdfgen)",n,bx0,by0,bx1,by1,badv);
-            let px0 = (bx0.floor() as i32) + translate.x;
-            let py0 = (by0.floor() as i32) + translate.y;
-            let px1 = (bx1.ceil() as i32) + translate.x;
-            let py1 = (by1.ceil() as i32) + translate.y;
-            let padv = badv as i32;
-            println!("       {},{} - {},{}; {} (pixel msdfgen)",px0,py0,px1,py1,padv);
-            let x0 = px0;
-            let y0 = gensize.y - 1 - py1;
-            let x1 = px1;
-            let y1 = gensize.y - 1 - py0;
-            let adv = padv;
-            println!("       {},{} - {},{}; {} (pixel)",x0,y0,x1,y1,adv);
-            let xr = x0 - border.x;
-            let yr = y0 - border.y;
-            let xs = (x1 - x0) + 2 * border.x;
-            let ys = (y1 - y0) + 2 * border.y;
-            println!("       {},{} ({}x{}); {} (relative pixel)",xr,yr,xs,ys,adv);
-            let ox = translate.x - xr;
-            let oy = gensize.y - 1 - translate.y - yr;
-            println!("       {},{} (offset)",ox,oy);
-            let mut file = File::open("output.png").expect("cannot open output.png");
-            let mut buffer: Vec<u8> = Vec::new();
-            file.read_to_end(&mut buffer).expect("unable to read file");
-            let image = decode::<ARGB8>(&buffer).expect("unable to decode");
-            let mut cutout = Image::<ARGB8>::new(usize_2 { x: xs as usize,y: ys as usize, });
-            for y in 0..ys {
-                for x in 0..xs {
-                    cutout.set_pixel(usize_2 { x: x as usize,y: y as usize, },image.pixel(usize_2 { x: (xr + x) as usize,y: (yr + y) as usize, }));
-                }
+    for set in CHARACTERS.iter() {
+        for n in set.0..set.1 {
+            let cmd = format!("msdfgen msdf -printmetrics -scale {} -size {} {} -translate 16 16 -font {} {}",scale,gensize.x,gensize.y,infile.file_name().unwrap().to_str().unwrap(),n);
+            let output = Command::new("sh").arg("-c").arg(cmd).output().expect("unable to run command");
+            if output.status.code().expect("what?") != 0 {
+                panic!("Error running msdfgen.");
             }
-            image_characters.push(ImageCharacter {
-                n: n,
-                image: cutout,
-                offset: i32_2 { x: ox,y: oy, },
-                advance: adv,
-            });
-            //Command::new("sh").arg("-c").arg(format!("mv output.png {:05}.png",n)).output().expect("unable to remove output.png");
-        }
-        else {
-            println!("{:?}",chunks);
-            let adv = chunks[2].trim().trim_matches(',').trim().parse::<f32>().expect("what?") as i32;
-            empty_characters.push(EmptyCharacter {
-                n: n,
-                offset: i32_2 { x: 0,y: 0, },
-                advance: adv,
-            });
+            let text = String::from_utf8(output.stdout).expect("what?");
+            let chunks: Vec<&str> = text.split_whitespace().collect();
+            if chunks[0] == "bounds" {
+                let bx0 = chunks[2].trim().trim_matches(',').trim().parse::<f32>().expect("what?") * scale as f32;
+                let by0 = chunks[3].trim().trim_matches(',').trim().parse::<f32>().expect("what?") * scale as f32;
+                let bx1 = chunks[4].trim().trim_matches(',').trim().parse::<f32>().expect("what?") * scale as f32;
+                let by1 = chunks[5].trim().trim_matches(',').trim().parse::<f32>().expect("what?") * scale as f32;
+                let badv = chunks[8].trim().trim_matches(',').trim().parse::<f32>().expect("what?") * scale as f32;
+                //println!("{:05}: {},{} - {},{}; {} (raw)",n,bx0,by0,bx1,by1,badv);
+                let x0 = (bx0.floor() as i32) + translate.x;
+                let y0 = (by0.floor() as i32) + translate.y;
+                let x1 = (bx1.ceil() as i32) + translate.x;
+                let y1 = (by1.ceil() as i32) + translate.y;
+                let adv = badv as i32;
+                //println!("       {},{} - {},{}; {} (pixel)",x0,y0,x1,y1,adv);
+                let xr = x0 - border.x;
+                let yr = y0 - border.y;
+                let xs = (x1 - x0) + 2 * border.x;
+                let ys = (y1 - y0) + 2 * border.y;
+                //println!("       {},{} ({}x{}); {} (relative)",xr,yr,xs,ys,adv);
+                let ox = translate.x - xr;
+                let oy = translate.y - yr;
+                //println!("       {},{} (offset)",ox,oy);
+                println!("{:04X}: {},{} ({}x{}); {}; {},{}",n,xr,yr,xs,ys,adv,ox,oy);
+                let mut file = File::open("output.png").expect("cannot open output.png");
+                let mut buffer: Vec<u8> = Vec::new();
+                file.read_to_end(&mut buffer).expect("unable to read file");
+                let image = decode::<ARGB8>(&buffer).expect("unable to decode");
+                let mut cutout = Image::<ARGB8>::new(usize_2 { x: xs as usize,y: ys as usize, });
+                for y in 0..ys {
+                    for x in 0..xs {
+                        cutout.set_pixel(usize_2 { x: x as usize,y: y as usize, },image.pixel(usize_2 { x: (xr + x) as usize,y: (gensize.y - yr - ys + y) as usize, }));
+                    }
+                }
+                image_characters.push(ImageCharacter {
+                    n: n,
+                    image: cutout,
+                    offset: i32_2 { x: ox,y: oy, },
+                    advance: adv,
+                });
+                //Command::new("sh").arg("-c").arg(format!("mv output.png {:04X}.png",n)).output().expect("unable to remove output.png");
+            }
+            else {
+                let adv = chunks[2].trim().trim_matches(',').trim().parse::<f32>().expect("what?") as i32;
+                empty_characters.push(EmptyCharacter {
+                    n: n,
+                    offset: i32_2 { x: 0,y: 0, },
+                    advance: adv,
+                });
+            }
         }
     }
 
@@ -206,66 +259,112 @@ fn main() {
     // sort image characters by surface
     image_characters.sort_by(|a,b| b.image.size.y.cmp(&a.image.size.y));
 
-    for tsize in TSIZES.iter() {
-        let mut image = Image::<ARGB8>::new(*tsize);
-        for y in 0..image.size.y {
-            for x in 0..image.size.x {
-                image.set_pixel(usize_2 { x: x as usize,y: y as usize, },ARGB8::new_rgb(0,0,0));
-            }
-        }
-        let mut characters: Vec<Character> = Vec::new();
-        let mut wx = 0;
-        let mut wy = 0;
-        let mut everything_placed = true;
-        for ch in image_characters.iter() {
-            let mut searching = true;
-            while searching {
-                if rect_empty(
-                    &image,
-                    isize_r {
-                        o: isize_2 { x: wx as isize,y: wy as isize, },
-                        s: isize_2 { x: ch.image.size.x as isize,y: ch.image.size.y as isize, },
-                    }) {
-                    println!("room for {:05} at {},{}",ch.n,wx,wy);
-                    for y in 0..ch.image.size.y {
-                        for x in 0..ch.image.size.x {
-                            image.set_pixel(usize_2 { x: wx + x,y: wy + y, },ch.image.pixel(usize_2 { x: x,y: y, }));
-                        }
-                    }
+    for m in 2..64 {
+        let tsize = m * 64;
+        if !options_pot || is_pot(tsize) {
+            println!("Trying to fit on {}x{} texture...",tsize,tsize);
+            let mut image = Image::<ARGB8>::new(usize_2 { x: tsize,y: tsize, });
+            let mut characters: Vec<Character> = Vec::new();
+            let mut everything_placed = true;
+            for ch in image_characters.iter() {
+                //println!("checking to see if {:04X} is already represented...",ch.n);
+                let mut p = isize_2 { x: 0,y: 0, };
+                if find_rect(&ch.image,&image,&mut p) {
+                    let r = i32_r {
+                        o: i32_2 { x: p.x as i32 + border.x,y: p.y as i32 + border.y, },
+                        s: i32_2 { x: ch.image.size.x as i32 - 2 * border.x,y: ch.image.size.y as i32 - 2 * border.y, },
+                    };
+                    let fr = i32_r {
+                        o: i32_2 { x: r.o.x,y: tsize as i32 - r.o.y - r.s.y, },
+                        s: r.s,
+                    };
+                    //println!("re-using pixels for {:04X}",ch.n);
+                    //println!("    found at {},{}!",p.x,p.y);
                     characters.push(Character {
                         n: ch.n,
-                        r: i32_r {
-                            o: i32_2 { x: wx as i32 + border.x,y: wy as i32 + border.y + 1, },  // that + 1 is magic, seems to be a rounding artifact
-                            s: i32_2 { x: ch.image.size.x as i32 - 2 * border.x,y: ch.image.size.y as i32 - 2 * border.y, }, },
+                        r: fr,
                         offset: ch.offset,
                         advance: ch.advance,
                     });
-                    searching = false;
                 }
-                wy += 1;
-                if wy >= image.size.y {
-                    wy = 0;
-                    wx += 1;
-                    if wx >= image.size.x {
-                        println!("ran out of space");
+                else {
+                    //println!("    no, searching for empty space of {}x{} pixels...",ch.image.size.x,ch.image.size.y);
+                    if find_empty(&ch.image.size,&image,&mut p) {
+                        //println!("allocating pixels for {:04X}",ch.n);
+                        //println!("        found at {},{}!",p.x,p.y);
+                        //println!("        writing {:04X} into atlas...",ch.n);
+                        for y in 0..ch.image.size.y {
+                            for x in 0..ch.image.size.x {
+                                image.set_pixel(usize_2 { x: p.x as usize + x,y: p.y as usize + y, },ch.image.pixel(usize_2 { x: x,y: y, }));
+                            }
+                        }
+                        let r = i32_r {
+                            o: i32_2 { x: p.x as i32 + border.x,y: p.y as i32 + border.y, },
+                            s: i32_2 { x: ch.image.size.x as i32 - 2 * border.x,y: ch.image.size.y as i32 - 2 * border.y, },
+                        };
+                        let fr = i32_r {
+                            o: i32_2 { x: r.o.x,y: tsize as i32 - r.o.y - r.s.y, },
+                            s: r.s,
+                        };
+                        characters.push(Character {
+                            n: ch.n,
+                            r: fr,
+                            offset: ch.offset,
+                            advance: ch.advance,
+                        });
+                    }
+                    else {
+                        everything_placed = false;
                         break;
                     }
                 }
             }
-            if searching {
-                println!("font does not fit on {}x{} texture",tsize.x,tsize.y);
-                everything_placed = false;
+            if everything_placed {
+                for ch in empty_characters {
+                    characters.push(Character {
+                        n: ch.n,
+                        r: i32_r {
+                            o: i32_2 { x: 0,y: 0, },
+                            s: i32_2 { x: 0,y: 0, },
+                        },
+                        offset: ch.offset,
+                        advance: ch.advance,
+                    });
+                }
+
+                let mut file = File::create(outfile.file_name().unwrap().to_str().unwrap()).expect("cannot create file");
+                let mut buffer: Vec<u8> = Vec::new();
+
+                buffer.push(0x45);                       // header
+                buffer.push(0x46);
+                buffer.push(0x4E);
+                buffer.push(0x84);
+                buffer.push(0x30);
+                buffer.push(0x30);
+                buffer.push(0x31);
+                buffer.push(0x00);
+                push_u32(&mut buffer,scale as u32);  // scale
+                push_u32(&mut buffer,characters.len() as u32);  // number of characters
+                for ch in &characters {
+                    push_u32(&mut buffer,ch.n);          // code point
+                    push_i32(&mut buffer,ch.r.o.x);      // rect on the image
+                    push_i32(&mut buffer,ch.r.o.y);
+                    push_i32(&mut buffer,ch.r.s.x);
+                    push_i32(&mut buffer,ch.r.s.y);
+                    push_i32(&mut buffer,ch.offset.x);   // character origin offset
+                    push_i32(&mut buffer,ch.offset.y);
+                    push_i32(&mut buffer,ch.advance);    // advance to next character
+                    //println!("{:04X}: {},{} ({}x{}); {},{}; {}",ch.n,ch.r.o.x,ch.r.o.y,ch.r.s.x,ch.r.s.y,ch.offset.x,ch.offset.y,ch.advance);
+                }
+                let image_buffer = bmp::encode::<ARGB8>(&image).expect("cannot encode");
+                buffer.append(&mut image_buffer.clone());
+                file.write_all(&buffer).expect("cannot write");
+
+                //let mut file = File::create("debug.bmp").expect("what?");
+                //file.write_all(&image_buffer).expect("what?");
+
                 break;
             }
-        }
-        if everything_placed {
-            let mut file = File::create(outfile.file_name().unwrap().to_str().unwrap()).expect("cannot create file");
-            let buffer = bmp::encode::<ARGB8>(&image).expect("cannot encode");
-            file.write_all(&buffer).expect("cannot write");
-            for ch in characters {
-                println!("{:05}: {},{} ({}x{}); {},{}; {}",ch.n,ch.r.o.x,ch.r.o.y,ch.r.s.x,ch.r.s.y,ch.offset.x,ch.offset.y,ch.advance);
-            }
-            break;
         }
     }
 }

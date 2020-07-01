@@ -374,6 +374,7 @@ impl<'a> UI<'a> {
                         unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),window.window,self.context) };
                         unsafe { gl::Viewport(0,0,window.size.x as i32,window.size.y as i32) };
                         unsafe { gl::Scissor(0,0,window.size.x as i32,window.size.y as i32) };
+                        self.graphics.set_window_size(window.size);
                         (window.handler)(Event::Paint(&mut self.graphics,r));
                         unsafe { gl::Flush() };
                         unsafe { glXSwapBuffers(self.connection.get_raw_dpy(),window.window) };
@@ -486,8 +487,8 @@ impl<'a> UI<'a> {
         unsafe { epoll_wait(self.epfd,epe.as_mut_ptr(),1,-1) };
     }
 
-    pub fn graphics(&self) -> &Graphics {
-        &self.graphics
+    pub fn graphics(&mut self) -> &mut Graphics {
+        &mut self.graphics
     }
 }
 

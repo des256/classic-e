@@ -16,7 +16,7 @@ use crate::u32_2;
 use crate::f32_4;
 
 pub struct Shader {
-    sp: GLuint,
+    pub(crate) sp: GLuint,
 }
 
 pub trait OpenGLUniform {
@@ -54,7 +54,8 @@ impl OpenGLUniform for u32 {
 }
 
 impl Graphics {
-    pub fn create_shader(&self,
+    // API-wise, create_shader is caled from the Graphics object, but the Graphics object itself also needs to create some shaders in the constructor
+    pub(crate) fn _create_shader(
         vertex_src: &str,
         geometry_src: Option<&str>,
         fragment_src: &str,
@@ -148,9 +149,22 @@ impl Graphics {
         }
     }
 
+    pub fn create_shader(&self,
+        vertex_src: &str,
+        geometry_src: Option<&str>,
+        fragment_src: &str,
+    ) -> Result<Shader,UIError> {
+        Self::_create_shader(vertex_src,geometry_src,fragment_src)
+    }
+
     pub fn bind_shader(&mut self,shader: &Shader) {
         unsafe { gl::UseProgram(shader.sp); }
         self.sp = shader.sp;
+    }
+
+    pub fn unbind_shader(&mut self) {
+        unsafe { gl::UseProgram(0); }
+        self.sp = 0;
     }
 
     pub fn set_uniform<T: OpenGLUniform>(&mut self,name: &str,value: T) {

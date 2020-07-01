@@ -38,7 +38,7 @@ pub trait Pixel: Clone + Copy + Zero {
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct R3G3B2 {
-    pub d: u8,
+    d: u8,
 }
 
 impl Pixel for R3G3B2 {
@@ -133,7 +133,7 @@ impl From<R3G3B2> for RGB8 {
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct ARGB2 {
-    pub d: u8,
+    d: u8,
 }
 
 impl Pixel for ARGB2 {
@@ -231,7 +231,7 @@ impl From<ARGB2> for u32 {
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct R5G6B5 {
-    pub d: u16,
+    d: u16,
 }
 
 impl Pixel for R5G6B5 {
@@ -323,7 +323,7 @@ impl From<R5G6B5> for u32 {
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct ARGB4 {
-    pub d: u16,
+    d: u16,
 }
 
 impl Pixel for ARGB4 {
@@ -422,7 +422,7 @@ impl From<ARGB4> for u32 {
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct A1RGB5 {
-    pub d: u16,
+    d: u16,
 }
 
 impl Pixel for A1RGB5 {
@@ -530,9 +530,9 @@ impl From<A1RGB5> for u32 {
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct RGB8 {
-    pub r: u8,
-    pub g: u8,
-    pub b: u8,
+    r: u8,
+    g: u8,
+    b: u8,
 }
 
 impl Pixel for RGB8 {
@@ -611,10 +611,10 @@ impl From<RGB8> for u32 {
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct ARGB8 {
-    pub b: u8,
-    pub g: u8,
-    pub r: u8,
-    pub a: u8,
+    b: u8,
+    g: u8,
+    r: u8,
+    a: u8,
 }
 
 impl Pixel for ARGB8 {
@@ -697,7 +697,7 @@ impl From<ARGB8> for u32 {
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct A2RGB10 {
-    pub d: u32,
+    d: u32,
 }
 
 impl Pixel for A2RGB10 {

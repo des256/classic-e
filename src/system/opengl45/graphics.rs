@@ -2,18 +2,94 @@
 // Desmond Germans, 2020
 
 use gl::types::GLuint;
+use crate::Shader;
+use crate::f32_2;
+use crate::usize_2;
+use crate::Font;
+use crate::ARGB8;
+use crate::Pixel;
 
 pub struct Graphics {
     pub(crate) sp: GLuint,
     pub(crate) vaas: Vec<GLuint>,
+    pub(crate) msdf_shader: Shader,
+    pub(crate) size: usize_2,
+    pub(crate) scale: f32_2,
+    pub(crate) color: ARGB8,
+}
+
+const SCREEN: f32_2 = f32_2 { x: 2.0,y: 2.0, };  // pixels per GU
+
+pub enum BlendMode {
+    Replace,
+    Over,
 }
 
 impl Graphics {
     pub(crate) fn new() -> Graphics {
+
+        let vs = r#"
+            #version 420 core
+
+            uniform vec2 scale;
+
+            layout(location = 0) in vec4 p;
+
+            out vec2 tc;
+
+            void main() {
+                tc = vec2(p.z,1.0 - p.w);
+                gl_Position = vec4(-1.0 + scale.x * p.x,-1.0 + scale.y * p.y,0.0,1.0);
+            }
+        "#;
+
+        let fs = r#"
+            #version 420 core
+
+            uniform sampler2D font_texture;
+            uniform vec4 color;
+
+            in vec2 tc;
+
+            out vec4 frag_color;
+
+            float median(float r,float g,float b) {
+                return max(min(r,g),min(max(r,g),b));
+            }
+
+            void main() {
+                vec3 t = texture(font_texture,tc).rgb;
+                vec2 unit = (4.0 / textureSize(font_texture,0)).xy;
+                float dist = median(t.r,t.g,t.b) - 0.5;
+                dist *= dot(unit,0.5 / fwidth(tc));
+                float cov = clamp(dist + 0.5,0.0,1.0);
+                frag_color = vec4(color.xyz,color.w * cov);
+            }
+        "#;
+
+        let msdf_shader = Graphics::_create_shader(vs,None,fs).expect("what?");
+
         Graphics {
             sp: 0,
             vaas: Vec::new(),
+            msdf_shader: msdf_shader,
+            size: usize_2 { x: 1,y: 1, },
+            scale: SCREEN,
+            color: ARGB8::new_rgb(255,0,0),
         }
+    }
+
+    pub fn set_scale(&mut self,scale: f32_2) {
+        self.scale = f32_2 { x: scale.x * SCREEN.x,y: scale.y * SCREEN.y, };
+    }
+
+    pub fn set_window_size(&mut self,size: usize_2) {
+        self.size = size;
+    }
+
+    pub fn bind_msdf_shader(&mut self) {
+        unsafe { gl::UseProgram(self.msdf_shader.sp); }
+        self.sp = self.msdf_shader.sp;
     }
 
     pub fn clear(&mut self,r: f32,g: f32,b: f32,a: f32) {
@@ -25,5 +101,24 @@ impl Graphics {
 
     pub fn draw_triangle_fan(&mut self,n: i32) {
         unsafe { gl::DrawArrays(gl::TRIANGLE_FAN,0,n) };
+    }
+
+    pub fn draw_triangles(&mut self,n: i32) {
+        unsafe { gl::DrawArrays(gl::TRIANGLES,0,n) };
+    }
+
+    pub fn set_blend(&mut self,mode: BlendMode) {
+        match mode {
+            BlendMode::Replace => unsafe { gl::Disable(gl::BLEND); },
+            _ => unsafe { gl::Enable(gl::BLEND); },
+        }
+        match mode {
+            BlendMode::Over => unsafe { gl::BlendFunc(gl::SRC_ALPHA,gl::ONE_MINUS_SRC_ALPHA); },
+            _ => { },
+        }
+    }
+
+    pub fn set_color(&mut self,color: ARGB8) {
+        self.color = color;
     }
 }
