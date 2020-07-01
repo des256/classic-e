@@ -3,22 +3,22 @@
 
 use gl::types::GLuint;
 use crate::Shader;
-use crate::f32_2;
-use crate::usize_2;
+use crate::Vec2;
 use crate::ARGB8;
 use crate::Pixel;
 use std::cell::Cell;
+use crate::prelude::*;
 
 pub struct Graphics {
     pub(crate) sp: Cell<GLuint>,
     pub(crate) vaas: Cell<Vec<GLuint>>,
     pub(crate) msdf_shader: Shader,
-    pub(crate) size: Cell<usize_2>,
-    pub(crate) scale: Cell<f32_2>,
+    pub(crate) size: Cell<Vec2<usize>>,
+    pub(crate) scale: Cell<Vec2<f32>>,
     pub(crate) color: Cell<ARGB8>,
 }
 
-const SCREEN: f32_2 = f32_2 { x: 2.0,y: 2.0, };  // pixels per GU
+const SCREEN: Vec2<f32> = Vec2 { x: 2.0,y: 2.0, };  // pixels per GU
 
 pub enum BlendMode {
     Replace,
@@ -79,17 +79,17 @@ impl Graphics {
             sp: Cell::new(0),
             vaas: Cell::new(Vec::new()),
             msdf_shader: msdf_shader,
-            size: Cell::new(usize_2 { x: 1,y: 1, }),
+            size: Cell::new(vec2!(1,1)),
             scale: Cell::new(SCREEN),
             color: Cell::new(ARGB8::new_rgb(255,0,0)),
         }
     }
 
-    pub fn set_scale(&self,scale: f32_2) {
-        self.scale.set(f32_2 { x: scale.x * SCREEN.x,y: scale.y * SCREEN.y, });
+    pub fn set_scale(&self,scale: Vec2<f32>) {
+        self.scale.set(vec2!(scale.x * SCREEN.x,scale.y * SCREEN.y));
     }
 
-    pub fn set_window_size(&self,size: usize_2) {
+    pub fn set_window_size(&self,size: Vec2<usize>) {
         self.size.set(size);
     }
 

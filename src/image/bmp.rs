@@ -3,7 +3,7 @@
 
 use crate::Image;
 use crate::Pixel;
-use crate::usize_2;
+use crate::prelude::*;
 
 #[derive(Clone,Copy)]
 enum Type {
@@ -674,7 +674,7 @@ pub fn decode<T: Pixel>(src: &[u8]) -> Option<Image<T>> {
             _ => { },
         }
     }
-    let mut image = Image::<T>::new(usize_2 { x: width,y: height, });
+    let mut image = Image::<T>::new(vec2!(width,height));
     decode_pixels(&mut image.data,&src[offset as usize..],width,height,bottom_up,itype,&palette,redmask,greenmask,bluemask,alphamask);
     Some(image)
 }
@@ -758,7 +758,7 @@ pub fn encode<T: Pixel>(image: &Image<T>) -> Option<Vec<u8>> {
     dst.push32(0);  // 118
     for y in 0..image.size.y {
         for x in 0..image.size.x {
-            let p = image.pixel(usize_2 { x: x,y: y, });
+            let p = image.pixel(vec2!(x,y));
             let r = p.r() as u32;
             let g = p.g() as u32;
             let b = p.b() as u32;

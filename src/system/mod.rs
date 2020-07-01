@@ -4,8 +4,8 @@
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
-use crate::isize_2;
-use crate::isize_r;
+use crate::Vec2;
+use crate::Rect;
 
 pub enum Button {
     Left,
@@ -63,14 +63,14 @@ impl Debug for Wheel {
 }
 
 pub enum Event<'a> {
-    Paint(&'a Graphics,isize_r),
+    Paint(&'a Graphics,Rect<isize>),
     KeyPress(u8),
     KeyRelease(u8),
-    MousePress(isize_2,Button),
-    MouseRelease(isize_2,Button),
+    MousePress(Vec2<isize>,Button),
+    MouseRelease(Vec2<isize>,Button),
     MouseWheel(Wheel),
-    MouseMove(isize_2),
-    Resize(isize_2),
+    MouseMove(Vec2<isize>),
+    Resize(Vec2<isize>),
     Close,
 }
 

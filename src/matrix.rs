@@ -20,6 +20,7 @@ use std::ops::AddAssign;
 use std::ops::SubAssign;
 use std::ops::MulAssign;
 use std::ops::DivAssign;
+use crate::prelude::*;
 
 #[derive(Copy,Clone)]
 pub struct Mat2x2<T> {
@@ -69,8 +70,8 @@ macro_rules! impl_mat2x2 (
         impl One for Mat2x2<$t> {
             fn one() -> Mat2x2<$t> {
                 Mat2x2 {
-                    x: Vec2::<$t>::new(1.0,0.0),
-                    y: Vec2::<$t>::new(0.0,1.0),
+                    x: vec2!(1.0,0.0),
+                    y: vec2!(0.0,1.0),
                 }
             }
         }
@@ -143,11 +144,11 @@ macro_rules! impl_mat2x2 (
             type Output = Mat2x2<$t>;
             fn mul(self,other: Mat2x2<$t>) -> Self::Output {
                 Mat2x2 {
-                    x: Vec2::<$t>::new(
+                    x: vec2!(
                         self.x.x * other.x.x + self.y.x * other.x.y,
                         self.x.y * other.x.x + self.y.y * other.x.y
                     ),
-                    y: Vec2::<$t>::new(
+                    y: vec2!(
                         self.x.x * other.y.x + self.y.x * other.y.y,
                         self.x.y * other.y.x + self.y.y * other.y.y
                     ),
@@ -179,11 +180,11 @@ macro_rules! impl_mat2x2 (
 
         impl MulAssign<Mat2x2<$t>> for Mat2x2<$t> {
             fn mul_assign(&mut self,other: Mat2x2<$t>) {
-                let nx = Vec2::<$t>::new(
+                let nx = vec2!(
                     self.x.x * other.x.x + self.y.x * other.x.y,
                     self.x.y * other.x.x + self.y.y * other.x.y
                 );
-                let ny = Vec2::<$t>::new(
+                let ny = vec2!(
                     self.x.x * other.y.x + self.y.x * other.y.y,
                     self.x.y * other.y.x + self.y.y * other.y.y
                 );
@@ -233,9 +234,9 @@ macro_rules! impl_mat3x3 (
 
             pub fn scale(s: Vec3<$t>) -> Mat3x3<$t> {
                 Mat3x3 {
-                    x: Vec3::<$t>::new(s.x,0.0,0.0),
-                    y: Vec3::<$t>::new(0.0,s.y,0.0),
-                    z: Vec3::<$t>::new(0.0,0.0,s.z),
+                    x: vec3!(s.x,0.0,0.0),
+                    y: vec3!(0.0,s.y,0.0),
+                    z: vec3!(0.0,0.0,s.z),
                 }
             }
 
@@ -261,9 +262,9 @@ macro_rules! impl_mat3x3 (
                 let rj = s * r * j;
                 jj *= s;
                 Mat3x3 {
-                    x: Vec3::<$t>::new(1.0 - (ii + jj),ri - kj,rj + ki),
-                    y: Vec3::<$t>::new(ri + kj,1.0 - (rr + jj),ij - kr),
-                    z: Vec3::<$t>::new(rj - ki,ij + kr,1.0 - (rr + ii)),
+                    x: vec3!(1.0 - (ii + jj),ri - kj,rj + ki),
+                    y: vec3!(ri + kj,1.0 - (rr + jj),ij - kr),
+                    z: vec3!(rj - ki,ij + kr,1.0 - (rr + ii)),
                 }
             }
 
@@ -271,9 +272,9 @@ macro_rules! impl_mat3x3 (
                 let sa = a.sin();
                 let ca = a.cos();
                 Mat3x3 {
-                    x: Vec3::<$t>::new(1.0,0.0,0.0),
-                    y: Vec3::<$t>::new(0.0,ca,sa),
-                    z: Vec3::<$t>::new(0.0,-sa,ca),
+                    x: vec3!(1.0,0.0,0.0),
+                    y: vec3!(0.0,ca,sa),
+                    z: vec3!(0.0,-sa,ca),
                 }
             }
 
@@ -281,9 +282,9 @@ macro_rules! impl_mat3x3 (
                 let sa = a.sin();
                 let ca = a.cos();
                 Mat3x3 {
-                    x: Vec3::<$t>::new(ca,0.0,-sa),
-                    y: Vec3::<$t>::new(0.0,1.0,0.0),
-                    z: Vec3::<$t>::new(sa,0.0,ca),
+                    x: vec3!(ca,0.0,-sa),
+                    y: vec3!(0.0,1.0,0.0),
+                    z: vec3!(sa,0.0,ca),
                 }
             }
 
@@ -291,17 +292,17 @@ macro_rules! impl_mat3x3 (
                 let sa = a.sin();
                 let ca = a.cos();
                 Mat3x3 {
-                    x: Vec3::<$t>::new(ca,sa,0.0),
-                    y: Vec3::<$t>::new(-sa,ca,0.0),
-                    z: Vec3::<$t>::new(0.0,0.0,1.0),
+                    x: vec3!(ca,sa,0.0),
+                    y: vec3!(-sa,ca,0.0),
+                    z: vec3!(0.0,0.0,1.0),
                 }
             }
 
             pub fn normal_from(m: Mat4x4<$t>) -> Mat3x3<$t> {
                 Mat3x3 {
-                    x: Vec3::<$t>::new(m.x.x,m.x.y,m.x.z),
-                    y: Vec3::<$t>::new(m.y.x,m.y.y,m.y.z),
-                    z: Vec3::<$t>::new(m.z.x,m.z.y,m.z.z),
+                    x: vec3!(m.x.x,m.x.y,m.x.z),
+                    y: vec3!(m.y.x,m.y.y,m.y.z),
+                    z: vec3!(m.z.x,m.z.y,m.z.z),
                 }.inverse().transpose()
             }
 
@@ -343,9 +344,9 @@ macro_rules! impl_mat3x3 (
                     let mh = b * g - a * h;
                     let mi = a * e - b * d;
                     Mat3x3 {
-                        x: Vec3::<$t>::new(ma,md,mg),
-                        y: Vec3::<$t>::new(mb,me,mh),
-                        z: Vec3::<$t>::new(mc,mf,mi),
+                        x: vec3!(ma,md,mg),
+                        y: vec3!(mb,me,mh),
+                        z: vec3!(mc,mf,mi),
                     } / nd
                 }
                 else {
@@ -355,9 +356,9 @@ macro_rules! impl_mat3x3 (
 
             pub fn transpose(&self) -> Mat3x3<$t> {
                 Mat3x3 {
-                    x: Vec3::<$t>::new(self.x.x,self.y.x,self.z.x),
-                    y: Vec3::<$t>::new(self.x.y,self.y.y,self.z.y),
-                    z: Vec3::<$t>::new(self.x.z,self.y.z,self.z.z),
+                    x: vec3!(self.x.x,self.y.x,self.z.x),
+                    y: vec3!(self.x.y,self.y.y,self.z.y),
+                    z: vec3!(self.x.z,self.y.z,self.z.z),
                 }
             }
         }
@@ -395,9 +396,9 @@ macro_rules! impl_mat3x3 (
         impl One for Mat3x3<$t> {
             fn one() -> Mat3x3<$t> {
                 Mat3x3 {
-                    x: Vec3::<$t>::new(1.0,0.0,0.0),
-                    y: Vec3::<$t>::new(0.0,1.0,0.0),
-                    z: Vec3::<$t>::new(0.0,0.0,1.0),
+                    x: vec3!(1.0,0.0,0.0),
+                    y: vec3!(0.0,1.0,0.0),
+                    z: vec3!(0.0,0.0,1.0),
                 }
             }
         }
@@ -465,11 +466,11 @@ macro_rules! impl_mat3x3 (
         impl Mul<Vec3<$t>> for Mat3x3<$t> {
             type Output = Vec3<$t>;
             fn mul(self,other: Vec3<$t>) -> Self::Output {
-                Vec3 {
-                    x: self.x.x * other.x + self.y.x * other.y + self.z.x * other.z,
-                    y: self.x.y * other.x + self.y.y * other.y + self.z.y * other.z,
-                    z: self.x.z * other.x + self.y.z * other.y + self.z.z * other.z,
-                }
+                vec3!(
+                    self.x.x * other.x + self.y.x * other.y + self.z.x * other.z,
+                    self.x.y * other.x + self.y.y * other.y + self.z.y * other.z,
+                    self.x.z * other.x + self.y.z * other.y + self.z.z * other.z
+                )
             }
         }
 
@@ -477,20 +478,20 @@ macro_rules! impl_mat3x3 (
             type Output = Mat3x3<$t>;
             fn mul(self,other: Mat3x3<$t>) -> Self::Output {
                 Mat3x3 {
-                    x: Vec3::<$t>::new(
+                    x: vec3!(
                         self.x.x * other.x.x + self.y.x * other.x.y + self.z.x * other.x.z,
                         self.x.y * other.x.x + self.y.y * other.x.y + self.z.y * other.x.z,
-                        self.x.z * other.x.x + self.y.z * other.x.y + self.z.z * other.x.z,
+                        self.x.z * other.x.x + self.y.z * other.x.y + self.z.z * other.x.z
                     ),
-                    y: Vec3::<$t>::new(
+                    y: vec3!(
                         self.x.x * other.y.x + self.y.x * other.y.y + self.z.x * other.y.z,
                         self.x.y * other.y.x + self.y.y * other.y.y + self.z.y * other.y.z,
-                        self.x.z * other.y.x + self.y.z * other.y.y + self.z.z * other.y.z,
+                        self.x.z * other.y.x + self.y.z * other.y.y + self.z.z * other.y.z
                     ),
-                    z: Vec3::<$t>::new(
+                    z: vec3!(
                         self.x.x * other.z.x + self.y.x * other.z.y + self.z.x * other.z.z,
                         self.x.y * other.z.x + self.y.y * other.z.y + self.z.y * other.z.z,
-                        self.x.z * other.z.x + self.y.z * other.z.y + self.z.z * other.z.z,
+                        self.x.z * other.z.x + self.y.z * other.z.y + self.z.z * other.z.z
                     ),
                 }
             }
@@ -522,20 +523,20 @@ macro_rules! impl_mat3x3 (
 
         impl MulAssign<Mat3x3<$t>> for Mat3x3<$t> {
             fn mul_assign(&mut self,other: Mat3x3<$t>) {
-                let nx = Vec3::<$t>::new(
+                let nx = vec3!(
                     self.x.x * other.x.x + self.y.x * other.x.y + self.z.x * other.x.z,
                     self.x.y * other.x.x + self.y.y * other.x.y + self.z.y * other.x.z,
-                    self.x.z * other.x.x + self.y.z * other.x.y + self.z.z * other.x.z,
+                    self.x.z * other.x.x + self.y.z * other.x.y + self.z.z * other.x.z
                 );
-                let ny = Vec3::<$t>::new(
+                let ny = vec3!(
                     self.x.x * other.y.x + self.y.x * other.y.y + self.z.x * other.y.z,
                     self.x.y * other.y.x + self.y.y * other.y.y + self.z.y * other.y.z,
-                    self.x.z * other.y.x + self.y.z * other.y.y + self.z.z * other.y.z,
+                    self.x.z * other.y.x + self.y.z * other.y.y + self.z.z * other.y.z
                 );
-                let nz = Vec3::<$t>::new(
+                let nz = vec3!(
                     self.x.x * other.z.x + self.y.x * other.z.y + self.z.x * other.z.z,
                     self.x.y * other.z.x + self.y.y * other.z.y + self.z.y * other.z.z,
-                    self.x.z * other.z.x + self.y.z * other.z.y + self.z.z * other.z.z,
+                    self.x.z * other.z.x + self.y.z * other.z.y + self.z.z * other.z.z
                 );
                 self.x = nx;
                 self.y = ny;
@@ -664,10 +665,10 @@ macro_rules! impl_mat4x4 (
                     let cofo = i * bhfd - j * ahed + l * afeb;
                     let cofp = i * bgfc - j * agec + k * afeb;
                     Mat4x4 {
-                        x: Vec4::<$t>::new(cofa,-cofb,cofc,-cofd),
-                        y: Vec4::<$t>::new(-cofe,coff,-cofg,cofh),
-                        z: Vec4::<$t>::new(cofi,-cofj,cofk,-cofl),
-                        w: Vec4::<$t>::new(-cofm,cofn,-cofo,cofp),
+                        x: vec4!(cofa,-cofb,cofc,-cofd),
+                        y: vec4!(-cofe,coff,-cofg,cofh),
+                        z: vec4!(cofi,-cofj,cofk,-cofl),
+                        w: vec4!(-cofm,cofn,-cofo,cofp),
                     } / nd
                 }
                 else {
@@ -677,10 +678,10 @@ macro_rules! impl_mat4x4 (
 
             pub fn transpose(&self) -> Mat4x4<$t> {
                 Mat4x4 {
-                    x: Vec4::<$t>::new(self.x.x,self.y.x,self.z.x,self.w.x),
-                    y: Vec4::<$t>::new(self.x.y,self.y.y,self.z.y,self.w.y),
-                    z: Vec4::<$t>::new(self.x.z,self.y.z,self.z.z,self.w.z),
-                    w: Vec4::<$t>::new(self.x.w,self.y.w,self.z.w,self.w.w),
+                    x: vec4!(self.x.x,self.y.x,self.z.x,self.w.x),
+                    y: vec4!(self.x.y,self.y.y,self.z.y,self.w.y),
+                    z: vec4!(self.x.z,self.y.z,self.z.z,self.w.z),
+                    w: vec4!(self.x.w,self.y.w,self.z.w,self.w.w),
                 }
             }
 
@@ -692,38 +693,38 @@ macro_rules! impl_mat4x4 (
                 let ry = -(t + b) / dy;
                 let rz = -(f + n) / dz;
                 Mat4x4 {
-                    x: Vec4::<$t>::new(2.0 / dx,0.0,0.0,0.0),
-                    y: Vec4::<$t>::new(0.0,2.0 / dy,0.0,0.0),
-                    z: Vec4::<$t>::new(0.0,0.0,-2.0 / dz,0.0),
-                    w: Vec4::<$t>::new(rx,ry,rz,1.0),
+                    x: vec4!(2.0 / dx,0.0,0.0,0.0),
+                    y: vec4!(0.0,2.0 / dy,0.0,0.0),
+                    z: vec4!(0.0,0.0,-2.0 / dz,0.0),
+                    w: vec4!(rx,ry,rz,1.0),
                 }
             }
 
             pub fn perspective(fovy: $t,aspect: $t,n: $t,f: $t) -> Mat4x4<$t> {
                 let q = 1.0 / (fovy.to_radians() / 2.0).tan();
                 Mat4x4 {
-                    x: Vec4::<$t>::new(q / aspect,0.0,0.0,0.0),
-                    y: Vec4::<$t>::new(0.0,q,0.0,0.0),
-                    z: Vec4::<$t>::new(0.0,0.0,(f + n) / (n - f),-1.0),
-                    w: Vec4::<$t>::new(0.0,0.0,2.0 * f * n / (n - f),0.0),
+                    x: vec4!(q / aspect,0.0,0.0,0.0),
+                    y: vec4!(0.0,q,0.0,0.0),
+                    z: vec4!(0.0,0.0,(f + n) / (n - f),-1.0),
+                    w: vec4!(0.0,0.0,2.0 * f * n / (n - f),0.0),
                 }
             }
 
             pub fn translate(t: Vec3<$t>) -> Mat4x4<$t> {
                 Mat4x4 {
-                    x: Vec4::<$t>::new(1.0,0.0,0.0,0.0),
-                    y: Vec4::<$t>::new(0.0,1.0,0.0,0.0),
-                    z: Vec4::<$t>::new(0.0,0.0,1.0,0.0),
-                    w: Vec4::<$t>::new(t.x,t.y,t.z,1.0),
+                    x: vec4!(1.0,0.0,0.0,0.0),
+                    y: vec4!(0.0,1.0,0.0,0.0),
+                    z: vec4!(0.0,0.0,1.0,0.0),
+                    w: vec4!(t.x,t.y,t.z,1.0),
                 }
             }
 
             pub fn scale(s: Vec3<$t>) -> Mat4x4<$t> {
                 Mat4x4 {
-                    x: Vec4::<$t>::new(s.x,0.0,0.0,0.0),
-                    y: Vec4::<$t>::new(0.0,s.y,0.0,0.0),
-                    z: Vec4::<$t>::new(0.0,0.0,s.z,0.0),
-                    w: Vec4::<$t>::new(0.0,0.0,0.0,1.0),
+                    x: vec4!(s.x,0.0,0.0,0.0),
+                    y: vec4!(0.0,s.y,0.0,0.0),
+                    z: vec4!(0.0,0.0,s.z,0.0),
+                    w: vec4!(0.0,0.0,0.0,1.0),
                 }
             }
 
@@ -749,10 +750,10 @@ macro_rules! impl_mat4x4 (
                 let rj = s * r * j;
                 jj *= s;
                 Mat4x4 {
-                    x: Vec4::<$t>::new(1.0 - (ii + jj),ri - kj,rj + ki,0.0),
-                    y: Vec4::<$t>::new(ri + kj,1.0 - (rr + jj),ij - kr,0.0),
-                    z: Vec4::<$t>::new(rj - ki,ij + kr,1.0 - (rr + ii),0.0),
-                    w: Vec4::<$t>::new(0.0,0.0,0.0,1.0),
+                    x: vec4!(1.0 - (ii + jj),ri - kj,rj + ki,0.0),
+                    y: vec4!(ri + kj,1.0 - (rr + jj),ij - kr,0.0),
+                    z: vec4!(rj - ki,ij + kr,1.0 - (rr + ii),0.0),
+                    w: vec4!(0.0,0.0,0.0,1.0),
                 }
             }
 
@@ -760,10 +761,10 @@ macro_rules! impl_mat4x4 (
                 let sa = a.sin();
                 let ca = a.cos();
                 Mat4x4 {
-                    x: Vec4::<$t>::new(1.0,0.0,0.0,0.0),
-                    y: Vec4::<$t>::new(0.0,ca,sa,0.0),
-                    z: Vec4::<$t>::new(0.0,-sa,ca,0.0),
-                    w: Vec4::<$t>::new(0.0,0.0,0.0,1.0),
+                    x: vec4!(1.0,0.0,0.0,0.0),
+                    y: vec4!(0.0,ca,sa,0.0),
+                    z: vec4!(0.0,-sa,ca,0.0),
+                    w: vec4!(0.0,0.0,0.0,1.0),
                 }
             }
 
@@ -771,10 +772,10 @@ macro_rules! impl_mat4x4 (
                 let sa = a.sin();
                 let ca = a.cos();
                 Mat4x4 {
-                    x: Vec4::<$t>::new(ca,0.0,-sa,0.0),
-                    y: Vec4::<$t>::new(0.0,1.0,0.0,0.0),
-                    z: Vec4::<$t>::new(sa,0.0,ca,0.0),
-                    w: Vec4::<$t>::new(0.0,0.0,0.0,1.0),
+                    x: vec4!(ca,0.0,-sa,0.0),
+                    y: vec4!(0.0,1.0,0.0,0.0),
+                    z: vec4!(sa,0.0,ca,0.0),
+                    w: vec4!(0.0,0.0,0.0,1.0),
                 }
             }
 
@@ -782,10 +783,10 @@ macro_rules! impl_mat4x4 (
                 let sa = a.sin();
                 let ca = a.cos();
                 Mat4x4 {
-                    x: Vec4::<$t>::new(ca,sa,0.0,0.0),
-                    y: Vec4::<$t>::new(-sa,ca,0.0,0.0),
-                    z: Vec4::<$t>::new(0.0,0.0,1.0,0.0),
-                    w: Vec4::<$t>::new(0.0,0.0,0.0,1.0),
+                    x: vec4!(ca,sa,0.0,0.0),
+                    y: vec4!(-sa,ca,0.0,0.0),
+                    z: vec4!(0.0,0.0,1.0,0.0),
+                    w: vec4!(0.0,0.0,0.0,1.0),
                 }
             }
         }
@@ -825,10 +826,10 @@ macro_rules! impl_mat4x4 (
         impl One for Mat4x4<$t> {
             fn one() -> Mat4x4<$t> {
                 Mat4x4 {
-                    x: Vec4::<$t>::new(1.0,0.0,0.0,0.0),
-                    y: Vec4::<$t>::new(0.0,1.0,0.0,0.0),
-                    z: Vec4::<$t>::new(0.0,0.0,1.0,0.0),
-                    w: Vec4::<$t>::new(0.0,0.0,0.0,1.0),
+                    x: vec4!(1.0,0.0,0.0,0.0),
+                    y: vec4!(0.0,1.0,0.0,0.0),
+                    z: vec4!(0.0,0.0,1.0,0.0),
+                    w: vec4!(0.0,0.0,0.0,1.0),
                 }
             }
         }
@@ -915,29 +916,29 @@ macro_rules! impl_mat4x4 (
             type Output = Mat4x4<$t>;
             fn mul(self,other: Mat4x4<$t>) -> Self::Output {
                 Mat4x4 {
-                    x: Vec4::<$t>::new(
+                    x: vec4!(
                         self.x.x * other.x.x + self.y.x * other.x.y + self.z.x * other.x.z + self.w.x * other.x.w,
                         self.x.y * other.x.x + self.y.y * other.x.y + self.z.y * other.x.z + self.w.y * other.x.w,
                         self.x.z * other.x.x + self.y.z * other.x.y + self.z.z * other.x.z + self.w.z * other.x.w,
-                        self.x.w * other.x.x + self.y.w * other.x.y + self.z.w * other.x.z + self.w.w * other.x.w,
+                        self.x.w * other.x.x + self.y.w * other.x.y + self.z.w * other.x.z + self.w.w * other.x.w
                     ),
-                    y: Vec4::<$t>::new(
+                    y: vec4!(
                         self.x.x * other.y.x + self.y.x * other.y.y + self.z.x * other.y.z + self.w.x * other.y.w,
                         self.x.y * other.y.x + self.y.y * other.y.y + self.z.y * other.y.z + self.w.y * other.y.w,
                         self.x.z * other.y.x + self.y.z * other.y.y + self.z.z * other.y.z + self.w.z * other.y.w,
-                        self.x.w * other.y.x + self.y.w * other.y.y + self.z.w * other.y.z + self.w.w * other.y.w,
+                        self.x.w * other.y.x + self.y.w * other.y.y + self.z.w * other.y.z + self.w.w * other.y.w
                     ),
-                    z: Vec4::<$t>::new(
+                    z: vec4!(
                         self.x.x * other.z.x + self.y.x * other.z.y + self.z.x * other.z.z + self.w.x * other.z.w,
                         self.x.y * other.z.x + self.y.y * other.z.y + self.z.y * other.z.z + self.w.y * other.z.w,
                         self.x.z * other.z.x + self.y.z * other.z.y + self.z.z * other.z.z + self.w.z * other.z.w,
-                        self.x.w * other.z.x + self.y.w * other.z.y + self.z.w * other.z.z + self.w.w * other.z.w,
+                        self.x.w * other.z.x + self.y.w * other.z.y + self.z.w * other.z.z + self.w.w * other.z.w
                     ),
-                    w: Vec4::<$t>::new(
+                    w: vec4!(
                         self.x.x * other.w.x + self.y.x * other.w.y + self.z.x * other.w.z + self.w.x * other.w.w,
                         self.x.y * other.w.x + self.y.y * other.w.y + self.z.y * other.w.z + self.w.y * other.w.w,
                         self.x.z * other.w.x + self.y.z * other.w.y + self.z.z * other.w.z + self.w.z * other.w.w,
-                        self.x.w * other.w.x + self.y.w * other.w.y + self.z.w * other.w.z + self.w.w * other.w.w,
+                        self.x.w * other.w.x + self.y.w * other.w.y + self.z.w * other.w.z + self.w.w * other.w.w
                     ),
                 }
             }
@@ -971,29 +972,29 @@ macro_rules! impl_mat4x4 (
 
         impl MulAssign<Mat4x4<$t>> for Mat4x4<$t> {
             fn mul_assign(&mut self,other: Mat4x4<$t>) {
-                let nx = Vec4::<$t>::new(
+                let nx = vec4!(
                     self.x.x * other.x.x + self.y.x * other.x.y + self.z.x * other.x.z + self.w.x * other.x.w,
                     self.x.y * other.x.x + self.y.y * other.x.y + self.z.y * other.x.z + self.w.y * other.x.w,
                     self.x.z * other.x.x + self.y.z * other.x.y + self.z.z * other.x.z + self.w.z * other.x.w,
-                    self.x.w * other.x.x + self.y.w * other.x.y + self.z.w * other.x.z + self.w.w * other.x.w,
+                    self.x.w * other.x.x + self.y.w * other.x.y + self.z.w * other.x.z + self.w.w * other.x.w
                 );
-                let ny = Vec4::<$t>::new(
+                let ny = vec4!(
                     self.x.x * other.y.x + self.y.x * other.y.y + self.z.x * other.y.z + self.w.x * other.y.w,
                     self.x.y * other.y.x + self.y.y * other.y.y + self.z.y * other.y.z + self.w.y * other.y.w,
                     self.x.z * other.y.x + self.y.z * other.y.y + self.z.z * other.y.z + self.w.z * other.y.w,
-                    self.x.w * other.y.x + self.y.w * other.y.y + self.z.w * other.y.z + self.w.w * other.y.w,
+                    self.x.w * other.y.x + self.y.w * other.y.y + self.z.w * other.y.z + self.w.w * other.y.w
                 );
-                let nz = Vec4::<$t>::new(
+                let nz = vec4!(
                     self.x.x * other.z.x + self.y.x * other.z.y + self.z.x * other.z.z + self.w.x * other.z.w,
                     self.x.y * other.z.x + self.y.y * other.z.y + self.z.y * other.z.z + self.w.y * other.z.w,
                     self.x.z * other.z.x + self.y.z * other.z.y + self.z.z * other.z.z + self.w.z * other.z.w,
-                    self.x.w * other.z.x + self.y.w * other.z.y + self.z.w * other.z.z + self.w.w * other.z.w,
+                    self.x.w * other.z.x + self.y.w * other.z.y + self.z.w * other.z.z + self.w.w * other.z.w
                 );
-                let nw = Vec4::<$t>::new(
+                let nw = vec4!(
                     self.x.x * other.w.x + self.y.x * other.w.y + self.z.x * other.w.z + self.w.x * other.w.w,
                     self.x.y * other.w.x + self.y.y * other.w.y + self.z.y * other.w.z + self.w.y * other.w.w,
                     self.x.z * other.w.x + self.y.z * other.w.y + self.z.z * other.w.z + self.w.z * other.w.w,
-                    self.x.w * other.w.x + self.y.w * other.w.y + self.z.w * other.w.z + self.w.w * other.w.w,
+                    self.x.w * other.w.x + self.y.w * other.w.y + self.z.w * other.w.z + self.w.w * other.w.w
                 );
                 self.x = nx;
                 self.y = ny;

@@ -11,9 +11,8 @@ use gl::types::GLchar;
 use gl::types::GLfloat;
 use crate::UIError;
 use crate::Graphics;
-use crate::f32_2;
-use crate::u32_2;
-use crate::f32_4;
+use crate::Vec2;
+use crate::Vec4;
 
 pub struct Shader {
     pub(crate) sp: GLuint,
@@ -23,19 +22,19 @@ pub trait OpenGLUniform {
     fn set_uniform(location: i32,value: Self);
 }
 
-impl OpenGLUniform for f32_2 {
+impl OpenGLUniform for Vec2<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
-impl OpenGLUniform for f32_4 {
+impl OpenGLUniform for Vec4<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
-impl OpenGLUniform for u32_2 {
+impl OpenGLUniform for Vec2<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2uiv(location,1,&value as *const Self as *const GLuint) };
     }

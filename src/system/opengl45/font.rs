@@ -5,21 +5,21 @@ use crate::Graphics;
 use crate::UIError;
 use crate::Texture2D;
 use crate::ARGB8;
-use crate::i32_r;
-use crate::i32_2;
 use std::fs::File;
 use std::io::prelude::*;
 use crate::decode;
-use crate::f32_4;
-use crate::f32_2;
 use crate::Pixel;
+use crate::Vec2;
+use crate::Vec4;
+use crate::prelude::*;
+use crate::Rect;
 
-const FONT: f32_2 = f32_2 { x: 0.065,y: 0.065, };  // manually found by comparing chrome and html font-size: 24 --> draw_text font size should be similar
+const FONT: Vec2<f32> = Vec2 { x: 0.065,y: 0.065, };  // manually found by comparing chrome and html font-size: 24 --> draw_text font size should be similar
 
 pub struct Character {
     n: u32,
-    r: i32_r,
-    offset: i32_2,
+    r: Rect<i32>,
+    offset: Vec2<i32>,
     advance: i32,
 }
 
@@ -63,11 +63,8 @@ impl Graphics {
             let adv = (buffer[44 + i * 32] as u32) | ((buffer[45 + i * 32] as u32) << 8) | ((buffer[46 + i * 32] as u32) << 16) | ((buffer[47 + i * 32] as u32) << 24);
             characters.push(Character {
                 n: n,
-                r: i32_r {
-                    o: i32_2 { x: rox as i32,y: roy as i32, },
-                    s: i32_2 { x: rsx as i32,y: rsy as i32, },
-                },
-                offset: i32_2 { x: ox as i32,y: oy as i32, },
+                r: rect!(rox as i32,roy as i32,rsx as i32,rsy as i32),
+                offset: vec2!(ox as i32,oy as i32),
                 advance: adv as i32,
             });
         }
@@ -80,9 +77,9 @@ impl Graphics {
         })
     }
 
-    pub fn draw_text(&self,p: f32_2,text: &str,font: &Font,font_size: f32_2,font_spacing: f32) {
-        let mut vertices: Vec<f32_4> = Vec::new();
-        let mut lp = f32_2 { x: p.x as f32,y: p.y as f32, };
+    pub fn draw_text(&self,p: Vec2<f32>,text: &str,font: &Font,font_size: Vec2<f32>,font_spacing: f32) {
+        let mut vertices: Vec<Vec4<f32>> = Vec::new();
+        let mut lp = vec2!(p.x as f32,p.y as f32);
         let mut count = 0;
         for c in text.chars() {
             if let Some(ch) = find_character(font,c) {
@@ -106,12 +103,12 @@ impl Graphics {
                     let tsy = tdy * (ch.r.s.y as f32);
 
                     // add quad
-                    vertices.push(f32_4 { x: ox,y: oy,z: tox,w: toy, });
-                    vertices.push(f32_4 { x: ox + sx,y: oy,z: tox + tsx,w: toy, });
-                    vertices.push(f32_4 { x: ox + sx,y: oy + sy,z: tox + tsx,w: toy + tsy, });
-                    vertices.push(f32_4 { x: ox,y: oy,z: tox,w: toy, });
-                    vertices.push(f32_4 { x: ox + sx,y: oy + sy,z: tox + tsx,w: toy + tsy, });
-                    vertices.push(f32_4 { x: ox,y: oy + sy,z: tox,w: toy + tsy, });
+                    vertices.push(vec4!(ox,oy,tox,toy));
+                    vertices.push(vec4!(ox + sx,oy,tox + tsx,toy));
+                    vertices.push(vec4!(ox + sx,oy + sy,tox + tsx,toy + tsy));
+                    vertices.push(vec4!(ox,oy,tox,toy));
+                    vertices.push(vec4!(ox + sx,oy + sy,tox + tsx,toy + tsy));
+                    vertices.push(vec4!(ox,oy + sy,tox,toy + tsy));
                     lp.x += FONT.x * font_size.x * (ch.advance as f32) / (font.scale as f32) + FONT.x * font_size.x * font_spacing;
                     count += 1;
                 }
@@ -128,14 +125,14 @@ impl Graphics {
         let scale = self.scale.get();
         let size = self.size.get();
         let color = self.color.get();
-        self.set_uniform("scale",f32_2 { x: scale.x / (size.x as f32),y: scale.y / (size.y as f32), });
+        self.set_uniform("scale",vec2!(scale.x / (size.x as f32),scale.y / (size.y as f32)));
         self.set_uniform("font_texture",0);
-        self.set_uniform("color",f32_4 {
-            x: (color.r() as f32) / 255.0,
-            y: (color.g() as f32) / 255.0,
-            z: (color.b() as f32) / 255.0,
-            w: (color.a() as f32) / 255.0,
-        });
+        self.set_uniform("color",vec4!(
+            (color.r() as f32) / 255.0,
+            (color.g() as f32) / 255.0,
+            (color.b() as f32) / 255.0,
+            (color.a() as f32) / 255.0
+        ));
         self.draw_triangles(6 * count);
         self.unbind_vertexbuffer();
         self.unbind_shader();

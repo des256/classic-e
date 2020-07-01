@@ -3,7 +3,7 @@
 
 use crate::Image;
 use crate::Pixel;
-use crate::usize_2;
+use crate::prelude::*;
 
 // Inflate algorithm
 const LITLEN_LENGTH: [u16; 29] = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
@@ -976,7 +976,7 @@ pub fn decode<T: Pixel>(src: &[u8]) -> Option<Image<T>> {
             None => { return None; },
         };
         let mut sp = 0usize;
-        let mut result = Image::<T>::new(usize_2 { x: width as usize,y: height as usize, });
+        let mut result = Image::<T>::new(vec2!(width as usize,height as usize));
         for i in 0..7 {
             if apresent[i] {
                 let raw_data = unfilter(&filtered_data[sp..sp + adsize[i] as usize],aheight[i] as usize,astride[i] as usize,bpp);
@@ -1000,7 +1000,7 @@ pub fn decode<T: Pixel>(src: &[u8]) -> Option<Image<T>> {
         
         //let after_unfilter = Instant::now();
         
-        let mut result = Image::new(usize_2 { x: width as usize,y: height as usize, });
+        let mut result = Image::new(vec2!(width as usize,height as usize));
         decode_pixels(&mut result.data,&raw_data,width as usize,height as usize,width as usize,0,0,1,1,itype,&palette,gamma);
         
         //let after_decode = Instant::now();

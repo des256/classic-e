@@ -4,17 +4,18 @@
 use std::env;
 use std::path::Path;
 use std::process::Command;
-use e::i32_2;
 use e::Image;
 use e::ARGB8;
 use std::fs::File;
 use std::io::prelude::*;
 use e::decode;
 use e::bmp;
-use e::usize_2;
 use e::Zero;
-use e::i32_r;
-use e::isize_2;
+use e::Vec2;
+use e::prelude::*;
+use e::vec2;
+use e::Rect;
+use e::rect;
 
 static CHARACTERS: &[(u32,u32)] = &[
     (0x0020,0x0080),  // ASCII
@@ -39,20 +40,20 @@ static CHARACTERS: &[(u32,u32)] = &[
 struct ImageCharacter {
     n: u32,
     image: Image<ARGB8>,
-    offset: i32_2,
+    offset: Vec2<i32>,
     advance: i32,
 }
 
 struct EmptyCharacter {
     n: u32,
-    offset: i32_2,
+    offset: Vec2<i32>,
     advance: i32,
 }
 
 struct Character {
     n: u32,
-    r: i32_r,
-    offset: i32_2,
+    r: Rect<i32>,
+    offset: Vec2<i32>,
     advance: i32,
 }
 
@@ -78,13 +79,13 @@ fn exit_version() {
     std::process::exit(-1);
 }
 
-fn find_empty(size: &usize_2,haystack: &Image<ARGB8>,p: &mut isize_2) -> bool {
+fn find_empty(size: &Vec2<usize>,haystack: &Image<ARGB8>,p: &mut Vec2<isize>) -> bool {
     for hy in 0..haystack.size.y - size.y as usize {
         for hx in 0..haystack.size.x - size.x as usize {
             let mut found = true;
             for y in 0..size.y {
                 for x in 0..size.x {
-                    if haystack.pixel(usize_2 { x: hx + x,y: hy + y, }) != ARGB8::zero() {
+                    if haystack.pixel(vec2!(hx + x,hy + y)) != ARGB8::zero() {
                         found = false;
                         break;
                     }
@@ -103,13 +104,13 @@ fn find_empty(size: &usize_2,haystack: &Image<ARGB8>,p: &mut isize_2) -> bool {
     false
 }
 
-fn find_rect(needle: &Image<ARGB8>,haystack: &Image<ARGB8>,p: &mut isize_2) -> bool {
+fn find_rect(needle: &Image<ARGB8>,haystack: &Image<ARGB8>,p: &mut Vec2<isize>) -> bool {
     for hy in 0..haystack.size.y - needle.size.y {
         for hx in 0..haystack.size.x - needle.size.x {
             let mut found = true;
             for y in 0..needle.size.y {
                 for x in 0..needle.size.x {
-                    if haystack.pixel(usize_2 { x: hx + x,y: hy + y, }) != needle.pixel(usize_2 { x: x,y: y, }) {
+                    if haystack.pixel(vec2!(hx + x,hy + y)) != needle.pixel(vec2!(x,y)) {
                         found = false;
                         break;
                     }
@@ -186,9 +187,9 @@ fn main() {
     }
 
     // standard parameters
-    let gensize = i32_2 { x: 64 * scale,y: 64 * scale, };
-    let translate = i32_2 { x: 16 * scale,y: 16 * scale, };
-    let border = i32_2 { x: 2,y: 2, };
+    let gensize = vec2!(64 * scale,64 * scale);
+    let translate = vec2!(16 * scale,16 * scale);
+    let border = vec2!(2,2);
     println!("gensize {}x{}, translate {},{}; border {}x{}",gensize.x,gensize.y,translate.x,translate.y,border.x,border.y);
 
     // convert and load all characters
@@ -229,16 +230,16 @@ fn main() {
                 let mut buffer: Vec<u8> = Vec::new();
                 file.read_to_end(&mut buffer).expect("unable to read file");
                 let image = decode::<ARGB8>(&buffer).expect("unable to decode");
-                let mut cutout = Image::<ARGB8>::new(usize_2 { x: xs as usize,y: ys as usize, });
+                let mut cutout = Image::<ARGB8>::new(vec2!(xs as usize,ys as usize));
                 for y in 0..ys {
                     for x in 0..xs {
-                        cutout.set_pixel(usize_2 { x: x as usize,y: y as usize, },image.pixel(usize_2 { x: (xr + x) as usize,y: (gensize.y - yr - ys + y) as usize, }));
+                        cutout.set_pixel(vec2!(x as usize,y as usize),image.pixel(vec2!((xr + x) as usize,(gensize.y - yr - ys + y) as usize)));
                     }
                 }
                 image_characters.push(ImageCharacter {
                     n: n,
                     image: cutout,
-                    offset: i32_2 { x: ox,y: oy, },
+                    offset: vec2!(ox,oy),
                     advance: adv,
                 });
                 //Command::new("sh").arg("-c").arg(format!("mv output.png {:04X}.png",n)).output().expect("unable to remove output.png");
@@ -247,7 +248,7 @@ fn main() {
                 let adv = chunks[2].trim().trim_matches(',').trim().parse::<f32>().expect("what?") as i32;
                 empty_characters.push(EmptyCharacter {
                     n: n,
-                    offset: i32_2 { x: 0,y: 0, },
+                    offset: vec2!(0,0),
                     advance: adv,
                 });
             }
@@ -263,21 +264,15 @@ fn main() {
         let tsize = m * 64;
         if !options_pot || is_pot(tsize) {
             println!("Trying to fit on {}x{} texture...",tsize,tsize);
-            let mut image = Image::<ARGB8>::new(usize_2 { x: tsize,y: tsize, });
+            let mut image = Image::<ARGB8>::new(vec2!(tsize,tsize));
             let mut characters: Vec<Character> = Vec::new();
             let mut everything_placed = true;
             for ch in image_characters.iter() {
                 //println!("checking to see if {:04X} is already represented...",ch.n);
-                let mut p = isize_2 { x: 0,y: 0, };
+                let mut p = vec2!(0,0);
                 if find_rect(&ch.image,&image,&mut p) {
-                    let r = i32_r {
-                        o: i32_2 { x: p.x as i32 + border.x,y: p.y as i32 + border.y, },
-                        s: i32_2 { x: ch.image.size.x as i32 - 2 * border.x,y: ch.image.size.y as i32 - 2 * border.y, },
-                    };
-                    let fr = i32_r {
-                        o: i32_2 { x: r.o.x,y: tsize as i32 - r.o.y - r.s.y, },
-                        s: r.s,
-                    };
+                    let r = rect!(p.x as i32 + border.x,p.y as i32 + border.y,ch.image.size.x as i32 - 2 * border.x,ch.image.size.y as i32 - 2 * border.y);
+                    let fr = rect!(r.o.x,tsize as i32 - r.o.y - r.s.y,r.s.x,r.s.y);
                     //println!("re-using pixels for {:04X}",ch.n);
                     //println!("    found at {},{}!",p.x,p.y);
                     characters.push(Character {
@@ -295,17 +290,11 @@ fn main() {
                         //println!("        writing {:04X} into atlas...",ch.n);
                         for y in 0..ch.image.size.y {
                             for x in 0..ch.image.size.x {
-                                image.set_pixel(usize_2 { x: p.x as usize + x,y: p.y as usize + y, },ch.image.pixel(usize_2 { x: x,y: y, }));
+                                image.set_pixel(vec2!(p.x as usize + x,p.y as usize + y),ch.image.pixel(vec2!(x,y)));
                             }
                         }
-                        let r = i32_r {
-                            o: i32_2 { x: p.x as i32 + border.x,y: p.y as i32 + border.y, },
-                            s: i32_2 { x: ch.image.size.x as i32 - 2 * border.x,y: ch.image.size.y as i32 - 2 * border.y, },
-                        };
-                        let fr = i32_r {
-                            o: i32_2 { x: r.o.x,y: tsize as i32 - r.o.y - r.s.y, },
-                            s: r.s,
-                        };
+                        let r = rect!(p.x as i32 + border.x,p.y as i32 + border.y,ch.image.size.x as i32 - 2 * border.x,ch.image.size.y as i32 - 2 * border.y);
+                        let fr = rect!(r.o.x,tsize as i32 - r.o.y - r.s.y,r.s.x,r.s.y);
                         characters.push(Character {
                             n: ch.n,
                             r: fr,
@@ -323,10 +312,7 @@ fn main() {
                 for ch in empty_characters {
                     characters.push(Character {
                         n: ch.n,
-                        r: i32_r {
-                            o: i32_2 { x: 0,y: 0, },
-                            s: i32_2 { x: 0,y: 0, },
-                        },
+                        r: rect!(0,0,0,0),
                         offset: ch.offset,
                         advance: ch.advance,
                     });

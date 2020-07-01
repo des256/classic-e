@@ -18,12 +18,12 @@ use std::ffi::CString;
 use std::ffi::c_void;
 use std::mem::transmute;
 use std::os::raw::c_int;
-use crate::isize_2;
-use crate::isize_r;
 use crate::UIError;
 use crate::Graphics;
-use crate::usize_2;
 use std::cell::Cell;
+use crate::prelude::*;
+use crate::Vec2;
+use crate::Rect;
 
 const WGL_DRAW_TO_WINDOW_ARB: c_int = 0x2001;
 const WGL_SUPPORT_OPENGL_ARB: c_int = 0x2010;
@@ -61,7 +61,7 @@ type WglCreateContextAttribsARBProc = unsafe extern "C" fn(
 struct Window<'a> {
     hwnd: HWND,
     hdc: HDC,
-    size: Cell<usize_2>,
+    size: Cell<Vec2<usize>>,
     handler: Box<dyn Fn(Event) + 'a>,
 }
 
@@ -365,22 +365,22 @@ impl<'a> UI<'a> {
                 (window.handler)(Event::KeyRelease(wparam_lo as u8));
             },
             WM_LBUTTONDOWN => {
-                (window.handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
+                (window.handler)(Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
             },
             WM_LBUTTONUP => {
-                (window.handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
+                (window.handler)(Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
             },
             WM_MBUTTONDOWN => {
-                (window.handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
+                (window.handler)(Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
             },
             WM_MBUTTONUP => {
-                (window.handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
+                (window.handler)(Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
             },
             WM_RBUTTONDOWN => {
-                (window.handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
+                (window.handler)(Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
             },
             WM_RBUTTONUP => {
-                (window.handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
+                (window.handler)(Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
             },
             WM_MOUSEWHEEL => {
                 if wparam_hi >= 0x8000 {
@@ -390,7 +390,7 @@ impl<'a> UI<'a> {
                 }
             },
             WM_MOUSEMOVE => {
-                (window.handler)(Event::MouseMove(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
+                (window.handler)(Event::MouseMove(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
             },
             WM_PAINT => {
                 let mut paintstruct = PAINTSTRUCT {
@@ -412,17 +412,14 @@ impl<'a> UI<'a> {
                 unsafe { gl::Viewport(0,0,size.x as i32,size.y as i32) };
                 unsafe { gl::Scissor(0,0,size.x as i32,size.y as i32) };
                 self.graphics.set_window_size(size);
-                (window.handler)(Event::Paint(&self.graphics,isize_r::new(
-                    isize_2::new(paintstruct.rcPaint.left as isize,paintstruct.rcPaint.top as isize),
-                    isize_2::new(paintstruct.rcPaint.right as isize - paintstruct.rcPaint.left as isize,paintstruct.rcPaint.bottom as isize - paintstruct.rcPaint.top as isize)
-                )));
+                (window.handler)(Event::Paint(&self.graphics,rect!(paintstruct.rcPaint.left as isize,paintstruct.rcPaint.top as isize,paintstruct.rcPaint.right as isize - paintstruct.rcPaint.left as isize,paintstruct.rcPaint.bottom as isize - paintstruct.rcPaint.top as isize)));
                 unsafe { wglMakeCurrent(hidden_hdc,hglrc) };
                 unsafe { SwapBuffers(window.hdc) };
                 unsafe { EndPaint(hwnd,&paintstruct) };
             },
             WM_SIZE => {
-                window.size.set(usize_2 { x: lparam_lo as usize,y: lparam_hi as usize, });
-                (window.handler)(Event::Resize(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
+                window.size.set(vec2!lparam_lo as usize,lparam_hi as usize));
+                (window.handler)(Event::Resize(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
             },
             WM_CLOSE => {
                 (window.handler)(Event::Close);
@@ -434,10 +431,10 @@ impl<'a> UI<'a> {
         0    
     }
 
-    pub fn create_window(&mut self,r: &isize_r,title: &str,handler: impl Fn(Event) + 'a) -> bool {
+    pub fn create_window(&mut self,r: Rect<isize>,title: &str,handler: impl Fn(Event) + 'a) -> bool {
         let window_style = WS_OVERLAPPEDWINDOW;
         let window_exstyle = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
-        let mut rect = RECT {
+        let mut rc = RECT {
             left: r.o.x as i32,
             right: r.o.x as i32 + r.s.x as i32,
             top: r.o.y as i32,
@@ -445,7 +442,7 @@ impl<'a> UI<'a> {
         };
         unsafe {
             AdjustWindowRectEx(
-                &mut rect as *mut RECT,
+                &mut rc as *mut RECT,
                 window_style,
                 FALSE,
                 window_exstyle
@@ -458,8 +455,8 @@ impl<'a> UI<'a> {
             WS_CLIPSIBLINGS | WS_CLIPCHILDREN | window_style,
             CW_USEDEFAULT,
             CW_USEDEFAULT,
-            rect.right - rect.left,
-            rect.bottom - rect.top,
+            rc.right - rc.left,
+            rc.bottom - rc.top,
             null_mut(),
             null_mut(),
             self.hinstance,
@@ -472,7 +469,7 @@ impl<'a> UI<'a> {
         let window = Window {
             hwnd: hwnd,
             hdc: hdc,
-            size: Cell::new(usize_2 { x: (rect.right - rect.left) as usize,y: (rect.bottom - rect.top) as usize, }),
+            size: Cell::new(vec2!(rc.right - rc.left) as usize,(rc.bottom - rc.top) as usize)),
             handler: Box::new(handler),
         };
         unsafe { SetPixelFormat(hdc,self.pfid,&self.pfd) };

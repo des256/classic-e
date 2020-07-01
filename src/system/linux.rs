@@ -14,10 +14,8 @@ use xcb::xproto::*;
 use x11::glx::arb::*;
 use std::ptr::null_mut;
 use crate::UIError;
-use crate::isize_r;
 use xcb::cast_event;
 use crate::Event;
-use crate::isize_2;
 use crate::Button;
 use crate::Wheel;
 use xcb::GenericEvent;
@@ -28,9 +26,11 @@ use libc::epoll_event;
 use libc::EPOLLIN;
 use std::os::unix::io::AsRawFd;
 use libc::epoll_wait;
-use crate::usize_2;
-use gl::types::GLuint;
+use crate::Vec2;
 use crate::Graphics;
+use std::cell::Cell;
+use crate::prelude::*;
+use crate::Rect;
 
 type GlXCreateContextAttribsARBProc = unsafe extern "C" fn(
     dpy: *mut Display,
@@ -55,7 +55,7 @@ fn load_function(name: &str) -> *mut c_void {
 
 struct Window<'a> {
     window: XID,
-    size: usize_2,
+    size: Cell<Vec2<usize>>,
     handler: Box<dyn Fn(Event) + 'a>,
 }
 
@@ -293,7 +293,7 @@ impl<'a> UI<'a> {
         })
     }
 
-    pub fn create_window(&mut self,r: &isize_r,title: &str,handler: impl Fn(Event) + 'a) -> bool {
+    pub fn create_window(&mut self,r: Rect<isize>,title: &str,handler: impl Fn(Event) + 'a) -> bool {
         let window = self.connection.generate_id() as XID;
         let values = [
             (CW_EVENT_MASK,
@@ -346,7 +346,7 @@ impl<'a> UI<'a> {
         self.windows.push(
             Window {
                 window: window,
-                size: usize_2 { x: r.s.x as usize,y: r.s.y as usize, },
+                size: Cell::new(vec2!(r.s.x as usize,r.s.y as usize)),
                 handler: Box::new(handler),
             }
         );
@@ -358,17 +358,15 @@ impl<'a> UI<'a> {
         match r {
             EXPOSE => {
                 let expose: &ExposeEvent = unsafe { cast_event(&xcb_event) };
-                let r = isize_r::new(
-                    isize_2::new(expose.x() as isize,expose.y() as isize),
-                    isize_2::new(expose.width() as isize,expose.height() as isize)
-                );
+                let r = rect!(expose.x() as isize,expose.y() as isize,expose.width() as isize,expose.height() as isize);
                 let id = expose.window() as XID;
                 for window in &mut self.windows {
                     if window.window == id {
                         unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),window.window,self.context) };
-                        unsafe { gl::Viewport(0,0,window.size.x as i32,window.size.y as i32) };
-                        unsafe { gl::Scissor(0,0,window.size.x as i32,window.size.y as i32) };
-                        self.graphics.set_window_size(window.size);
+                        let size = window.size.get();
+                        unsafe { gl::Viewport(0,0,size.x as i32,size.y as i32) };
+                        unsafe { gl::Scissor(0,0,size.x as i32,size.y as i32) };
+                        self.graphics.set_window_size(size);
                         (window.handler)(Event::Paint(&mut self.graphics,r));
                         unsafe { gl::Flush() };
                         unsafe { glXSwapBuffers(self.connection.get_raw_dpy(),window.window) };
@@ -398,7 +396,7 @@ impl<'a> UI<'a> {
             },
             BUTTON_PRESS => {
                 let button_press: &ButtonPressEvent = unsafe { cast_event(&xcb_event) };
-                let p = isize_2::new(button_press.event_x() as isize,button_press.event_y() as isize);
+                let p = vec2!(button_press.event_x() as isize,button_press.event_y() as isize);
                 let id = button_press.event() as XID;
                 for window in &mut self.windows {
                     if window.window == id {
@@ -418,7 +416,7 @@ impl<'a> UI<'a> {
             },
             BUTTON_RELEASE => {
                 let button_release: &ButtonReleaseEvent = unsafe { cast_event(&xcb_event) };
-                let p = isize_2::new(button_release.event_x() as isize,button_release.event_y() as isize);
+                let p = vec2!(button_release.event_x() as isize,button_release.event_y() as isize);
                 let id = button_release.event() as XID;
                 for window in &mut self.windows {
                     if window.window == id {
@@ -434,7 +432,7 @@ impl<'a> UI<'a> {
             },
             MOTION_NOTIFY => {
                 let motion_notify: &MotionNotifyEvent = unsafe { cast_event(&xcb_event) };
-                let p = isize_2::new(motion_notify.event_x() as isize,motion_notify.event_y() as isize);
+                let p = vec2!(motion_notify.event_x() as isize,motion_notify.event_y() as isize);
                 let id = motion_notify.event() as XID;
                 for window in &mut self.windows {
                     if window.window == id {
@@ -444,11 +442,11 @@ impl<'a> UI<'a> {
             },
             CONFIGURE_NOTIFY => {
                 let configure_notify: &ConfigureNotifyEvent = unsafe { cast_event(&xcb_event) };
-                let s = isize_2::new(configure_notify.width() as isize,configure_notify.height() as isize);
+                let s = vec2!(configure_notify.width() as isize,configure_notify.height() as isize);
                 let id = configure_notify.event() as XID;
                 for window in &mut self.windows {
                     if window.window == id {
-                        window.size = usize_2 { x: s.x as usize,y: s.y as usize, };
+                        window.size.set(vec2!(s.x as usize,s.y as usize));
                         (window.handler)(Event::Resize(s));
                     }
                 }

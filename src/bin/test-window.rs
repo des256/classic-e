@@ -3,10 +3,11 @@
 
 use e::UI;
 use e::Event;
-use e::isize_2;
-use e::isize_r;
 use std::rc::Rc;
 use std::cell::RefCell;
+use e::vec2;
+use e::prelude::*;
+use e::rect;
 
 struct App {
     running: bool,
@@ -53,7 +54,7 @@ fn main() {
     };
     let cloned_app = app.clone();
     ui.create_window(
-        &isize_r::new(isize_2::new(50,50),isize_2::new(640,360)),
+        rect!(50,50,640,360),
         "Test Window",
         move |event| {
             let mut app = cloned_app.borrow_mut();

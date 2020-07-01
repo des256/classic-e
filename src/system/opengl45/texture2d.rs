@@ -10,7 +10,7 @@ use crate::RGB8;
 use crate::ARGB8;
 use crate::Graphics;
 use crate::UIError;
-use crate::usize_2;
+use crate::Vec2;
 
 pub trait OpenGLFormat {
     fn gl_internal_format() -> GLuint;
@@ -32,7 +32,7 @@ impl OpenGLFormat for ARGB8 {
 
 pub struct Texture2D<T: OpenGLFormat> {
     pub tex: GLuint,
-    pub size: usize_2,
+    pub size: Vec2<usize>,
     phantom: PhantomData<T>,
 }
 

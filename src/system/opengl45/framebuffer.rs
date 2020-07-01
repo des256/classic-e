@@ -3,13 +3,13 @@
 
 use crate::Graphics;
 use gl::types::GLuint;
-use crate::usize_2;
+use crate::Vec2;
 use crate::UIError;
 
 pub struct Framebuffer {
     fbo: GLuint,
     pub tex: GLuint,
-    pub size: usize_2,
+    pub size: Vec2<usize>,
 }
 
 impl Drop for Framebuffer {
@@ -22,7 +22,7 @@ impl Drop for Framebuffer {
 }
 
 impl Graphics {
-    pub fn create_framebuffer(&self,size: usize_2) -> Result<Framebuffer,UIError> {
+    pub fn create_framebuffer(&self,size: Vec2<usize>) -> Result<Framebuffer,UIError> {
         let mut fbo: GLuint = 0;
         let mut tex: GLuint = 0;
         unsafe {

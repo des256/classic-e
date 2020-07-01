@@ -5,16 +5,16 @@ use gl::types::GLuint;
 use crate::UIError;
 use crate::Graphics;
 use std::ffi::c_void;
-use crate::f32_2;
 use gl::types::GLvoid;
-use crate::f32_4;
+use crate::Vec2;
+use crate::Vec4;
 
 pub trait Vertex {
     fn bind() -> Vec<GLuint>;
     fn len() -> isize;
 }
 
-impl Vertex for f32_2 {
+impl Vertex for Vec2<f32> {
     fn bind() -> Vec<GLuint> {
         unsafe {
             gl::EnableVertexAttribArray(0);
@@ -28,7 +28,7 @@ impl Vertex for f32_2 {
     }
 }
 
-impl Vertex for f32_4 {
+impl Vertex for Vec4<f32> {
     fn bind() -> Vec<GLuint> {
         unsafe {
             gl::EnableVertexAttribArray(0);

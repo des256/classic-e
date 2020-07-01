@@ -15,13 +15,6 @@ pub struct Rect<T> {
 }
 
 impl<T: PartialOrd + Add<Output=T> + Copy> Rect<T> {
-    pub fn new(o: Vec2<T>,s: Vec2<T>) -> Rect<T> {
-        Rect {
-            o: o,
-            s: s,
-        }
-    }
-
     pub fn contains(&self,p: &Vec2<T>) -> bool {
         (p.x >= self.o.x) && (p.y >= self.o.y) && (p.x < self.o.x + self.s.x) && (p.y < self.o.y + self.s.y)
     }
@@ -42,22 +35,12 @@ impl<T: Display> Display for Rect<T> {
     }
 }
 
-/// Rectangle of `i32`.
-#[allow(non_camel_case_types)]
-pub type i32_r = Rect<i32>;
-
-/// Rectangle of `i64`.
-#[allow(non_camel_case_types)]
-pub type i64_r = Rect<i64>;
-
-/// Rectangle of `isize`.
-#[allow(non_camel_case_types)]
-pub type isize_r = Rect<isize>;
-
-/// Rectangle of `f32`.
-#[allow(non_camel_case_types)]
-pub type f32_r = Rect<f32>;
-
-/// Rectangle of `f64`.
-#[allow(non_camel_case_types)]
-pub type f64_r = Rect<f64>;
+#[macro_export]
+macro_rules! rect (
+    ($o:expr,$s:expr) => (
+        init_rect($o,$s)
+    );
+    ($ox:expr,$oy:expr,$sx:expr,$sy:expr) => (
+        init_rect(vec2!($ox,$oy),vec2!($sx,$sy))
+    );
+);

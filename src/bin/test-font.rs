@@ -3,15 +3,15 @@
 
 use e::UI;
 use e::Event;
-use e::isize_2;
-use e::isize_r;
 use std::rc::Rc;
 use std::cell::RefCell;
-use e::f32_2;
 use e::Font;
 use e::ARGB8;
 use e::Pixel;
 use e::BlendMode;
+use e::prelude::*;
+use e::vec2;
+use e::rect;
 
 struct App {
     running: bool,
@@ -30,9 +30,9 @@ fn handler(event: Event,app: &mut App) {
             //graphics.draw_text(f32_2 { x: 10.0,y: 76.0, },"inside a window, so yeah,",&app.font,f32_2 { x: 44.0,y:44.0, },0.0);
             //graphics.draw_text(f32_2 { x: 10.0,y: 20.0, },"it's kinda cool, right?",&app.font,f32_2 { x: 44.0,y:44.0, },0.0);
 
-            graphics.draw_text(f32_2 { x: 10.0,y: 132.0, },"WHO",&app.font,f32_2 { x: 44.0,y:44.0, },0.0);
-            graphics.draw_text(f32_2 { x: 10.0,y: 76.0, },"ARE",&app.font,f32_2 { x: 44.0,y:44.0, },0.0);
-            graphics.draw_text(f32_2 { x: 10.0,y: 20.0, },"YOU?",&app.font,f32_2 { x: 44.0,y:44.0, },0.0);
+            graphics.draw_text(vec2!(10.0,132.0),"WHO",&app.font,vec2!(44.0,44.0),0.0);
+            graphics.draw_text(vec2!(10.0,76.0),"ARE",&app.font,vec2!(44.0,44.0),0.0);
+            graphics.draw_text(vec2!(10.0,20.0),"YOU?",&app.font,vec2!(44.0,44.0),0.0);
         },
         Event::Close => {
             app.running = false;
@@ -47,14 +47,14 @@ fn main() {
         Err(_) => { panic!("Cannot open UI."); },
     };
     let font = ui.graphics().load_font("font.fnt").expect("what?");
-    ui.graphics().set_scale(f32_2 { x: 1.0,y: 1.0, });
+    ui.graphics().set_scale(vec2!(1.0,1.0));
     let app = Rc::new(RefCell::new(App {
         running: true,
         font: font,
     }));
     let cloned_app = app.clone();
     ui.create_window(
-        &isize_r::new(isize_2::new(50,50),isize_2::new(640,360)),
+        rect!(50,50,640,360),
         "Test Window",
         move |event| {
             let mut app = cloned_app.borrow_mut();

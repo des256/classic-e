@@ -25,15 +25,6 @@ pub struct Vec2<T> {
 
 macro_rules! impl_vec2 (
     ($t:ty) => (
-        impl Vec2<$t> {
-            pub fn new(x: $t,y: $t) -> Vec2<$t> {
-                Vec2 {
-                    x: x,
-                    y: y,
-                }
-            }
-        }
-
         impl PartialEq for Vec2<$t> {
             fn eq(&self,other: &Vec2<$t>) -> bool {
                 (self.x == other.x)
@@ -156,72 +147,58 @@ macro_rules! impl_vec2_neg (
     );
 );
 
-#[allow(non_camel_case_types)]
-pub type u8_2 = Vec2<u8>;
+macro_rules! impl_vec2_flt (
+    ($t:ty) => (
+        impl Vec2<$t> {
+            pub fn dot(a: Vec2<$t>,b: Vec2<$t>) -> $t {
+                a.x * b.x + a.y * b.y
+            }
+
+            pub fn abs(&self) -> $t {
+                (self.x * self.x + self.y * self.y).sqrt()
+            }
+
+            pub fn norm(self) -> Vec2<$t> {
+                let d = self.abs();
+                if d != <$t>::zero() {
+                    self / d
+                }
+                else {
+                    self
+                }
+            }
+        }
+    );
+);
+
+#[macro_export]
+macro_rules! vec2 (
+    ($x:expr,$y:expr) => (
+        init_vec2($x,$y)
+    );
+);
 
 impl_vec2!(u8);
-
-#[allow(non_camel_case_types)]
-pub type i8_2 = Vec2<i8>;
-
 impl_vec2!(i8);
 impl_vec2_neg!(i8);
-
-#[allow(non_camel_case_types)]
-pub type u16_2 = Vec2<u16>;
-
 impl_vec2!(u16);
-
-#[allow(non_camel_case_types)]
-pub type i16_2 = Vec2<i16>;
-
 impl_vec2!(i16);
 impl_vec2_neg!(i16);
-
-#[allow(non_camel_case_types)]
-pub type u32_2 = Vec2<u32>;
-
 impl_vec2!(u32);
-
-#[allow(non_camel_case_types)]
-pub type i32_2 = Vec2<i32>;
-
 impl_vec2!(i32);
 impl_vec2_neg!(i32);
-
-#[allow(non_camel_case_types)]
-pub type u64_2 = Vec2<u64>;
-
 impl_vec2!(u64);
-
-#[allow(non_camel_case_types)]
-pub type i64_2 = Vec2<i64>;
-
 impl_vec2!(i64);
 impl_vec2_neg!(i64);
-
-#[allow(non_camel_case_types)]
-pub type usize_2 = Vec2<usize>;
-
 impl_vec2!(usize);
-
-#[allow(non_camel_case_types)]
-pub type isize_2 = Vec2<isize>;
-
 impl_vec2!(isize);
 impl_vec2_neg!(isize);
-
-#[allow(non_camel_case_types)]
-pub type f32_2 = Vec2<f32>;
-
 impl_vec2!(f32);
 impl_vec2_neg!(f32);
-
-#[allow(non_camel_case_types)]
-pub type f64_2 = Vec2<f64>;
-
+impl_vec2_flt!(f32);
 impl_vec2!(f64);
 impl_vec2_neg!(f64);
+impl_vec2_flt!(f64);
 
 #[derive(Copy,Clone)]
 pub struct Vec3<T> {
@@ -232,42 +209,6 @@ pub struct Vec3<T> {
 
 macro_rules! impl_vec3 (
     ($t:ty) => (
-        impl Vec3<$t> {
-            pub fn new(x: $t,y: $t,z: $t) -> Vec3<$t> {
-                Vec3 {
-                    x: x,
-                    y: y,
-                    z: z,
-                }
-            }
-
-            pub fn cross(a: Vec3<$t>,b: Vec3<$t>) -> Vec3<$t> {
-                Vec3 {
-                    x: a.y * b.z - a.z * b.y,
-                    y: a.z * b.x - a.x * b.z,
-                    z: a.x * b.y - a.y * b.x,
-                }
-            }
-
-            pub fn dot(a: Vec3<$t>,b: Vec3<$t>) -> $t {
-                a.x * b.x + a.y * b.y + a.z * b.z
-            }
-
-            pub fn abs(&self) -> $t {
-                (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
-            }
-
-            pub fn norm(self) -> Vec3<$t> {
-                let d = self.abs();
-                if d != 0.0 {
-                    self / d
-                }
-                else {
-                    self
-                }
-            }
-        }
-
         impl PartialEq for Vec3<$t> {
             fn eq(&self,other: &Vec3<$t>) -> bool {
                 (self.x == other.x)
@@ -294,17 +235,6 @@ macro_rules! impl_vec3 (
                     x: <$t>::zero(),
                     y: <$t>::zero(),
                     z: <$t>::zero(),
-                }
-            }
-        }
-
-        impl Neg for Vec3<$t> {
-            type Output = Vec3<$t>;
-            fn neg(self) -> Self::Output {
-                Vec3 {
-                    x: -self.x,
-                    y: -self.y,
-                    z: -self.z,
                 }
             }
         }
@@ -381,7 +311,7 @@ macro_rules! impl_vec3 (
         impl Div<$t> for Vec3<$t> {
             type Output = Vec3<$t>;
             fn div(self,other: $t) -> Self::Output {
-                if other != 0.0 {
+                if other != <$t>::zero() {
                     Vec3 {
                         x: self.x / other,
                         y: self.y / other,
@@ -396,7 +326,7 @@ macro_rules! impl_vec3 (
 
         impl DivAssign<$t> for Vec3<$t> {
             fn div_assign(&mut self,other: $t) {
-                if other != 0.0 {
+                if other != <$t>::zero() {
                     self.x /= other;
                     self.y /= other;
                     self.z /= other;
@@ -406,15 +336,81 @@ macro_rules! impl_vec3 (
     );
 );
 
-#[allow(non_camel_case_types)]
-pub type f32_3 = Vec3<f32>;
+macro_rules! impl_vec3_neg (
+    ($t:ty) => (
+        impl Neg for Vec3<$t> {
+            type Output = Self;
+            fn neg(self) -> Self::Output {
+                Vec3 {
+                    x: -self.x,
+                    y: -self.y,
+                    z: -self.z,
+                }
+            }
+        }
+    );
+);
 
+macro_rules! impl_vec3_flt (
+    ($t:ty) => (
+        impl Vec3<$t> {
+            pub fn cross(a: Vec3<$t>,b: Vec3<$t>) -> Vec3<$t> {
+                Vec3 {
+                    x: a.y * b.z - a.z * b.y,
+                    y: a.z * b.x - a.x * b.z,
+                    z: a.x * b.y - a.y * b.x,
+                }
+            }
+
+            pub fn dot(a: Vec3<$t>,b: Vec3<$t>) -> $t {
+                a.x * b.x + a.y * b.y + a.z * b.z
+            }
+
+            pub fn abs(&self) -> $t {
+                (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
+            }
+
+            pub fn norm(self) -> Vec3<$t> {
+                let d = self.abs();
+                if d != <$t>::zero() {
+                    self / d
+                }
+                else {
+                    self
+                }
+            }
+        }
+    );
+);
+
+#[macro_export]
+macro_rules! vec3 (
+    ($x:expr,$y:expr,$z:expr) => (
+        init_vec3($x,$y,$z)
+    );
+);
+
+impl_vec3!(u8);
+impl_vec3!(i8);
+impl_vec3_neg!(i8);
+impl_vec3!(u16);
+impl_vec3!(i16);
+impl_vec3_neg!(i16);
+impl_vec3!(u32);
+impl_vec3!(i32);
+impl_vec3_neg!(i32);
+impl_vec3!(u64);
+impl_vec3!(i64);
+impl_vec3_neg!(i64);
+impl_vec3!(usize);
+impl_vec3!(isize);
+impl_vec3_neg!(isize);
 impl_vec3!(f32);
-
-#[allow(non_camel_case_types)]
-pub type f64_3 = Vec3<f64>;
-
+impl_vec3_neg!(f32);
+impl_vec3_flt!(f32);
 impl_vec3!(f64);
+impl_vec3_neg!(f64);
+impl_vec3_flt!(f64);
 
 #[derive(Copy,Clone)]
 pub struct Vec4<T> {
@@ -426,17 +422,6 @@ pub struct Vec4<T> {
 
 macro_rules! impl_vec4 (
     ($t:ty) => (
-        impl Vec4<$t> {
-            pub fn new(x: $t,y: $t,z: $t,w: $t) -> Vec4<$t> {
-                Vec4 {
-                    x: x,
-                    y: y,
-                    z: z,
-                    w: w,
-                }
-            }
-        }
-
         impl PartialEq for Vec4<$t> {
             fn eq(&self,other: &Vec4<$t>) -> bool {
                 (self.x == other.x)
@@ -465,18 +450,6 @@ macro_rules! impl_vec4 (
                     y: <$t>::zero(),
                     z: <$t>::zero(),
                     w: <$t>::zero(),
-                }
-            }
-        }
-
-        impl Neg for Vec4<$t> {
-            type Output = Vec4<$t>;
-            fn neg(self) -> Self::Output {
-                Vec4 {
-                    x: -self.x,
-                    y: -self.y,
-                    z: -self.z,
-                    w: -self.w,
                 }
             }
         }
@@ -559,7 +532,7 @@ macro_rules! impl_vec4 (
         impl Div<$t> for Vec4<$t> {
             type Output = Vec4<$t>;
             fn div(self,other: $t) -> Self::Output {
-                if other != 0.0 {
+                if other != <$t>::zero() {
                     Vec4 {
                         x: self.x / other,
                         y: self.y / other,
@@ -575,7 +548,7 @@ macro_rules! impl_vec4 (
 
         impl DivAssign<$t> for Vec4<$t> {
             fn div_assign(&mut self,other: $t) {
-                if other != 0.0 {
+                if other != <$t>::zero() {
                     self.x /= other;
                     self.y /= other;
                     self.z /= other;
@@ -586,12 +559,71 @@ macro_rules! impl_vec4 (
     );
 );
 
-#[allow(non_camel_case_types)]
-pub type f32_4 = Vec4<f32>;
+macro_rules! impl_vec4_neg (
+    ($t:ty) => (
+        impl Neg for Vec4<$t> {
+            type Output = Self;
+            fn neg(self) -> Self::Output {
+                Vec4 {
+                    x: -self.x,
+                    y: -self.y,
+                    z: -self.z,
+                    w: -self.w,
+                }
+            }
+        }
+    );
+);
 
+macro_rules! impl_vec4_flt (
+    ($t:ty) => (
+        impl Vec4<$t> {
+            pub fn dot(a: Vec4<$t>,b: Vec4<$t>) -> $t {
+                a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w
+            }
+
+            pub fn abs(&self) -> $t {
+                (self.x * self.x + self.y * self.y + self.z * self.z + self.w * self.w).sqrt()
+            }
+
+            pub fn norm(self) -> Vec4<$t> {
+                let d = self.abs();
+                if d != <$t>::zero() {
+                    self / d
+                }
+                else {
+                    self
+                }
+            }
+        }
+    );
+);
+
+#[macro_export]
+macro_rules! vec4 (
+    ($x:expr,$y:expr,$z:expr,$w:expr) => (
+        init_vec4($x,$y,$z,$w)
+    );
+);
+
+impl_vec4!(u8);
+impl_vec4!(i8);
+impl_vec4_neg!(i8);
+impl_vec4!(u16);
+impl_vec4!(i16);
+impl_vec4_neg!(i16);
+impl_vec4!(u32);
+impl_vec4!(i32);
+impl_vec4_neg!(i32);
+impl_vec4!(u64);
+impl_vec4!(i64);
+impl_vec4_neg!(i64);
+impl_vec4!(usize);
+impl_vec4!(isize);
+impl_vec4_neg!(isize);
 impl_vec4!(f32);
-
-#[allow(non_camel_case_types)]
-pub type f64_4 = Vec4<f64>;
-
+impl_vec4_neg!(f32);
+impl_vec4_flt!(f32);
 impl_vec4!(f64);
+impl_vec4_neg!(f64);
+impl_vec4_flt!(f64);
