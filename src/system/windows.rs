@@ -22,6 +22,8 @@ use crate::isize_2;
 use crate::isize_r;
 use crate::UIError;
 use crate::Graphics;
+use crate::usize_2;
+use std::cell::Cell;
 
 const WGL_DRAW_TO_WINDOW_ARB: c_int = 0x2001;
 const WGL_SUPPORT_OPENGL_ARB: c_int = 0x2010;
@@ -59,6 +61,7 @@ type WglCreateContextAttribsARBProc = unsafe extern "C" fn(
 struct Window<'a> {
     hwnd: HWND,
     hdc: HDC,
+    size: Cell<usize_2>,
     handler: Box<dyn Fn(Event) + 'a>,
 }
 
@@ -405,6 +408,10 @@ impl<'a> UI<'a> {
                 };
                 unsafe { BeginPaint(hwnd,&mut paintstruct) };
                 unsafe { wglMakeCurrent(window.hdc,hglrc) };
+                let size = window.size.get();
+                unsafe { gl::Viewport(0,0,size.x as i32,size.y as i32) };
+                unsafe { gl::Scissor(0,0,size.x as i32,size.y as i32) };
+                self.graphics.set_window_size(size);
                 (window.handler)(Event::Paint(&self.graphics,isize_r::new(
                     isize_2::new(paintstruct.rcPaint.left as isize,paintstruct.rcPaint.top as isize),
                     isize_2::new(paintstruct.rcPaint.right as isize - paintstruct.rcPaint.left as isize,paintstruct.rcPaint.bottom as isize - paintstruct.rcPaint.top as isize)
@@ -414,6 +421,7 @@ impl<'a> UI<'a> {
                 unsafe { EndPaint(hwnd,&paintstruct) };
             },
             WM_SIZE => {
+                window.size.set(usize_2 { x: lparam_lo as usize,y: lparam_hi as usize, });
                 (window.handler)(Event::Resize(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
             },
             WM_CLOSE => {
@@ -464,6 +472,7 @@ impl<'a> UI<'a> {
         let window = Window {
             hwnd: hwnd,
             hdc: hdc,
+            size: Cell::new(usize_2 { x: (rect.right - rect.left) as usize,y: (rect.bottom - rect.top) as usize, }),
             handler: Box::new(handler),
         };
         unsafe { SetPixelFormat(hdc,self.pfid,&self.pfd) };
