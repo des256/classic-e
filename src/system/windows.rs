@@ -21,6 +21,7 @@ use std::os::raw::c_int;
 use crate::isize_2;
 use crate::isize_r;
 use crate::UIError;
+use crate::Graphics;
 
 const WGL_DRAW_TO_WINDOW_ARB: c_int = 0x2001;
 const WGL_SUPPORT_OPENGL_ARB: c_int = 0x2010;
@@ -69,6 +70,7 @@ pub struct UI<'a> {
     hidden_hdc: HDC,
     hidden_hwnd: HWND,
     windows: Vec<Window<'a>>,
+    graphics: Graphics,
 }
 
 fn win32_string(value: &str) -> Vec<u16> {
@@ -323,65 +325,66 @@ impl<'a> UI<'a> {
             hglrc: hglrc,
             hidden_hdc: hidden_hdc,
             hidden_hwnd: hidden_hwnd,
-            windows: Vec::new(),        
+            windows: Vec::new(),
+            graphics: Graphics::new(),    
         })
-    }
-
-    fn find_window(&mut self,hwnd: HWND) -> Option<&mut Window<'a>> {
-        for window in &mut self.windows {
-            if hwnd == window.hwnd {
-                return Some(window);
-            }
-        }
-        None
     }
 
     fn handle_event(&mut self,hwnd: HWND,message: UINT,wparam: WPARAM,lparam: LPARAM) -> LRESULT {
 
         let hglrc = self.hglrc;
         let hidden_hdc = self.hidden_hdc;
-        let window = match self.find_window(hwnd) {
-            Some(window) => window,
-            None => { return unsafe { DefWindowProcW(hwnd,message,wparam,lparam) } },
-        };
+
+        let mut found_i = -1i32;
+        for i in 0..self.windows.len() {
+            if self.windows[i].hwnd == hwnd {
+                found_i = i as i32;
+                break;
+            }
+        }
+        if found_i == -1 {
+            return unsafe { DefWindowProcW(hwnd,message,wparam,lparam) };
+        }
+        let n = found_i as usize;
+
         let wparam_hi = (wparam >> 16) as u16;
         let wparam_lo = (wparam & 0x0000FFFF) as u16;
         let lparam_hi = (lparam >> 16) as u16;
         let lparam_lo = (lparam & 0x0000FFFF) as u16;
         match message {
             WM_KEYDOWN => {
-                (window.handler)(Event::KeyPress(wparam_lo as u8));
+                (self.windows[n].handler)(Event::KeyPress(wparam_lo as u8));
             },
             WM_KEYUP => {
-                (window.handler)(Event::KeyRelease(wparam_lo as u8));
+                (self.windows[n].handler)(Event::KeyRelease(wparam_lo as u8));
             },
             WM_LBUTTONDOWN => {
-                (window.handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
+                (self.windows[n].handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
             },
             WM_LBUTTONUP => {
-                (window.handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
+                (self.windows[n].handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
             },
             WM_MBUTTONDOWN => {
-                (window.handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
+                (self.windows[n].handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
             },
             WM_MBUTTONUP => {
-                (window.handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
+                (self.windows[n].handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
             },
             WM_RBUTTONDOWN => {
-                (window.handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
+                (self.windows[n].handler)(Event::MousePress(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
             },
             WM_RBUTTONUP => {
-                (window.handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
+                (self.windows[n].handler)(Event::MouseRelease(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
             },
             WM_MOUSEWHEEL => {
                 if wparam_hi >= 0x8000 {
-                    (window.handler)(Event::MouseWheel(Wheel::Down));
+                    (self.windows[n].handler)(Event::MouseWheel(Wheel::Down));
                 } else {
-                    (window.handler)(Event::MouseWheel(Wheel::Up));
+                    (self.windows[n].handler)(Event::MouseWheel(Wheel::Up));
                 }
             },
             WM_MOUSEMOVE => {
-                (window.handler)(Event::MouseMove(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
+                (self.windows[n].handler)(Event::MouseMove(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
             },
             WM_PAINT => {
                 let mut paintstruct = PAINTSTRUCT {
@@ -398,20 +401,20 @@ impl<'a> UI<'a> {
                     rgbReserved: [0; 32],
                 };
                 unsafe { BeginPaint(hwnd,&mut paintstruct) };
-                unsafe { wglMakeCurrent(window.hdc,hglrc) };
-                (window.handler)(Event::Paint(isize_r::new(
+                unsafe { wglMakeCurrent(self.windows[n].hdc,hglrc) };
+                (self.windows[n].handler)(Event::Paint(&mut self.graphics,isize_r::new(
                     isize_2::new(paintstruct.rcPaint.left as isize,paintstruct.rcPaint.top as isize),
                     isize_2::new(paintstruct.rcPaint.right as isize - paintstruct.rcPaint.left as isize,paintstruct.rcPaint.bottom as isize - paintstruct.rcPaint.top as isize)
                 )));
                 unsafe { wglMakeCurrent(hidden_hdc,hglrc) };
-                unsafe { SwapBuffers(window.hdc) };
+                unsafe { SwapBuffers(self.windows[n].hdc) };
                 unsafe { EndPaint(hwnd,&paintstruct) };
             },
             WM_SIZE => {
-                (window.handler)(Event::Resize(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
+                (self.windows[n].handler)(Event::Resize(isize_2::new(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
             },
             WM_CLOSE => {
-                (window.handler)(Event::Close);
+                (self.windows[n].handler)(Event::Close);
             },
             _ => {
                 return unsafe { DefWindowProcW(hwnd,message,wparam,lparam) };
