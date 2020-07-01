@@ -28,6 +28,12 @@ pub enum BlendMode {
 impl Graphics {
     pub(crate) fn new() -> Graphics {
 
+        let mut vao: GLuint = 0;
+        unsafe {
+            gl::GenVertexArrays(1,&mut vao);
+            gl::BindVertexArray(vao);
+        }
+
         let vs = r#"
             #version 420 core
 

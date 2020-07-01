@@ -29,7 +29,6 @@ use libc::EPOLLIN;
 use std::os::unix::io::AsRawFd;
 use libc::epoll_wait;
 use crate::usize_2;
-use crate::Framebuffer;
 use gl::types::GLuint;
 use crate::Graphics;
 
@@ -57,7 +56,7 @@ fn load_function(name: &str) -> *mut c_void {
 struct Window<'a> {
     window: XID,
     size: usize_2,
-    handler: Box<dyn FnMut(Event) + 'a>,
+    handler: Box<dyn Fn(Event) + 'a>,
 }
 
 pub struct UI<'a> {
@@ -70,12 +69,12 @@ pub struct UI<'a> {
     depth: u8,
     wm_protocols: u32,
     colormap: XID,
-    wm_motif_hints: u32,
-    wm_transient_for: u32,
-    wm_net_type: u32,
-    wm_net_type_utility: u32,
-    wm_net_state: u32,
-    wm_net_state_above: u32,
+    _wm_motif_hints: u32,
+    _wm_transient_for: u32,
+    _wm_net_type: u32,
+    _wm_net_type_utility: u32,
+    _wm_net_state: u32,
+    _wm_net_state_above: u32,
     windows: Vec<Window<'a>>,
     epfd: c_int,
     graphics: Graphics,
@@ -265,11 +264,6 @@ impl<'a> UI<'a> {
             }
             unsafe { glXMakeCurrent(connection.get_raw_dpy(),window,context) };
             gl::load_with(|symbol| load_function(&symbol));
-            let mut vao: GLuint = 0;
-            unsafe {
-                gl::GenVertexArrays(1,&mut vao);
-                gl::BindVertexArray(vao);
-            }
             context
         };
 
@@ -287,19 +281,19 @@ impl<'a> UI<'a> {
             depth: depth,
             wm_protocols: wm_protocols,
             colormap: colormap,
-            wm_motif_hints: wm_motif_hints,
-            wm_transient_for: wm_transient_for,
-            wm_net_type: wm_net_type,
-            wm_net_type_utility: wm_net_type_utility,
-            wm_net_state: wm_net_state,
-            wm_net_state_above: wm_net_state_above,
+            _wm_motif_hints: wm_motif_hints,
+            _wm_transient_for: wm_transient_for,
+            _wm_net_type: wm_net_type,
+            _wm_net_type_utility: wm_net_type_utility,
+            _wm_net_state: wm_net_state,
+            _wm_net_state_above: wm_net_state_above,
             windows: Vec::new(),
             epfd: epfd,
             graphics: Graphics::new(),
         })
     }
 
-    pub fn create_window(&mut self,r: &isize_r,title: &str,handler: impl FnMut(Event) + 'a) -> bool {
+    pub fn create_window(&mut self,r: &isize_r,title: &str,handler: impl Fn(Event) + 'a) -> bool {
         let window = self.connection.generate_id() as XID;
         let values = [
             (CW_EVENT_MASK,
