@@ -31,6 +31,7 @@ use crate::Graphics;
 use std::cell::Cell;
 use crate::prelude::*;
 use crate::Rect;
+use std::rc::Rc;
 
 type GlXCreateContextAttribsARBProc = unsafe extern "C" fn(
     dpy: *mut Display,
@@ -77,7 +78,7 @@ pub struct UI<'a> {
     _wm_net_state_above: u32,
     windows: Vec<Window<'a>>,
     epfd: c_int,
-    graphics: Graphics,
+    graphics: Rc<Graphics>,
 }
 
 impl<'a> UI<'a> {
@@ -289,7 +290,7 @@ impl<'a> UI<'a> {
             _wm_net_state_above: wm_net_state_above,
             windows: Vec::new(),
             epfd: epfd,
-            graphics: Graphics::new(),
+            graphics: Rc::new(Graphics::new()),
         })
     }
 
@@ -358,7 +359,7 @@ impl<'a> UI<'a> {
         match r {
             EXPOSE => {
                 let expose: &ExposeEvent = unsafe { cast_event(&xcb_event) };
-                let r = rect!(expose.x() as isize,expose.y() as isize,expose.width() as isize,expose.height() as isize);
+                //let r = rect!(expose.x() as isize,expose.y() as isize,expose.width() as isize,expose.height() as isize);
                 let id = expose.window() as XID;
                 for window in &mut self.windows {
                     if window.window == id {
@@ -367,10 +368,10 @@ impl<'a> UI<'a> {
                         unsafe { gl::Viewport(0,0,size.x as i32,size.y as i32) };
                         unsafe { gl::Scissor(0,0,size.x as i32,size.y as i32) };
                         self.graphics.set_window_size(size);
-                        (window.handler)(Event::Paint(&mut self.graphics,r));
+                        let space = self.graphics.get_space();
+                        (window.handler)(Event::Paint(Rc::clone(&self.graphics),space));
                         unsafe { gl::Flush() };
                         unsafe { glXSwapBuffers(self.connection.get_raw_dpy(),window.window) };
-                        // glSwapBuffers
                     }
                 }
             },
@@ -479,8 +480,8 @@ impl<'a> UI<'a> {
         unsafe { epoll_wait(self.epfd,epe.as_mut_ptr(),1,-1) };
     }
 
-    pub fn graphics(&mut self) -> &mut Graphics {
-        &mut self.graphics
+    pub fn graphics(&self) -> Rc<Graphics> {
+        Rc::clone(&self.graphics)
     }
 }
 

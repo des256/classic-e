@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use crate::Vec2;
-use crate::Rect;
+use std::rc::Rc;
 
 pub enum Mouse {
     Left,
@@ -62,8 +62,8 @@ impl Debug for Wheel {
     }
 }
 
-pub enum Event<'a> {
-    Paint(&'a Graphics,Rect<isize>),
+pub enum Event {
+    Paint(Rc<Graphics>,Vec2<f32>),
     KeyPress(u8),
     KeyRelease(u8),
     MousePress(Vec2<isize>,Mouse),

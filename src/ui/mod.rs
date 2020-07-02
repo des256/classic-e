@@ -4,6 +4,7 @@
 use crate::Rect;
 use crate::Vec2;
 use crate::Graphics;
+use std::rc::Rc;
 
 pub enum HAlignment {
     Left,
@@ -20,7 +21,7 @@ pub enum VAlignment {
 }
 
 pub trait Widget {
-    fn draw(&self,graphics: &Graphics,r: Rect<f32>);
+    fn draw(&self,graphics: Rc<Graphics>,r: Rect<f32>);
     fn measure(&self) -> Vec2<f32>;
     fn halign(self,alignment: HAlignment) -> Self;
     fn valign(self,alignment: VAlignment) -> Self;

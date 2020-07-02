@@ -1,43 +1,38 @@
-// E - Font test
+// E - Text test
 // Desmond Germans, 2020
 
 use e::UI;
 use e::Event;
-use std::rc::Rc;
-use std::cell::RefCell;
-use e::Font;
-use e::ARGB8;
-use e::BlendMode;
-use e::prelude::*;
+use e::Text;
+use e::Widget;
 use e::vec2;
+use e::prelude::*;
+use e::Rect;
+use std::rc::Rc;
 use e::rect;
+use std::cell::RefCell;
+use e::HAlignment;
+use e::VAlignment;
+use e::ARGB8;
+use e::vec4;
 
 // App structure holds application-wide state. Here it's just a boolean
-// indicating if we're still running, and a font reference to be used during
-// drawing of the window.
+// indicating if we're still running, and a text widget.
 struct App {
     running: bool,
-    font: Rc<Font>,
+    tree: Text,  // The root object is a Text widget
 }
 
-// Event handler. Draws 3 words in orange on a blue background.
+// Event handler. Draws the text widget.
 fn handler(event: Event,app: &mut App) {
     match event {
-        Event::Paint(graphics,_) => {
+        Event::Paint(graphics,space) => {
 
             // clear the space to dark blue
             graphics.clear(ARGB8::from(0xFF003F4F));
 
-            // set color to orange
-            graphics.set_color(ARGB8::from(0xFFFF7F00));
-
-            // set blend mode to Over
-            graphics.set_blend(BlendMode::Over);
-
-            // draw the texts
-            graphics.draw_text(vec2!(10.0,132.0),"WHO",&app.font);
-            graphics.draw_text(vec2!(10.0,76.0),"ARE",&app.font);
-            graphics.draw_text(vec2!(10.0,20.0),"YOU?",&app.font);
+            // draw the text widget over the whole space
+            app.tree.draw(graphics,Rect::<f32> { o: vec2!(0.0,0.0),s: space, });
         },
         Event::Close => {
             app.running = false;
@@ -52,28 +47,31 @@ fn main() {
         Ok(ui) => ui,
         Err(_) => { panic!("Cannot open UI."); },
     };
-    
+
+    // create widget tree
+    let tree = Text::new(ui.graphics(),"Hello, World!")
+        .padding()
+        .halign(HAlignment::Center)
+        .valign(VAlignment::Top)
+        .color(ARGB8::from(vec4!(255,191,0,255)))
+    ;
+
     // create application state
-    let font = ui.graphics().get_font("font.fnt",vec2!(44.0,44.0),0.0).expect("what?");
     let app = Rc::new(RefCell::new(App {
         running: true,
-        font: font,
+        tree: tree,
     }));
 
     // clone pointer to give to window
-    let cloned_app = app.clone();
+    let cloned_app = Rc::clone(&app);
 
     // create the window
     ui.create_window(
         rect!(50,50,640,360),
         "Test Window",
         move |event| {
-
-            // borrow the app state
             let mut app = cloned_app.borrow_mut();
-
-            // pass down to handler
-            handler(event,&mut *app);
+            handler(event,&mut app);
         }
     );
 

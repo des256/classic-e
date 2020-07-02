@@ -73,7 +73,7 @@ pub struct UI<'a> {
     hidden_hdc: HDC,
     hidden_hwnd: HWND,
     windows: Vec<Window<'a>>,
-    graphics: Graphics,
+    graphics: Rc<Graphics>,
 }
 
 fn win32_string(value: &str) -> Vec<u16> {
@@ -329,7 +329,7 @@ impl<'a> UI<'a> {
             hidden_hdc: hidden_hdc,
             hidden_hwnd: hidden_hwnd,
             windows: Vec::new(),
-            graphics: Graphics::new(),    
+            graphics: Rc::new(Graphics::new()),
         })
     }
 
@@ -412,13 +412,9 @@ impl<'a> UI<'a> {
                 unsafe { gl::Viewport(0,0,size.x as i32,size.y as i32) };
                 unsafe { gl::Scissor(0,0,size.x as i32,size.y as i32) };
                 self.graphics.set_window_size(size);
-                (window.handler)(Event::Paint(&self.graphics,rect!(
-                    paintstruct.rcPaint.left as isize,
-                    paintstruct.rcPaint.top as isize,
-                    paintstruct.rcPaint.right as isize - paintstruct.rcPaint.left as isize,
-                    paintstruct.rcPaint.bottom as isize - paintstruct.rcPaint.top as isize
-                )));
-                unsafe { wglMakeCurrent(hidden_hdc,hglrc) };
+                let space = self.graphics.get_space();
+                (window.handler)(Event::Paint(Rc::clone(&self.graphics),space));
+                unsafe { gl::Flush() };
                 unsafe { SwapBuffers(window.hdc) };
                 unsafe { EndPaint(hwnd,&paintstruct) };
             },
@@ -518,8 +514,8 @@ impl<'a> UI<'a> {
         }
     }
 
-    pub fn graphics(&'a self) -> &'a Graphics {
-        &self.graphics
+    pub fn graphics(&'a self) -> Rc<Graphics> {
+        Rc::clone(&self.graphics)
     }
 }
 

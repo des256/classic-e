@@ -61,16 +61,16 @@ impl Font {
         }
     }
 
-    pub fn measure(&self,text: &str) -> Vec2<f32> {
-        let mut lp: Vec2<f32> = vec2!(0.0,0.0);
+    pub fn measure(&self,text: &str) -> (Vec2<f32>,Vec2<f32>) {
+        let mut lp = 0f32;
         let mut min: Vec2<f32> = vec2!(0.0,0.0);
         let mut max: Vec2<f32> = vec2!(0.0,0.0);
         for c in text.chars() {
             if let Some(ch) = self.proto.find(c) {
                 if (ch.r.s.x > 0) && (ch.r.s.y > 0) {
                     // bottom-left of the character, in GU
-                    let ox = lp.x - FONT.x * self.size.x * (ch.offset.x as f32) / (self.proto.scale as f32);
-                    let oy = lp.y - FONT.y * self.size.y * (ch.offset.y as f32) / (self.proto.scale as f32);
+                    let ox = lp - FONT.x * self.size.x * (ch.offset.x as f32) / (self.proto.scale as f32);
+                    let oy = -FONT.y * self.size.y * (ch.offset.y as f32) / (self.proto.scale as f32);
 
                     // size of the character, in GU
                     let sx = FONT.x * self.size.x * (ch.r.s.x as f32) / (self.proto.scale as f32);
@@ -91,15 +91,15 @@ impl Font {
                     }
 
                     // advance
-                    lp.x += FONT.x * self.size.x * (ch.advance as f32) / (self.proto.scale as f32) + FONT.x * self.size.x * self.spacing;
+                    lp += FONT.x * self.size.x * (ch.advance as f32) / (self.proto.scale as f32) + FONT.x * self.size.x * self.spacing;
                 }
                 else {
                     // only advance
-                    lp.x += 2.0 * FONT.x * self.size.x * (ch.advance as f32) / (self.proto.scale as f32) + FONT.x * self.size.x * self.spacing;  // the choice for double spacing is arbitrary
+                    lp += 2.0 * FONT.x * self.size.x * (ch.advance as f32) / (self.proto.scale as f32) + FONT.x * self.size.x * self.spacing;  // the choice for double spacing is arbitrary
                 }
             }
         }
-        max - min
+        (max - min,-min)
     }
 }
 
@@ -225,7 +225,7 @@ impl Graphics {
         let color = self.color.get();
         self.set_uniform("scale",vec2!(scale.x / (size.x as f32),scale.y / (size.y as f32)));
         self.set_uniform("font_texture",0);
-        self.set_uniform("color",Vec4::<f32>::from(color));
+        self.set_uniform("color",color);
         self.draw_triangles(6 * count);
         self.unbind_vertexbuffer();
         self.unbind_shader();

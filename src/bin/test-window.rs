@@ -9,10 +9,14 @@ use e::vec2;
 use e::prelude::*;
 use e::rect;
 
+// App structure holds application-wide state. Here it's just a boolean
+// indicating if we're still running.
 struct App {
     running: bool,
 }
 
+// Event handler. Prints the name of the window, followed by what kind of
+// event it is.
 fn handler(name: &str,event: Event,app: &mut App) {
     match event {
         Event::KeyPress(k) => {
@@ -36,8 +40,8 @@ fn handler(name: &str,event: Event,app: &mut App) {
         Event::Resize(s) => {
             println!("{}: Resize {}",name,s);
         },
-        Event::Paint(_,r) => {
-            println!("{}: Paint {}",name,r);
+        Event::Paint(_,s) => {
+            println!("{}: Paint {}",name,s);
         },
         Event::Close => {
             println!("{}: Close",name);
@@ -47,20 +51,33 @@ fn handler(name: &str,event: Event,app: &mut App) {
 }
 
 fn main() {
-    let app = Rc::new(RefCell::new(App { running: true, }));
+    // initialize UI
     let mut ui = match UI::new() {
         Ok(ui) => ui,
         Err(_) => { panic!("Cannot open UI."); },
     };
+
+    // create application state
+    let app = Rc::new(RefCell::new(App { running: true, }));
+
+    // clone pointer to give to window
     let cloned_app = app.clone();
+
+    // create the window
     ui.create_window(
         rect!(50,50,640,360),
         "Test Window",
         move |event| {
+
+            // borrow the app state
             let mut app = cloned_app.borrow_mut();
+
+            // pass down to handler
             handler("Test Window",event,&mut *app);
         }
     );
+
+    // event loop
     while app.borrow().running {
         ui.wait();
         ui.pump();
