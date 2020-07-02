@@ -4,7 +4,7 @@
 use std::env;
 use std::path::Path;
 use std::process::Command;
-use e::Image;
+use e::Mat;
 use e::ARGB8;
 use std::fs::File;
 use std::io::prelude::*;
@@ -39,7 +39,7 @@ static CHARACTERS: &[(u32,u32)] = &[
 
 struct ImageCharacter {
     n: u32,
-    image: Image<ARGB8>,
+    image: Mat<ARGB8>,
     offset: Vec2<i32>,
     advance: i32,
 }
@@ -79,13 +79,13 @@ fn exit_version() {
     std::process::exit(-1);
 }
 
-fn find_empty(size: &Vec2<usize>,haystack: &Image<ARGB8>,p: &mut Vec2<isize>) -> bool {
+fn find_empty(size: &Vec2<usize>,haystack: &Mat<ARGB8>,p: &mut Vec2<isize>) -> bool {
     for hy in 0..haystack.size.y - size.y as usize {
         for hx in 0..haystack.size.x - size.x as usize {
             let mut found = true;
             for y in 0..size.y {
                 for x in 0..size.x {
-                    if haystack.pixel(vec2!(hx + x,hy + y)) != ARGB8::zero() {
+                    if haystack.get(vec2!(hx + x,hy + y)) != ARGB8::zero() {
                         found = false;
                         break;
                     }
@@ -104,13 +104,13 @@ fn find_empty(size: &Vec2<usize>,haystack: &Image<ARGB8>,p: &mut Vec2<isize>) ->
     false
 }
 
-fn find_rect(needle: &Image<ARGB8>,haystack: &Image<ARGB8>,p: &mut Vec2<isize>) -> bool {
+fn find_rect(needle: &Mat<ARGB8>,haystack: &Mat<ARGB8>,p: &mut Vec2<isize>) -> bool {
     for hy in 0..haystack.size.y - needle.size.y {
         for hx in 0..haystack.size.x - needle.size.x {
             let mut found = true;
             for y in 0..needle.size.y {
                 for x in 0..needle.size.x {
-                    if haystack.pixel(vec2!(hx + x,hy + y)) != needle.pixel(vec2!(x,y)) {
+                    if haystack.get(vec2!(hx + x,hy + y)) != needle.get(vec2!(x,y)) {
                         found = false;
                         break;
                     }
@@ -230,10 +230,10 @@ fn main() {
                 let mut buffer: Vec<u8> = Vec::new();
                 file.read_to_end(&mut buffer).expect("unable to read file");
                 let image = decode::<ARGB8>(&buffer).expect("unable to decode");
-                let mut cutout = Image::<ARGB8>::new(vec2!(xs as usize,ys as usize));
+                let mut cutout = Mat::<ARGB8>::new(vec2!(xs as usize,ys as usize));
                 for y in 0..ys {
                     for x in 0..xs {
-                        cutout.set_pixel(vec2!(x as usize,y as usize),image.pixel(vec2!((xr + x) as usize,(gensize.y - yr - ys + y) as usize)));
+                        cutout.set(vec2!(x as usize,y as usize),image.get(vec2!((xr + x) as usize,(gensize.y - yr - ys + y) as usize)));
                     }
                 }
                 image_characters.push(ImageCharacter {
@@ -264,7 +264,7 @@ fn main() {
         let tsize = m * 64;
         if !options_pot || is_pot(tsize) {
             println!("Trying to fit on {}x{} texture...",tsize,tsize);
-            let mut image = Image::<ARGB8>::new(vec2!(tsize,tsize));
+            let mut image = Mat::<ARGB8>::new(vec2!(tsize,tsize));
             let mut characters: Vec<Character> = Vec::new();
             let mut everything_placed = true;
             for ch in image_characters.iter() {
@@ -290,7 +290,7 @@ fn main() {
                         //println!("        writing {:04X} into atlas...",ch.n);
                         for y in 0..ch.image.size.y {
                             for x in 0..ch.image.size.x {
-                                image.set_pixel(vec2!(p.x as usize + x,p.y as usize + y),ch.image.pixel(vec2!(x,y)));
+                                image.set(vec2!(p.x as usize + x,p.y as usize + y),ch.image.get(vec2!(x,y)));
                             }
                         }
                         let r = rect!(p.x as i32 + border.x,p.y as i32 + border.y,ch.image.size.x as i32 - 2 * border.x,ch.image.size.y as i32 - 2 * border.y);

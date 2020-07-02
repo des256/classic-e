@@ -1,34 +1,9 @@
-// E - Image
+// E - image
 // Desmond Germans, 2020
 
-use crate::Pixel;
-use std::marker::PhantomData;
+use crate::Mat;
 use crate::Zero;
-use crate::Vec2;
-
-pub struct Image<T> {
-    pub size: Vec2<usize>,
-    pub data: Box<[T]>,
-    phantom: PhantomData<T>,
-}
-
-impl<T: Clone + Copy + Zero> Image<T> {
-    pub fn new(size: Vec2<usize>) -> Image<T> {
-        Image {
-            size: size,
-            data: vec![T::zero(); (size.x * size.y) as usize].into_boxed_slice(),
-            phantom: PhantomData,
-        }
-    }
-
-    pub fn pixel(&self,p: Vec2<usize>) -> T {
-        self.data[(p.y * self.size.x + p.x) as usize]
-    }
-
-    pub fn set_pixel(&mut self,p: Vec2<usize>,v: T) {
-        self.data[(p.y * self.size.x + p.x) as usize] = v;
-    }
-}
+use crate::Vec4;
 
 pub mod bmp;
 pub mod png;
@@ -75,7 +50,7 @@ pub fn test(src: &[u8]) -> Option<(u32,u32)> {
 }
 
 #[allow(dead_code)]
-pub fn decode<T: Pixel>(src: &[u8]) -> Option<Image<T>> {
+pub fn decode<T: Copy + Clone + Zero>(src: &[u8]) -> Option<Mat<T>> where T: From<Vec4<u8>>,Vec4<u8>: From<T> {
     if let Some(image) = bmp::decode::<T>(src) {
         Some(image)
     }

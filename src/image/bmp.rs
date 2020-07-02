@@ -1,9 +1,10 @@
-// E - Image - BMP
+// E - image - BMP
 // Desmond Germans, 2020
 
-use crate::Image;
-use crate::Pixel;
+use crate::Mat;
 use crate::prelude::*;
+use crate::Zero;
+use crate::Vec4;
 
 #[derive(Clone,Copy)]
 enum Type {
@@ -85,7 +86,7 @@ impl Component {
     }
 }
 
-fn decode_pixels<T: Pixel>(dst: &mut [T],src: &[u8],width: usize,height: usize,bottom_up: bool,itype: Type,palette: &[T; 256],redmask: u32,greenmask: u32,bluemask: u32,alphamask: u32) {
+fn decode_pixels<T: Copy + Clone + Zero>(dst: &mut [T],src: &[u8],width: usize,height: usize,bottom_up: bool,itype: Type,palette: &[T; 256],redmask: u32,greenmask: u32,bluemask: u32,alphamask: u32) where T: From<Vec4<u8>>,Vec4<u8>: From<T> {
     let red = Component::new(redmask);
     let green = Component::new(greenmask);
     let blue = Component::new(bluemask);
@@ -328,7 +329,7 @@ fn decode_pixels<T: Pixel>(dst: &mut [T],src: &[u8],width: usize,height: usize,b
                     g = (g << 3) | (g >> 2);
                     b = (b << 3) | (b >> 2);
                     //println!("{},{}: {:04X} - a{} r{} g{} b{}",x,line,d,a,r,g,b);
-                    dst[dp] = T::new_rgb(r as u8,g as u8,b as u8);
+                    dst[dp] = T::from(vec4!(r as u8,g as u8,b as u8,255));
                     dp += 1;
                 }
                 let rest = (width * 2) & 3;
@@ -348,7 +349,7 @@ fn decode_pixels<T: Pixel>(dst: &mut [T],src: &[u8],width: usize,height: usize,b
                     let g = green.get(d,0);
                     let b = blue.get(d,0);
                     let a = if alphamask == 0 { 255 } else { alpha.get(d,255) };
-                    dst[dp] = T::new_rgba(r as u8,g as u8,b as u8,a as u8);
+                    dst[dp] = T::from(vec4!(r as u8,g as u8,b as u8,a as u8));
                     dp += 1;
                 }
                 let rest = (width * 2) & 3;
@@ -366,7 +367,7 @@ fn decode_pixels<T: Pixel>(dst: &mut [T],src: &[u8],width: usize,height: usize,b
                     let g = src[sp + 1];
                     let r = src[sp + 2];
                     sp += 3;
-                    dst[dp] = T::new_rgb(r as u8,g as u8,b as u8);
+                    dst[dp] = T::from(vec4!(r as u8,g as u8,b as u8,255));
                     dp += 1;
                 }
                 let rest = (width * 3) & 3;
@@ -386,7 +387,7 @@ fn decode_pixels<T: Pixel>(dst: &mut [T],src: &[u8],width: usize,height: usize,b
                     let g = (d >> 8) & 255;
                     let b = d & 255;
                     let a = if alphamask == 0 { 255 } else { d >> 24 };
-                    dst[dp] = T::new_rgba(r as u8,g as u8,b as u8,a as u8);
+                    dst[dp] = T::from(vec4!(r as u8,g as u8,b as u8,a as u8));
                     dp += 1;
                 }
                 line = (line as isize + dline) as usize;
@@ -402,7 +403,7 @@ fn decode_pixels<T: Pixel>(dst: &mut [T],src: &[u8],width: usize,height: usize,b
                     let g = green.get(d,0);
                     let b = blue.get(d,0);
                     let a = if alphamask == 0 { 255 } else { alpha.get(d,255) };
-                    dst[dp] = T::new_rgba(r as u8,g as u8,b as u8,a as u8);
+                    dst[dp] = T::from(vec4!(r as u8,g as u8,b as u8,a as u8));
                     dp += 1;
                 }
                 line = (line as isize + dline) as usize;
@@ -522,7 +523,7 @@ pub fn test(src: &[u8]) -> Option<(u32,u32)> {
     None
 }
 
-pub fn decode<T: Pixel>(src: &[u8]) -> Option<Image<T>> {
+pub fn decode<T: Copy + Clone + Zero>(src: &[u8]) -> Option<Mat<T>> where T: From<Vec4<u8>>,Vec4<u8>: From<T> {
     let tag = from_le16(&src[0..2]);
     if (tag != 0x4D42) &&
         (tag != 0x4142) &&
@@ -654,7 +655,7 @@ pub fn decode<T: Pixel>(src: &[u8]) -> Option<Image<T>> {
                     let b = src[sp];
                     let g = src[sp + 1];
                     let r = src[sp + 2];
-                    palette[i as usize] = T::new_rgb(r,g,b);
+                    palette[i as usize] = T::from(vec4!(r,g,b,255));
                 }
             },
             Type::B16 | Type::B32 => {
@@ -674,7 +675,7 @@ pub fn decode<T: Pixel>(src: &[u8]) -> Option<Image<T>> {
             _ => { },
         }
     }
-    let mut image = Image::<T>::new(vec2!(width,height));
+    let mut image = Mat::<T>::new(vec2!(width,height));
     decode_pixels(&mut image.data,&src[offset as usize..],width,height,bottom_up,itype,&palette,redmask,greenmask,bluemask,alphamask);
     Some(image)
 }
@@ -709,7 +710,7 @@ impl WriteTypes for Vec<u8> {
     }
 }
 
-pub fn encode<T: Pixel>(image: &Image<T>) -> Option<Vec<u8>> {
+pub fn encode<T: Copy + Clone + Zero>(image: &Mat<T>) -> Option<Vec<u8>> where T: From<Vec4<u8>>,Vec4<u8>: From<T> {
     let headersize = 108;
     let stride = image.size.x * 4;
     let palettesize = 0;
@@ -758,12 +759,11 @@ pub fn encode<T: Pixel>(image: &Image<T>) -> Option<Vec<u8>> {
     dst.push32(0);  // 118
     for y in 0..image.size.y {
         for x in 0..image.size.x {
-            let p = image.pixel(vec2!(x,y));
-            let r = p.r() as u32;
-            let g = p.g() as u32;
-            let b = p.b() as u32;
-            let a = p.a() as u32;
-            dst.push32((a << 24) | (r << 16) | (g << 8) | b);  // 122..
+            let d: Vec4<u8> = Vec4::<u8>::from(image.get(vec2!(x,y)));
+            dst.push(d.z);
+            dst.push(d.y);
+            dst.push(d.x);
+            dst.push(d.w);
         }
     }
     Some(dst)

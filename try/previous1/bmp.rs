@@ -1,7 +1,7 @@
 // image_formats::bmp
 // by Desmond Germans, 2019
 
-use canvas::Image;
+use canvas::Mat;
 
 const TYPE_C1: u16 = 0x0001;
 const TYPE_C2: u16 = 0x0002;

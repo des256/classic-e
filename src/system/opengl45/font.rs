@@ -1,6 +1,10 @@
 // E - OpenGL - Font
 // Desmond Germans, 2020
 
+// let font = graphics.load_font("hello.fnt",vec2!(hsize,vsize),spacing);
+// graphics.draw_text(vec2!(x,y),"Hello, World!",&font);
+// let size = font.measure("Hello, World!");
+
 use crate::Graphics;
 use crate::UIError;
 use crate::Texture2D;
@@ -8,11 +12,11 @@ use crate::ARGB8;
 use std::fs::File;
 use std::io::prelude::*;
 use crate::decode;
-use crate::Pixel;
 use crate::Vec2;
 use crate::Vec4;
 use crate::prelude::*;
 use crate::Rect;
+use std::rc::Rc;
 
 const FONT: Vec2<f32> = Vec2 { x: 0.065,y: 0.065, };  // manually found by comparing chrome and html font-size: 24 --> draw_text font size should be similar
 
@@ -23,24 +27,108 @@ pub struct Character {
     advance: i32,
 }
 
-pub struct Font {
+pub struct FontProto {
+    pub name: String,
     pub scale: u32,
     pub characters: Vec<Character>,
     pub texture: Texture2D<ARGB8>,
 }
 
-fn find_character(font: &Font,c: char) -> Option<&Character> {
-    let n = c as u32;
-    for ch in &font.characters {
-        if ch.n == n {
-            return Some(ch);
+impl FontProto {
+    fn find(&self,c: char) -> Option<&Character> {
+        let n = c as u32;
+        for ch in &self.characters {
+            if ch.n == n {
+                return Some(ch);
+            }
+        }
+        None
+    }
+}
+
+pub struct Font {
+    pub proto: Rc<FontProto>,
+    pub size: Vec2<f32>,
+    pub spacing: f32,
+}
+
+impl Font {
+    pub fn new(proto: Rc<FontProto>,size: Vec2<f32>,spacing: f32) -> Font {
+        Font {
+            proto: proto,
+            size: size,
+            spacing: spacing,
         }
     }
-    None
+
+    pub fn measure(&self,text: &str) -> Vec2<f32> {
+        let mut lp: Vec2<f32> = vec2!(0.0,0.0);
+        let mut min: Vec2<f32> = vec2!(0.0,0.0);
+        let mut max: Vec2<f32> = vec2!(0.0,0.0);
+        for c in text.chars() {
+            if let Some(ch) = self.proto.find(c) {
+                if (ch.r.s.x > 0) && (ch.r.s.y > 0) {
+                    // bottom-left of the character, in GU
+                    let ox = lp.x - FONT.x * self.size.x * (ch.offset.x as f32) / (self.proto.scale as f32);
+                    let oy = lp.y - FONT.y * self.size.y * (ch.offset.y as f32) / (self.proto.scale as f32);
+
+                    // size of the character, in GU
+                    let sx = FONT.x * self.size.x * (ch.r.s.x as f32) / (self.proto.scale as f32);
+                    let sy = FONT.y * self.size.y * (ch.r.s.y as f32) / (self.proto.scale as f32);
+
+                    // adjust min and max
+                    if ox < min.x {
+                        min.x = ox;
+                    }
+                    if ox + sx > max.x {
+                        max.x = ox + sx;
+                    }
+                    if oy < min.y {
+                        min.y = oy;
+                    }
+                    if oy + sy > max.y {
+                        max.y = oy + sy;
+                    }
+
+                    // advance
+                    lp.x += FONT.x * self.size.x * (ch.advance as f32) / (self.proto.scale as f32) + FONT.x * self.size.x * self.spacing;
+                }
+                else {
+                    // only advance
+                    lp.x += 2.0 * FONT.x * self.size.x * (ch.advance as f32) / (self.proto.scale as f32) + FONT.x * self.size.x * self.spacing;  // the choice for double spacing is arbitrary
+                }
+            }
+        }
+        max - min
+    }
 }
 
 impl Graphics {
-    pub fn load_font(&self,name: &str) -> Result<Font,UIError> {
+    pub fn get_font(&self,name: &str,size: Vec2<f32>,spacing: f32) -> Result<Rc<Font>,UIError> {
+
+        // see if font already exists, and refer to that
+        {
+            let fonts = self.fonts.borrow();
+            for font in &*fonts {
+                if (name == font.proto.name) && (size == font.size) && (spacing == font.spacing) {
+                    return Ok(Rc::clone(&font));
+                }
+            }
+        }
+
+        // see if proto already exists, and create new font for it
+        {
+            let protos = self.fontprotos.borrow();
+            for proto in &*protos {
+                if name == proto.name {
+                    let font = Rc::new(Font::new(Rc::clone(&proto),size,spacing));
+                    self.fonts.borrow_mut().push(Rc::clone(&font));
+                    return Ok(font);
+                }
+            }
+        }
+
+        // otherwise load the font
         let mut file = match File::open(name) {
             Ok(file) => file,
             Err(_) => { return Err(UIError::Generic); },
@@ -70,31 +158,37 @@ impl Graphics {
         }
         let image = decode::<ARGB8>(&buffer[16 + count * 32..]).expect("unable to decode");
         let texture = self.create_texture2d::<ARGB8>(&image).expect("unable to create font texture");
-        Ok(Font {
+
+        let proto = Rc::new(FontProto {
+            name: name.to_string(),
             scale: scale,
             characters: characters,
             texture: texture,
-        })
+        });
+        self.fontprotos.borrow_mut().push(Rc::clone(&proto));
+        let font = Rc::new(Font::new(proto,size,spacing));
+        self.fonts.borrow_mut().push(Rc::clone(&font));
+        Ok(font)
     }
 
-    pub fn draw_text(&self,p: Vec2<f32>,text: &str,font: &Font,font_size: Vec2<f32>,font_spacing: f32) {
+    pub fn draw_text(&self,p: Vec2<f32>,text: &str,font: &Rc<Font>) {
         let mut vertices: Vec<Vec4<f32>> = Vec::new();
         let mut lp = vec2!(p.x as f32,p.y as f32);
         let mut count = 0;
         for c in text.chars() {
-            if let Some(ch) = find_character(font,c) {
+            if let Some(ch) = font.proto.find(c) {
                 if (ch.r.s.x > 0) && (ch.r.s.y > 0) {
                     // bottom-left of the character, in GU
-                    let ox = lp.x - FONT.x * font_size.x * (ch.offset.x as f32) / (font.scale as f32);
-                    let oy = lp.y - FONT.y * font_size.y * (ch.offset.y as f32) / (font.scale as f32);
+                    let ox = lp.x - FONT.x * font.size.x * (ch.offset.x as f32) / (font.proto.scale as f32);
+                    let oy = lp.y - FONT.y * font.size.y * (ch.offset.y as f32) / (font.proto.scale as f32);
 
                     // size of the character, in GU
-                    let sx = FONT.x * font_size.x * (ch.r.s.x as f32) / (font.scale as f32);
-                    let sy = FONT.y * font_size.y * (ch.r.s.y as f32) / (font.scale as f32);
+                    let sx = FONT.x * font.size.x * (ch.r.s.x as f32) / (font.proto.scale as f32);
+                    let sy = FONT.y * font.size.y * (ch.r.s.y as f32) / (font.proto.scale as f32);
 
                     // texture divisor
-                    let tdx = 1.0 / (font.texture.size.x as f32);
-                    let tdy = 1.0 / (font.texture.size.y as f32);
+                    let tdx = 1.0 / (font.proto.texture.size.x as f32);
+                    let tdy = 1.0 / (font.proto.texture.size.y as f32);
 
                     // texture coordinates
                     let tox = tdx * (ch.r.o.x as f32);
@@ -109,11 +203,15 @@ impl Graphics {
                     vertices.push(vec4!(ox,oy,tox,toy));
                     vertices.push(vec4!(ox + sx,oy + sy,tox + tsx,toy + tsy));
                     vertices.push(vec4!(ox,oy + sy,tox,toy + tsy));
-                    lp.x += FONT.x * font_size.x * (ch.advance as f32) / (font.scale as f32) + FONT.x * font_size.x * font_spacing;
+
+                    // advance
+                    lp.x += FONT.x * font.size.x * (ch.advance as f32) / (font.proto.scale as f32) + FONT.x * font.size.x * font.spacing;
+
                     count += 1;
                 }
                 else {
-                    lp.x += 2.0 * FONT.x * font_size.x * (ch.advance as f32) / (font.scale as f32) + FONT.x * font_size.x * font_spacing;  // the choice for double spacing is arbitrary
+                    // only advance
+                    lp.x += 2.0 * FONT.x * font.size.x * (ch.advance as f32) / (font.proto.scale as f32) + FONT.x * font.size.x * font.spacing;  // the choice for double spacing is arbitrary
                 }
             }
         }
@@ -121,18 +219,13 @@ impl Graphics {
         let vertexbuffer = self.create_vertexbuffer(vertices).expect("what?");
         self.bind_vertexbuffer(&vertexbuffer);
         self.bind_msdf_shader();
-        self.bind_texture2d(0,&font.texture);
+        self.bind_texture2d(0,&font.proto.texture);
         let scale = self.scale.get();
         let size = self.size.get();
         let color = self.color.get();
         self.set_uniform("scale",vec2!(scale.x / (size.x as f32),scale.y / (size.y as f32)));
         self.set_uniform("font_texture",0);
-        self.set_uniform("color",vec4!(
-            (color.r() as f32) / 255.0,
-            (color.g() as f32) / 255.0,
-            (color.b() as f32) / 255.0,
-            (color.a() as f32) / 255.0
-        ));
+        self.set_uniform("color",Vec4::<f32>::from(color));
         self.draw_triangles(6 * count);
         self.unbind_vertexbuffer();
         self.unbind_shader();

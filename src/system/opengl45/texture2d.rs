@@ -2,33 +2,13 @@
 // Desmond Germans, 2020
 
 use gl::types::GLuint;
-use crate::Image;
+use crate::Mat;
 use std::ffi::c_void;
 use std::marker::PhantomData;
-use gl::types::GLenum;
-use crate::RGB8;
-use crate::ARGB8;
 use crate::Graphics;
 use crate::UIError;
 use crate::Vec2;
-
-pub trait OpenGLFormat {
-    fn gl_internal_format() -> GLuint;
-    fn gl_format() -> GLuint;
-    fn gl_type() -> GLenum;
-}
-
-impl OpenGLFormat for RGB8 {
-    fn gl_internal_format() -> GLuint { gl::RGB8 as GLuint }
-    fn gl_format() -> GLenum { gl::BGR }
-    fn gl_type() -> GLenum { gl::UNSIGNED_BYTE }
-}
-
-impl OpenGLFormat for ARGB8 {
-    fn gl_internal_format() -> GLuint { gl::RGBA8 as GLuint }
-    fn gl_format() -> GLenum { gl::BGRA }
-    fn gl_type() -> GLenum { gl::UNSIGNED_INT_8_8_8_8_REV }
-}
+use crate::OpenGLFormat;
 
 pub struct Texture2D<T: OpenGLFormat> {
     pub tex: GLuint,
@@ -45,7 +25,7 @@ impl<T: OpenGLFormat> Drop for Texture2D<T> {
 }
 
 impl Graphics {
-    pub fn create_texture2d<T: OpenGLFormat>(&self,image: &Image<T>) -> Result<Texture2D<T>,UIError> {
+    pub fn create_texture2d<T: OpenGLFormat>(&self,image: &Mat<T>) -> Result<Texture2D<T>,UIError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);

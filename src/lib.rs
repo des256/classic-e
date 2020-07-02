@@ -7,6 +7,9 @@ pub use zeroone::*;
 mod pixel;
 pub use pixel::*;
 
+mod mat;
+pub use mat::*;
+
 #[macro_use]
 mod vector;
 pub use vector::*;

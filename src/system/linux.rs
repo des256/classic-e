@@ -16,7 +16,7 @@ use std::ptr::null_mut;
 use crate::UIError;
 use xcb::cast_event;
 use crate::Event;
-use crate::Button;
+use crate::Mouse;
 use crate::Wheel;
 use xcb::GenericEvent;
 use libc::epoll_create1;
@@ -401,9 +401,9 @@ impl<'a> UI<'a> {
                 for window in &mut self.windows {
                     if window.window == id {
                         match button_press.detail() {
-                            1 => { (window.handler)(Event::MousePress(p,Button::Left)); },
-                            2 => { (window.handler)(Event::MousePress(p,Button::Middle)); },
-                            3 => { (window.handler)(Event::MousePress(p,Button::Right)); },
+                            1 => { (window.handler)(Event::MousePress(p,Mouse::Left)); },
+                            2 => { (window.handler)(Event::MousePress(p,Mouse::Middle)); },
+                            3 => { (window.handler)(Event::MousePress(p,Mouse::Right)); },
                             4 => { (window.handler)(Event::MouseWheel(Wheel::Up)); },
                             5 => { (window.handler)(Event::MouseWheel(Wheel::Down)); },
                             6 => { (window.handler)(Event::MouseWheel(Wheel::Left)); },
@@ -421,9 +421,9 @@ impl<'a> UI<'a> {
                 for window in &mut self.windows {
                     if window.window == id {
                         match button_release.detail() {
-                            1 => { (window.handler)(Event::MouseRelease(p,Button::Left)); },
-                            2 => { (window.handler)(Event::MouseRelease(p,Button::Middle)); },
-                            3 => { (window.handler)(Event::MouseRelease(p,Button::Right)); },
+                            1 => { (window.handler)(Event::MouseRelease(p,Mouse::Left)); },
+                            2 => { (window.handler)(Event::MouseRelease(p,Mouse::Middle)); },
+                            3 => { (window.handler)(Event::MouseRelease(p,Mouse::Right)); },
                             _ => { },
                         }
                         break;

@@ -5,9 +5,12 @@ use gl::types::GLuint;
 use crate::Shader;
 use crate::Vec2;
 use crate::ARGB8;
-use crate::Pixel;
 use std::cell::Cell;
 use crate::prelude::*;
+use std::rc::Rc;
+use crate::Font;
+use crate::FontProto;
+use std::cell::RefCell;
 
 pub struct Graphics {
     pub(crate) sp: Cell<GLuint>,
@@ -16,6 +19,8 @@ pub struct Graphics {
     pub(crate) size: Cell<Vec2<usize>>,
     pub(crate) scale: Cell<Vec2<f32>>,
     pub(crate) color: Cell<ARGB8>,
+    pub(crate) fontprotos: RefCell<Vec<Rc<FontProto>>>,
+    pub(crate) fonts: RefCell<Vec<Rc<Font>>>,
 }
 
 const SCREEN: Vec2<f32> = Vec2 { x: 2.0,y: 2.0, };  // pixels per GU
@@ -75,13 +80,17 @@ impl Graphics {
 
         let msdf_shader = Graphics::_create_shader(vs,None,fs).expect("what?");
 
+        // TODO: load default fonts
+
         Graphics {
             sp: Cell::new(0),
             vaas: Cell::new(Vec::new()),
             msdf_shader: msdf_shader,
             size: Cell::new(vec2!(1,1)),
             scale: Cell::new(SCREEN),
-            color: Cell::new(ARGB8::new_rgb(255,0,0)),
+            color: Cell::new(ARGB8::from(0xFFFF0000)),
+            fontprotos: RefCell::new(Vec::new()),
+            fonts: RefCell::new(Vec::new()),
         }
     }
 

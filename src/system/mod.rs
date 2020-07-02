@@ -7,28 +7,28 @@ use std::fmt::Formatter;
 use crate::Vec2;
 use crate::Rect;
 
-pub enum Button {
+pub enum Mouse {
     Left,
     Middle,
     Right,
 }
 
-impl Display for Button {
+impl Display for Mouse {
     fn fmt(&self,f: &mut Formatter) -> std::fmt::Result {
         match self {
-            Button::Left => { write!(f,"left") },
-            Button::Middle => { write!(f,"middle") },
-            Button::Right => { write!(f,"right") },
+            Mouse::Left => { write!(f,"left") },
+            Mouse::Middle => { write!(f,"middle") },
+            Mouse::Right => { write!(f,"right") },
         }
     }
 }
 
-impl Debug for Button {
+impl Debug for Mouse {
     fn fmt(&self,f: &mut Formatter) -> std::fmt::Result {
         match self {
-            Button::Left => { write!(f,"left") },
-            Button::Middle => { write!(f,"middle") },
-            Button::Right => { write!(f,"right") },
+            Mouse::Left => { write!(f,"left") },
+            Mouse::Middle => { write!(f,"middle") },
+            Mouse::Right => { write!(f,"right") },
         }
     }
 }
@@ -66,8 +66,8 @@ pub enum Event<'a> {
     Paint(&'a Graphics,Rect<isize>),
     KeyPress(u8),
     KeyRelease(u8),
-    MousePress(Vec2<isize>,Button),
-    MouseRelease(Vec2<isize>,Button),
+    MousePress(Vec2<isize>,Mouse),
+    MouseRelease(Vec2<isize>,Mouse),
     MouseWheel(Wheel),
     MouseMove(Vec2<isize>),
     Resize(Vec2<isize>),

@@ -7,7 +7,6 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use e::Font;
 use e::ARGB8;
-use e::Pixel;
 use e::BlendMode;
 use e::prelude::*;
 use e::vec2;
@@ -15,14 +14,14 @@ use e::rect;
 
 struct App {
     running: bool,
-    font: Font,
+    font: Rc<Font>,
 }
 
 fn handler(event: Event,app: &mut App) {
     match event {
         Event::Paint(graphics,_) => {
             graphics.clear(0.0,0.2,0.5,1.0);
-            graphics.set_color(ARGB8::new_rgba(255,127,0,255));
+            graphics.set_color(ARGB8::from(0xFFFF7F00));
             graphics.set_blend(BlendMode::Over);
 
             //graphics.draw_text(f32_2 { x: 10.0,y: 188.0, },"This is a test, just to see",&app.font,f32_2 { x: 44.0,y:44.0, },0.0);
@@ -30,9 +29,9 @@ fn handler(event: Event,app: &mut App) {
             //graphics.draw_text(f32_2 { x: 10.0,y: 76.0, },"inside a window, so yeah,",&app.font,f32_2 { x: 44.0,y:44.0, },0.0);
             //graphics.draw_text(f32_2 { x: 10.0,y: 20.0, },"it's kinda cool, right?",&app.font,f32_2 { x: 44.0,y:44.0, },0.0);
 
-            graphics.draw_text(vec2!(10.0,132.0),"WHO",&app.font,vec2!(44.0,44.0),0.0);
-            graphics.draw_text(vec2!(10.0,76.0),"ARE",&app.font,vec2!(44.0,44.0),0.0);
-            graphics.draw_text(vec2!(10.0,20.0),"YOU?",&app.font,vec2!(44.0,44.0),0.0);
+            graphics.draw_text(vec2!(10.0,132.0),"WHO",&app.font);
+            graphics.draw_text(vec2!(10.0,76.0),"ARE",&app.font);
+            graphics.draw_text(vec2!(10.0,20.0),"YOU?",&app.font);
         },
         Event::Close => {
             app.running = false;
@@ -46,7 +45,7 @@ fn main() {
         Ok(ui) => ui,
         Err(_) => { panic!("Cannot open UI."); },
     };
-    let font = ui.graphics().load_font("font.fnt").expect("what?");
+    let font = ui.graphics().get_font("font.fnt",vec2!(44.0,44.0),0.0).expect("what?");
     ui.graphics().set_scale(vec2!(1.0,1.0));
     let app = Rc::new(RefCell::new(App {
         running: true,
