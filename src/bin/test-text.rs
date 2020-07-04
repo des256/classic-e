@@ -1,26 +1,16 @@
 // E - Text test
 // Desmond Germans, 2020
 
-use e::UI;
-use e::Event;
-use e::Text;
-use e::Widget;
-use e::vec2;
+use e::*;
 use e::prelude::*;
-use e::Rect;
 use std::rc::Rc;
-use e::rect;
 use std::cell::RefCell;
-use e::HAlignment;
-use e::VAlignment;
-use e::ARGB8;
-use e::vec4;
 
 // App structure holds application-wide state. Here it's just a boolean
 // indicating if we're still running, and a text widget.
 struct App {
     running: bool,
-    tree: Text,  // The root object is a Text widget
+    text: Text,  // The root object is a Text widget
 }
 
 // Event handler. Draws the text widget.
@@ -32,7 +22,7 @@ fn handler(event: Event,app: &mut App) {
             graphics.clear(ARGB8::from(0xFF003F4F));
 
             // draw the text widget over the whole space
-            app.tree.draw(graphics,Rect::<f32> { o: vec2!(0.0,0.0),s: space, });
+            app.text.draw(graphics,Rect::<f32> { o: vec2!(0.0,0.0),s: space, });
         },
         Event::Close => {
             app.running = false;
@@ -49,17 +39,16 @@ fn main() {
     };
 
     // create widget tree
-    let tree = Text::new(ui.graphics(),"Hello, World!")
-        .padding()
-        .halign(HAlignment::Center)
-        .valign(VAlignment::Top)
-        .color(ARGB8::from(vec4!(255,191,0,255)))
-    ;
+    let mut text = Text::new(ui.graphics(),"Hello, World!");
+    text.padding(vec2!(10.0,10.0));
+    text.halign(HAlignment::Center);
+    text.valign(VAlignment::Top);
+    text.color(ARGB8::from(vec4!(255,191,0,255)));
 
     // create application state
     let app = Rc::new(RefCell::new(App {
         running: true,
-        tree: tree,
+        text: text,
     }));
 
     // clone pointer to give to window

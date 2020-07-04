@@ -1,21 +1,13 @@
 // E - Make FNT file from TTF file
 // Desmond Germans, 2020
 
+use e::*;
+use e::prelude::*;
 use std::env;
 use std::path::Path;
 use std::process::Command;
-use e::Mat;
-use e::ARGB8;
 use std::fs::File;
 use std::io::prelude::*;
-use e::decode;
-use e::bmp;
-use e::Zero;
-use e::Vec2;
-use e::prelude::*;
-use e::vec2;
-use e::Rect;
-use e::rect;
 
 static CHARACTERS: &[(u32,u32)] = &[
     (0x0020,0x0080),  // ASCII

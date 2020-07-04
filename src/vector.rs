@@ -1,12 +1,13 @@
 // E - Vector
 // Desmond Germans, 2020
 
+use crate::*;
+use crate::prelude::*;
 use std::cmp::PartialEq;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fmt::Debug;
 use std::fmt::Result;
-use crate::Zero;
 use std::ops::Add;
 use std::ops::Sub;
 use std::ops::Mul;

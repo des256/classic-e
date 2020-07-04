@@ -1,8 +1,8 @@
 // E - i - XBM
 // Desmond Germans, 2020
 
-use crate::Mat;
-use crate::Zero;
+use crate::*;
+use crate::prelude::*;
 
 pub fn test(_src: &[u8]) -> Option<(u32,u32)> {
     None

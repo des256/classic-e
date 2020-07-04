@@ -1,9 +1,8 @@
 // E - UI
 // Desmond Germans, 2020
 
-use crate::Rect;
-use crate::Vec2;
-use crate::Graphics;
+use crate::*;
+use crate::prelude::*;
 use std::rc::Rc;
 
 pub enum HAlignment {
@@ -23,13 +22,7 @@ pub enum VAlignment {
 pub trait Widget {
     fn draw(&self,graphics: Rc<Graphics>,r: Rect<f32>);
     fn measure(&self) -> Vec2<f32>;
-    fn halign(self,alignment: HAlignment) -> Self;
-    fn valign(self,alignment: VAlignment) -> Self;
-    fn padding(self) -> Self;
 }
-
-mod widgetengine;
-pub use widgetengine::*;
 
 mod text;
 pub use text::*;

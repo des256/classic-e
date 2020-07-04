@@ -1,8 +1,8 @@
 // E - Mat
 // Desmond Germans, 2020
 
-use crate::Zero;
-use crate::Vec2;
+use crate::*;
+use crate::prelude::*;
 use std::marker::PhantomData;
 
 pub struct Mat<T: Clone + Copy + Zero> {

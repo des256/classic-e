@@ -1,10 +1,8 @@
 // E - image - BMP
 // Desmond Germans, 2020
 
-use crate::Mat;
+use crate::*;
 use crate::prelude::*;
-use crate::Zero;
-use crate::Vec4;
 
 #[derive(Clone,Copy)]
 enum Type {

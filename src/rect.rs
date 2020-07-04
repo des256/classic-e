@@ -1,8 +1,8 @@
 // E - Rect
 // Desmond Germans, 2020
 
-use crate::Vec2;
-use crate::Zero;
+use crate::*;
+use crate::prelude::*;
 use std::ops::Add;
 use std::fmt::Display;
 use std::fmt::Formatter;

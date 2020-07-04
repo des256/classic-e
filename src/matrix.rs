@@ -1,16 +1,13 @@
 // E - Matrix
 // Desmond Germans, 2020
 
-use crate::Vec2;
-use crate::Vec3;
-use crate::Vec4;
+use crate::*;
+use crate::prelude::*;
 use std::cmp::PartialEq;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fmt::Result;
 use std::fmt::Debug;
-use crate::Zero;
-use crate::One;
 use std::ops::Add;
 use std::ops::Sub;
 use std::ops::Neg;
@@ -20,7 +17,6 @@ use std::ops::AddAssign;
 use std::ops::SubAssign;
 use std::ops::MulAssign;
 use std::ops::DivAssign;
-use crate::prelude::*;
 
 #[derive(Copy,Clone)]
 pub struct Mat2x2<T> {

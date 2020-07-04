@@ -1,6 +1,8 @@
 // E - System - Linux
 // Desmond Germans, 2020
 
+use crate::*;
+use crate::prelude::*;
 use x11::xlib::*;
 use std::os::raw::c_void;
 use std::os::raw::c_int;
@@ -13,11 +15,7 @@ use std::ffi::CStr;
 use xcb::xproto::*;
 use x11::glx::arb::*;
 use std::ptr::null_mut;
-use crate::UIError;
 use xcb::cast_event;
-use crate::Event;
-use crate::Mouse;
-use crate::Wheel;
 use xcb::GenericEvent;
 use libc::epoll_create1;
 use libc::epoll_ctl;
@@ -26,11 +24,7 @@ use libc::epoll_event;
 use libc::EPOLLIN;
 use std::os::unix::io::AsRawFd;
 use libc::epoll_wait;
-use crate::Vec2;
-use crate::Graphics;
 use std::cell::Cell;
-use crate::prelude::*;
-use crate::Rect;
 use std::rc::Rc;
 
 type GlXCreateContextAttribsARBProc = unsafe extern "C" fn(

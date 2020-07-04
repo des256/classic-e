@@ -1,13 +1,11 @@
 // E - OpenGL - VertexBuffer
 // Desmond Germans, 2020
 
+use crate::*;
+use crate::prelude::*;
 use gl::types::GLuint;
-use crate::UIError;
-use crate::Graphics;
 use std::ffi::c_void;
 use gl::types::GLvoid;
-use crate::Vec2;
-use crate::Vec4;
 
 pub trait Vertex {
     fn bind() -> Vec<GLuint>;

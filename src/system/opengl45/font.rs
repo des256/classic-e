@@ -5,17 +5,10 @@
 // graphics.draw_text(vec2!(x,y),"Hello, World!",&font);
 // let size = font.measure("Hello, World!");
 
-use crate::Graphics;
-use crate::UIError;
-use crate::Texture2D;
-use crate::ARGB8;
+use crate::*;
+use crate::prelude::*;
 use std::fs::File;
 use std::io::prelude::*;
-use crate::decode;
-use crate::Vec2;
-use crate::Vec4;
-use crate::prelude::*;
-use crate::Rect;
 use std::rc::Rc;
 
 const FONT: Vec2<f32> = Vec2 { x: 0.065,y: 0.065, };  // manually found by comparing chrome and html font-size: 24 --> draw_text font size should be similar

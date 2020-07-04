@@ -1,6 +1,8 @@
 // E - OpenGL - Shader
 // Desmond Germans, 2020
 
+use crate::*;
+use crate::prelude::*;
 use std::ffi::CString;
 use std::ptr::null;
 use gl::types::GLint;
@@ -9,10 +11,6 @@ use gl::types::GLuint;
 use std::ptr::null_mut;
 use gl::types::GLchar;
 use gl::types::GLfloat;
-use crate::UIError;
-use crate::Graphics;
-use crate::Vec2;
-use crate::Vec4;
 
 pub struct Shader {
     pub(crate) sp: GLuint,

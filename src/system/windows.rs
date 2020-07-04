@@ -1,6 +1,8 @@
 // E - System - Windows
 // Desmond Germans, 2020
 
+use crate::*;
+use crate::prelude::*;
 use winapi::shared::windef::*;
 use winapi::shared::minwindef::*;
 use winapi::shared::basetsd::*;
@@ -11,19 +13,11 @@ use std::ptr::null_mut;
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use std::iter::once;
-use crate::Event;
-use crate::Mouse;
-use crate::Wheel;
 use std::ffi::CString;
 use std::ffi::c_void;
 use std::mem::transmute;
 use std::os::raw::c_int;
-use crate::UIError;
-use crate::Graphics;
 use std::cell::Cell;
-use crate::prelude::*;
-use crate::Vec2;
-use crate::Rect;
 use std::rc::Rc;
 
 const WGL_DRAW_TO_WINDOW_ARB: c_int = 0x2001;

@@ -1,17 +1,12 @@
 // E - OpenGL - Graphics
 // Desmond Germans, 2020
 
-use gl::types::GLuint;
-use crate::Shader;
-use crate::Vec2;
-use std::cell::Cell;
+use crate::*;
 use crate::prelude::*;
+use gl::types::GLuint;
+use std::cell::Cell;
 use std::rc::Rc;
-use crate::Font;
-use crate::FontProto;
 use std::cell::RefCell;
-use crate::Vec4;
-use crate::Rect;
 
 pub struct Graphics {
     pub(crate) sp: Cell<GLuint>,

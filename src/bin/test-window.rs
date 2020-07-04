@@ -1,13 +1,10 @@
 // E - AppWindow test
 // Desmond Germans, 2020
 
-use e::UI;
-use e::Event;
+use e::*;
+use e::prelude::*;
 use std::rc::Rc;
 use std::cell::RefCell;
-use e::vec2;
-use e::prelude::*;
-use e::rect;
 
 // App structure holds application-wide state. Here it's just a boolean
 // indicating if we're still running.

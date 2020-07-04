@@ -1,10 +1,11 @@
 // E - System
 // Desmond Germans, 2020
 
+use crate::*;
+use crate::prelude::*;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
-use crate::Vec2;
 use std::rc::Rc;
 
 pub enum Mouse {

@@ -1,10 +1,9 @@
 // E - OpenGL - Framebuffer
 // Desmond Germans, 2020
 
-use crate::Graphics;
+use crate::*;
+use crate::prelude::*;
 use gl::types::GLuint;
-use crate::Vec2;
-use crate::UIError;
 
 pub struct Framebuffer {
     fbo: GLuint,

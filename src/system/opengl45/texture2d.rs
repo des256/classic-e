@@ -1,14 +1,11 @@
 // E - OpenGL - Texture2D
 // Desmond Germans, 2020
 
+use crate::*;
+use crate::prelude::*;
 use gl::types::GLuint;
-use crate::Mat;
 use std::ffi::c_void;
 use std::marker::PhantomData;
-use crate::Graphics;
-use crate::UIError;
-use crate::Vec2;
-use crate::OpenGLFormat;
 
 pub struct Texture2D<T: OpenGLFormat> {
     pub tex: GLuint,

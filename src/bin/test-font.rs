@@ -1,16 +1,10 @@
 // E - Font test
 // Desmond Germans, 2020
 
-use e::UI;
-use e::Event;
+use e::*;
+use e::prelude::*;
 use std::rc::Rc;
 use std::cell::RefCell;
-use e::Font;
-use e::ARGB8;
-use e::BlendMode;
-use e::prelude::*;
-use e::vec2;
-use e::rect;
 
 // App structure holds application-wide state. Here it's just a boolean
 // indicating if we're still running, and a font reference to be used during

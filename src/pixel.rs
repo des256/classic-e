@@ -1,10 +1,8 @@
 // E - Pixel
 // Desmond Germans, 2020
 
-use crate::Zero;
-use crate::Vec4;
+use crate::*;
 use crate::prelude::*;
-use crate::vec4;  // unsure why
 
 trait Clamp1 {
     fn clamp1(self) -> Self;
