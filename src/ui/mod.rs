@@ -20,9 +20,6 @@ pub enum VAlignment {
 pub trait Widget {
     fn draw(&self,gc: &GC,r: Rect<f32>);
     fn measure(&self) -> Vec2<f32>;
-    fn halign(self,alignment: HAlignment) -> Self;
-    fn valign(self,alignment: VAlignment) -> Self;
-    fn padding(self) -> Self;
 }
 
 mod font;

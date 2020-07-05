@@ -60,19 +60,4 @@ impl Widget for Text {
     fn measure(&self) -> Vec2<f32> {
         self.engine.padding + self.font.borrow().measure(&self.text.borrow()).0
     }
-
-    fn halign(mut self,alignment: HAlignment) -> Self {
-        self.engine.ha = alignment;
-        self
-    }
-
-    fn valign(mut self,alignment: VAlignment) -> Self {
-        self.engine.va = alignment;
-        self
-    }
-
-    fn padding(mut self) -> Self {
-        self.engine.padding += vec2!(20.0,20.0);
-        self
-    }
 }

@@ -1,6 +1,8 @@
 // E - System - Windows
 // Desmond Germans, 2020
 
+use crate::*;
+use crate::prelude::*;
 use winapi::shared::windef::*;
 use winapi::shared::minwindef::*;
 use winapi::shared::basetsd::*;
@@ -11,19 +13,12 @@ use std::ptr::null_mut;
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use std::iter::once;
-use crate::Event;
-use crate::Button;
-use crate::Wheel;
 use std::ffi::CString;
 use std::ffi::c_void;
 use std::mem::transmute;
 use std::os::raw::c_int;
-use crate::UIError;
-use crate::Graphics;
 use std::cell::Cell;
-use crate::prelude::*;
-use crate::Vec2;
-use crate::Rect;
+use std::rc::Rc;
 
 const WGL_DRAW_TO_WINDOW_ARB: c_int = 0x2001;
 const WGL_SUPPORT_OPENGL_ARB: c_int = 0x2010;
@@ -345,7 +340,6 @@ impl<'a> UI<'a> {
     fn handle_event(&mut self,hwnd: HWND,message: UINT,wparam: WPARAM,lparam: LPARAM) -> LRESULT {
 
         let hglrc = self.hglrc;
-        let hidden_hdc = self.hidden_hdc;
 
         let window = self.find_window(hwnd);
         if let None = window {
@@ -365,22 +359,22 @@ impl<'a> UI<'a> {
                 (window.handler)(Event::KeyRelease(wparam_lo as u8));
             },
             WM_LBUTTONDOWN => {
-                (window.handler)(Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
+                (window.handler)(Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Left));
             },
             WM_LBUTTONUP => {
-                (window.handler)(Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Left));
+                (window.handler)(Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Left));
             },
             WM_MBUTTONDOWN => {
-                (window.handler)(Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
+                (window.handler)(Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Middle));
             },
             WM_MBUTTONUP => {
-                (window.handler)(Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Middle));
+                (window.handler)(Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Middle));
             },
             WM_RBUTTONDOWN => {
-                (window.handler)(Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
+                (window.handler)(Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Right));
             },
             WM_RBUTTONUP => {
-                (window.handler)(Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Button::Right));
+                (window.handler)(Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Right));
             },
             WM_MOUSEWHEEL => {
                 if wparam_hi >= 0x8000 {
@@ -409,10 +403,12 @@ impl<'a> UI<'a> {
                 unsafe { BeginPaint(hwnd,&mut paintstruct) };
                 unsafe { wglMakeCurrent(window.hdc,hglrc) };
                 let size = window.size.get();
+                println!("window size retrieved at WM_PAINT {}",size);
                 unsafe { gl::Viewport(0,0,size.x as i32,size.y as i32) };
                 unsafe { gl::Scissor(0,0,size.x as i32,size.y as i32) };
                 self.graphics.set_window_size(size);
                 let space = self.graphics.get_space();
+                println!("space at WM_PAINT {}",space);
                 (window.handler)(Event::Paint(Rc::clone(&self.graphics),space));
                 unsafe { gl::Flush() };
                 unsafe { SwapBuffers(window.hdc) };
@@ -470,10 +466,11 @@ impl<'a> UI<'a> {
             return false;
         }
         let hdc = unsafe { GetDC(hwnd) };
+        println!("window size initiated to {}",vec2!(r.s.x as usize,r.s.y as usize));
         let window = Window {
             hwnd: hwnd,
             hdc: hdc,
-            size: Cell::new(vec2!((rc.right - rc.left) as usize,(rc.bottom - rc.top) as usize)),
+            size: Cell::new(vec2!(r.s.x as usize,r.s.y as usize)),
             handler: Box::new(handler),
         };
         unsafe { SetPixelFormat(hdc,self.pfid,&self.pfd) };
