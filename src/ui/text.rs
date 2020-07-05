@@ -1,50 +1,42 @@
 // E - UI - Text
 // Desmond Germans, 2020
 
-use crate::WidgetEngine;
-use crate::Graphics;
-use crate::Rect;
-use crate::Widget;
-use crate::Vec2;
-use crate::Font;
+use crate::*;
 use std::rc::Rc;
-use crate::HAlignment;
-use crate::VAlignment;
-use crate::prelude::*;
-use crate::ARGB8;
-use crate::BlendMode;
+use std::cell::Cell;
+use std::cell::RefCell;
 
 pub struct Text {
+    ui: Rc<UI>,
     engine: WidgetEngine,
-    font: Rc<Font>,
-    text: String,
-    color: ARGB8,
+    font: RefCell<Rc<Font>>,
+    text: RefCell<String>,
+    color: Cell<Vec4<f32>>,
 }
 
 impl Text {
-    pub fn new(graphics: Rc<Graphics>,text: &str) -> Text {
+    pub fn new(ui: &Rc<UI>,text: &str) -> Text {
         Text {
+            ui: Rc::clone(ui),
             engine: WidgetEngine::new(),
-            font: graphics.get_font("arialn.fnt",vec2!(14.0,14.0),0.0).expect("cannot load font"),
-            text: String::from(text),
-            color: ARGB8::from(vec4!(255,255,255,255)),
+            font: RefCell::new(ui.get_font("arialn.fnt",vec2!(14.0,14.0),0.0).expect("cannot load font")),
+            text: RefCell::new(String::from(text)),
+            color: Cell::new(vec4!(1.0,1.0,1.0,1.0)),
         }
     }
 
-    pub fn font(mut self,font: Rc<Font>) -> Self {
-        self.font = font;
-        self
+    pub fn set_font(&self,font: Rc<Font>) {
+        *(self.font.borrow_mut()) = font;
     }
 
-    pub fn color(mut self,color: ARGB8) -> Self {
-        self.color = color;
-        self
+    pub fn set_color<T>(&self,color: T) where Vec4<f32>: From<T> {
+        self.color.set(Vec4::<f32>::from(color));
     }
 }
 
 impl Widget for Text {
-    fn draw(&self,graphics: Rc<Graphics>,space: Rect<f32>) {
-        let (size,offset) = self.font.measure(&self.text);
+    fn draw(&self,gc: &GC,space: Rect<f32>) {
+        let (size,offset) = self.font.borrow().measure(&self.text.borrow());
         let size = size + 2.0 * self.engine.padding;
         let p: Vec2<f32> = self.engine.padding + vec2!(
             match self.engine.ha {
@@ -60,13 +52,13 @@ impl Widget for Text {
                 VAlignment::Bottom => space.o.y,
             }
         );
-        graphics.set_color(self.color);
-        graphics.set_blend(BlendMode::Over);
-        graphics.draw_text(p + offset,&self.text,&self.font);
+        gc.set_color(self.color.get());
+        gc.ui.system.set_blend(BlendMode::Over);
+        gc.draw_text(p + offset,&self.text.borrow());
     }
 
     fn measure(&self) -> Vec2<f32> {
-        self.engine.padding + self.font.measure(&self.text).0
+        self.engine.padding + self.font.borrow().measure(&self.text.borrow()).0
     }
 
     fn halign(mut self,alignment: HAlignment) -> Self {

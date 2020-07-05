@@ -1,6 +1,7 @@
 // E - System - Linux
 // Desmond Germans, 2020
 
+use crate::*;
 use x11::xlib::*;
 use std::os::raw::c_void;
 use std::os::raw::c_int;
@@ -13,11 +14,7 @@ use std::ffi::CStr;
 use xcb::xproto::*;
 use x11::glx::arb::*;
 use std::ptr::null_mut;
-use crate::UIError;
 use xcb::cast_event;
-use crate::Event;
-use crate::Mouse;
-use crate::Wheel;
 use xcb::GenericEvent;
 use libc::epoll_create1;
 use libc::epoll_ctl;
@@ -26,12 +23,9 @@ use libc::epoll_event;
 use libc::EPOLLIN;
 use std::os::unix::io::AsRawFd;
 use libc::epoll_wait;
-use crate::Vec2;
-use crate::Graphics;
 use std::cell::Cell;
-use crate::prelude::*;
-use crate::Rect;
 use std::rc::Rc;
+use std::cell::RefCell;
 
 type GlXCreateContextAttribsARBProc = unsafe extern "C" fn(
     dpy: *mut Display,
@@ -54,13 +48,17 @@ fn load_function(name: &str) -> *mut c_void {
     pointer
 }
 
-struct Window<'a> {
-    window: XID,
-    size: Cell<Vec2<usize>>,
-    handler: Box<dyn Fn(Event) + 'a>,
+pub trait Handler {
+    fn handle(&mut self,event: Event);
 }
 
-pub struct UI<'a> {
+struct Window {
+    window: XID,
+    size: Cell<Vec2<usize>>,
+    handler: Rc<RefCell<dyn Handler>>,
+}
+
+pub struct System {
     connection: Connection,
     hidden_window: XID,
     context: GLXContext,
@@ -76,17 +74,17 @@ pub struct UI<'a> {
     _wm_net_type_utility: u32,
     _wm_net_state: u32,
     _wm_net_state_above: u32,
-    windows: Vec<Window<'a>>,
+    windows: RefCell<Vec<Window>>,
     epfd: c_int,
-    graphics: Rc<Graphics>,
+    pub(crate) opengl: OpenGL,
 }
 
-impl<'a> UI<'a> {
-    pub fn new() -> Result<UI<'a>,UIError> {
+impl System {
+    pub fn new() -> Result<System,SystemError> {
 
         let connection = match Connection::connect_with_xlib_display() {
             Ok((connection,_)) => connection,
-            Err(_) => { return Err(UIError::Generic); },
+            Err(_) => { return Err(SystemError::Generic); },
         };
         connection.set_event_queue_owner(EventQueueOwner::Xcb);
         let fd = connection.as_raw_fd();
@@ -100,11 +98,11 @@ impl<'a> UI<'a> {
                     &mut glxmaj as *mut c_int,
                     &mut glxmin as *mut c_int
                 ) == 0 {
-                    return Err(UIError::Generic);
+                    return Err(SystemError::Generic);
                 }
             }
             if (glxmaj * 100 + glxmin) < 103 {
-                return Err(UIError::Generic);
+                return Err(SystemError::Generic);
             }
             let attribs = [
                 GLX_X_RENDERABLE,  1,
@@ -130,7 +128,7 @@ impl<'a> UI<'a> {
                 )
             };
             if fbcount == 0 {
-                return Err(UIError::Generic);
+                return Err(SystemError::Generic);
             }
             let fbconfig = unsafe { *fbconfigs };
             unsafe { XFree(fbconfigs as *mut c_void); }
@@ -150,7 +148,7 @@ impl<'a> UI<'a> {
                 }
             }
             if !found {
-                return Err(UIError::Generic);
+                return Err(SystemError::Generic);
             }
             let glx_create_context_attribs: GlXCreateContextAttribsARBProc = unsafe {
                 transmute(load_function("glXCreateContextAttribsARB"))
@@ -168,39 +166,39 @@ impl<'a> UI<'a> {
         let net_state_above_com = intern_atom(&connection,false,"_NET_WM_STATE_ABOVE");
         let wm_protocols = match protocols_com.get_reply() {
             Ok(protocols) => protocols.atom(),
-            Err(_) => { return Err(UIError::Generic); },
+            Err(_) => { return Err(SystemError::Generic); },
         };
         let wm_delete_window = match delete_window_com.get_reply() {
             Ok(delete_window) => delete_window.atom(),
-            Err(_) => { return Err(UIError::Generic); },
+            Err(_) => { return Err(SystemError::Generic); },
         };
         let wm_motif_hints = match motif_hints_com.get_reply() {
             Ok(motif_hints) => motif_hints.atom(),
-            Err(_) => { return Err(UIError::Generic); },
+            Err(_) => { return Err(SystemError::Generic); },
         };
         let wm_transient_for = match transient_for_com.get_reply() {
             Ok(transient_for) => transient_for.atom(),
-            Err(_) => { return Err(UIError::Generic); },
+            Err(_) => { return Err(SystemError::Generic); },
         };
         let wm_net_type = match net_type_com.get_reply() {
             Ok(net_type) => net_type.atom(),
-            Err(_) => { return Err(UIError::Generic); },
+            Err(_) => { return Err(SystemError::Generic); },
         };
         let wm_net_type_utility = match net_type_utility_com.get_reply() {
             Ok(net_type_utility) => net_type_utility.atom(),
-            Err(_) => { return Err(UIError::Generic); },
+            Err(_) => { return Err(SystemError::Generic); },
         };
         let wm_net_state = match net_state_com.get_reply() {
             Ok(net_state) => net_state.atom(),
-            Err(_) => { return Err(UIError::Generic); },
+            Err(_) => { return Err(SystemError::Generic); },
         };
         let wm_net_state_above = match net_state_above_com.get_reply() {
             Ok(net_state_above) => net_state_above.atom(),
-            Err(_) => { return Err(UIError::Generic); },
+            Err(_) => { return Err(SystemError::Generic); },
         };
         
         let rootwindow = visual_screen.root() as XID;
-        let window = connection.generate_id() as XID;
+        let hidden_window = connection.generate_id() as XID;
         let colormap = connection.generate_id() as XID;
         create_colormap(
             &connection,
@@ -224,7 +222,7 @@ impl<'a> UI<'a> {
         create_window(
             &connection,
             depth,
-            window as u32,
+            hidden_window as u32,
             rootwindow as u32,
             0,0,1,1,
             0,
@@ -238,7 +236,7 @@ impl<'a> UI<'a> {
         }
 
         let protocol_set = [wm_delete_window];
-        change_property(&connection,PROP_MODE_REPLACE as u8,window as u32,wm_protocols,ATOM_ATOM,32,&protocol_set);
+        change_property(&connection,PROP_MODE_REPLACE as u8,hidden_window as u32,wm_protocols,ATOM_ATOM,32,&protocol_set);
 
         let context = {
             let context_attribs: [c_int; 5] = [
@@ -258,12 +256,12 @@ impl<'a> UI<'a> {
             connection.flush();
             unsafe { XSync(connection.get_raw_dpy(),False) };
             if context.is_null() {
-                return Err(UIError::Generic);
+                return Err(SystemError::Generic);
             }
             if unsafe { glXIsDirect(connection.get_raw_dpy(),context) } == 0 {
-                return Err(UIError::Generic);
+                return Err(SystemError::Generic);
             }
-            unsafe { glXMakeCurrent(connection.get_raw_dpy(),window,context) };
+            unsafe { glXMakeCurrent(connection.get_raw_dpy(),hidden_window,context) };
             gl::load_with(|symbol| load_function(&symbol));
             context
         };
@@ -272,9 +270,14 @@ impl<'a> UI<'a> {
         let mut epe = [epoll_event { events: EPOLLIN as u32,u64: 0, }];
         unsafe { epoll_ctl(epfd,EPOLL_CTL_ADD,fd,epe.as_mut_ptr()) };
 
-        Ok(UI {
+        let opengl = match OpenGL::new() {
+            Ok(opengl) => opengl,
+            Err(_) => { return Err(SystemError::Generic) },
+        };
+
+        Ok(System {
             connection: connection,
-            hidden_window: window,
+            hidden_window: hidden_window,
             context: context,
             wm_delete_window: wm_delete_window,
             rootwindow: rootwindow,
@@ -288,13 +291,13 @@ impl<'a> UI<'a> {
             _wm_net_type_utility: wm_net_type_utility,
             _wm_net_state: wm_net_state,
             _wm_net_state_above: wm_net_state_above,
-            windows: Vec::new(),
+            windows: RefCell::new(Vec::new()),
             epfd: epfd,
-            graphics: Rc::new(Graphics::new()),
+            opengl: opengl,
         })
     }
 
-    pub fn create_window(&mut self,r: Rect<isize>,title: &str,handler: impl Fn(Event) + 'a) -> bool {
+    pub fn create_window(&self,r: Rect<isize>,title: &str,handler: Rc<RefCell<dyn Handler>>) -> bool {
         let window = self.connection.generate_id() as XID;
         let values = [
             (CW_EVENT_MASK,
@@ -344,34 +347,32 @@ impl<'a> UI<'a> {
             &protocol_set
         );
         self.connection.flush();
-        self.windows.push(
+        self.windows.borrow_mut().push(
             Window {
                 window: window,
                 size: Cell::new(vec2!(r.s.x as usize,r.s.y as usize)),
-                handler: Box::new(handler),
+                handler: handler,
             }
         );
         true
     }
 
-    fn handle_event(&mut self,xcb_event: GenericEvent) {
+    fn handle_event(&self,xcb_event: GenericEvent) {
         let r = xcb_event.response_type() & !0x80;
         match r {
             EXPOSE => {
                 let expose: &ExposeEvent = unsafe { cast_event(&xcb_event) };
-                //let r = rect!(expose.x() as isize,expose.y() as isize,expose.width() as isize,expose.height() as isize);
+                let r = rect!(expose.x() as isize,expose.y() as isize,expose.width() as isize,expose.height() as isize);
                 let id = expose.window() as XID;
-                for window in &mut self.windows {
+                for window in &*self.windows.borrow_mut() {
                     if window.window == id {
                         unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),window.window,self.context) };
                         let size = window.size.get();
                         unsafe { gl::Viewport(0,0,size.x as i32,size.y as i32) };
                         unsafe { gl::Scissor(0,0,size.x as i32,size.y as i32) };
-                        self.graphics.set_window_size(size);
-                        let space = self.graphics.get_space();
-                        (window.handler)(Event::Paint(Rc::clone(&self.graphics),space));
+                        window.handler.borrow_mut().handle(Event::Paint(size,r));
                         unsafe { gl::Flush() };
-                        unsafe { glXSwapBuffers(self.connection.get_raw_dpy(),window.window) };
+                        unsafe { glXSwapBuffers(self.connection.get_raw_dpy(),window.window) };    
                     }
                 }
             },
@@ -379,9 +380,9 @@ impl<'a> UI<'a> {
                 let key_press: &KeyPressEvent = unsafe { cast_event(&xcb_event) };
                 let k = key_press.detail() as u8;
                 let id = key_press.event() as XID;
-                for window in &mut self.windows {
+                for window in &*self.windows.borrow_mut() {
                     if window.window == id {
-                        (window.handler)(Event::KeyPress(k));
+                        window.handler.borrow_mut().handle(Event::KeyPress(k));
                     }
                 }
             },
@@ -389,9 +390,9 @@ impl<'a> UI<'a> {
                 let key_release: &KeyReleaseEvent = unsafe { cast_event(&xcb_event) };
                 let k = key_release.detail() as u8;
                 let id = key_release.event() as XID;
-                for window in &mut self.windows {
+                for window in &*self.windows.borrow_mut() {
                     if window.window == id {
-                        (window.handler)(Event::KeyRelease(k));
+                        window.handler.borrow_mut().handle(Event::KeyRelease(k));
                     }
                 }
             },
@@ -399,19 +400,18 @@ impl<'a> UI<'a> {
                 let button_press: &ButtonPressEvent = unsafe { cast_event(&xcb_event) };
                 let p = vec2!(button_press.event_x() as isize,button_press.event_y() as isize);
                 let id = button_press.event() as XID;
-                for window in &mut self.windows {
+                for window in &*self.windows.borrow_mut() {
                     if window.window == id {
                         match button_press.detail() {
-                            1 => { (window.handler)(Event::MousePress(p,Mouse::Left)); },
-                            2 => { (window.handler)(Event::MousePress(p,Mouse::Middle)); },
-                            3 => { (window.handler)(Event::MousePress(p,Mouse::Right)); },
-                            4 => { (window.handler)(Event::MouseWheel(Wheel::Up)); },
-                            5 => { (window.handler)(Event::MouseWheel(Wheel::Down)); },
-                            6 => { (window.handler)(Event::MouseWheel(Wheel::Left)); },
-                            7 => { (window.handler)(Event::MouseWheel(Wheel::Right)); },
+                            1 => { window.handler.borrow_mut().handle(Event::MousePress(p,Mouse::Left)); },
+                            2 => { window.handler.borrow_mut().handle(Event::MousePress(p,Mouse::Middle)); },
+                            3 => { window.handler.borrow_mut().handle(Event::MousePress(p,Mouse::Right)); },
+                            4 => { window.handler.borrow_mut().handle(Event::MouseWheel(Wheel::Up)); },
+                            5 => { window.handler.borrow_mut().handle(Event::MouseWheel(Wheel::Down)); },
+                            6 => { window.handler.borrow_mut().handle(Event::MouseWheel(Wheel::Left)); },
+                            7 => { window.handler.borrow_mut().handle(Event::MouseWheel(Wheel::Right)); },
                             _ => { },
                         }
-                        break;
                     }
                 }
             },
@@ -419,15 +419,14 @@ impl<'a> UI<'a> {
                 let button_release: &ButtonReleaseEvent = unsafe { cast_event(&xcb_event) };
                 let p = vec2!(button_release.event_x() as isize,button_release.event_y() as isize);
                 let id = button_release.event() as XID;
-                for window in &mut self.windows {
+                for window in &*self.windows.borrow_mut() {
                     if window.window == id {
                         match button_release.detail() {
-                            1 => { (window.handler)(Event::MouseRelease(p,Mouse::Left)); },
-                            2 => { (window.handler)(Event::MouseRelease(p,Mouse::Middle)); },
-                            3 => { (window.handler)(Event::MouseRelease(p,Mouse::Right)); },
+                            1 => { window.handler.borrow_mut().handle(Event::MouseRelease(p,Mouse::Left)); },
+                            2 => { window.handler.borrow_mut().handle(Event::MouseRelease(p,Mouse::Middle)); },
+                            3 => { window.handler.borrow_mut().handle(Event::MouseRelease(p,Mouse::Right)); },
                             _ => { },
                         }
-                        break;
                     }
                 }
             },
@@ -435,9 +434,9 @@ impl<'a> UI<'a> {
                 let motion_notify: &MotionNotifyEvent = unsafe { cast_event(&xcb_event) };
                 let p = vec2!(motion_notify.event_x() as isize,motion_notify.event_y() as isize);
                 let id = motion_notify.event() as XID;
-                for window in &mut self.windows {
+                for window in &*self.windows.borrow_mut() {
                     if window.window == id {
-                        (window.handler)(Event::MouseMove(p));
+                        window.handler.borrow_mut().handle(Event::MouseMove(p));
                     }
                 }
             },
@@ -445,10 +444,10 @@ impl<'a> UI<'a> {
                 let configure_notify: &ConfigureNotifyEvent = unsafe { cast_event(&xcb_event) };
                 let s = vec2!(configure_notify.width() as isize,configure_notify.height() as isize);
                 let id = configure_notify.event() as XID;
-                for window in &mut self.windows {
+                for window in &*self.windows.borrow_mut() {
                     if window.window == id {
                         window.size.set(vec2!(s.x as usize,s.y as usize));
-                        (window.handler)(Event::Resize(s));
+                        window.handler.borrow_mut().handle(Event::Resize(s));
                     }
                 }
             },
@@ -456,11 +455,11 @@ impl<'a> UI<'a> {
                 let client_message : &ClientMessageEvent = unsafe { cast_event(&xcb_event) };
                 let data = &client_message.data().data;
                 let atom = (data[0] as u32) | ((data[1] as u32) << 8) | ((data[2] as u32) << 16) | ((data[3] as u32) << 24);
-                let id = client_message.window() as XID;
                 if atom == self.wm_delete_window {
-                    for window in &mut self.windows {
+                    let id = client_message.window() as XID;
+                    for window in &*self.windows.borrow_mut() {
                         if window.window == id {
-                            (window.handler)(Event::Close);
+                            window.handler.borrow_mut().handle(Event::Close);
                         }
                     }
                 }
@@ -469,7 +468,7 @@ impl<'a> UI<'a> {
         }
     }
 
-    pub fn pump(&mut self) {
+    pub fn pump(&self) {
         while let Some(xcb_event) = self.connection.poll_for_event() {
             self.handle_event(xcb_event);
         }
@@ -480,15 +479,87 @@ impl<'a> UI<'a> {
         unsafe { epoll_wait(self.epfd,epe.as_mut_ptr(),1,-1) };
     }
 
-    pub fn graphics(&self) -> Rc<Graphics> {
-        Rc::clone(&self.graphics)
+    pub fn clear<T>(&self,color: T) where Vec4<f32>: From<T> {
+        self.opengl.clear(color);
+    }
+
+    pub fn draw_triangle_fan(&self,n: i32) {
+        self.opengl.draw_triangle_fan(n);
+    }
+
+    pub fn draw_triangles(&self,n: i32) {
+        self.opengl.draw_triangles(n);
+    }
+
+    pub fn set_blend(&self,mode: BlendMode) {
+        self.opengl.set_blend(mode);
+    }
+
+    pub fn create_shader(&self,
+        vertex_src: &str,
+        geometry_src: Option<&str>,
+        fragment_src: &str,
+    ) -> Result<Shader,SystemError> {
+        self.opengl.create_shader(vertex_src,geometry_src,fragment_src)
+    }
+
+    pub fn bind_shader(&self,shader: &Shader) {
+        self.opengl.bind_shader(shader);
+    }
+
+    pub fn unbind_shader(&self) {
+        self.opengl.unbind_shader();
+    }
+
+    pub fn set_uniform<T: OpenGLUniform>(&self,name: &str,value: T) {
+        self.opengl.set_uniform(name,value);
+    }
+
+    pub fn create_vertexbuffer<T: Vertex>(&self,vertices: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
+        self.opengl.create_vertexbuffer(vertices)
+    }
+
+    pub fn bind_vertexbuffer<T: Vertex>(&self,vertexbuffer: &VertexBuffer<T>) {
+        self.opengl.bind_vertexbuffer(vertexbuffer);
+    }
+
+    pub fn unbind_vertexbuffer(&self) {
+        self.opengl.unbind_vertexbuffer();
+    }
+
+    pub fn create_framebuffer(&self,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
+        self.opengl.create_framebuffer(size)
+    }
+
+    pub fn bind_framebuffer(&self,framebuffer: &Framebuffer) {
+        self.opengl.bind_framebuffer(framebuffer);
+    }
+
+    pub fn unbind_framebuffer(&self) {
+        self.opengl.unbind_framebuffer();
+    }
+
+    pub fn bind_framebuffer_as_texture2d(&self,layer: usize,framebuffer: &Framebuffer) {
+        self.opengl.bind_framebuffer_as_texture2d(layer,framebuffer);
+    }
+
+    pub fn create_texture2d<T: OpenGLFormat>(&self,image: &Mat<T>) -> Result<Texture2D<T>,SystemError> {
+        self.opengl.create_texture2d(image)
+    }
+
+    pub fn bind_texture2d<T: OpenGLFormat>(&self,layer: usize,texture: &Texture2D<T>) {
+        self.opengl.bind_texture2d(layer,texture);
+    }
+
+    pub fn unbind_texture2d(&self,layer: usize) {
+        self.opengl.unbind_texture2d(layer);
     }
 }
 
-impl<'a> Drop for UI<'a> {
+impl Drop for System {
     fn drop(&mut self) {
         unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),0,null_mut()); }
-        for window in &self.windows {
+        for window in &*self.windows.borrow() {
             unmap_window(&self.connection,window.window as u32);
             destroy_window(&self.connection,window.window as u32);
         }

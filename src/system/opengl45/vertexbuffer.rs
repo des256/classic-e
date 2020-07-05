@@ -1,13 +1,10 @@
 // E - OpenGL - VertexBuffer
 // Desmond Germans, 2020
 
+use crate::*;
 use gl::types::GLuint;
-use crate::UIError;
-use crate::Graphics;
 use std::ffi::c_void;
 use gl::types::GLvoid;
-use crate::Vec2;
-use crate::Vec4;
 
 pub trait Vertex {
     fn bind() -> Vec<GLuint>;
@@ -55,8 +52,8 @@ impl<T: Vertex> Drop for VertexBuffer<T> {
     }
 }
 
-impl Graphics {
-    pub fn create_vertexbuffer<T: Vertex>(&self,vertices: Vec<T>) -> Result<VertexBuffer<T>,UIError> {
+impl OpenGL {
+    pub(crate) fn _create_vertexbuffer<T: Vertex>(vertices: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
         let mut vbo: GLuint = 0;
         unsafe {
             gl::GenBuffers(1,&mut vbo);
@@ -67,6 +64,10 @@ impl Graphics {
             _vertices: vertices,
             vbo: vbo,
         })
+    }
+
+    pub fn create_vertexbuffer<T: Vertex>(&self,vertices: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
+        Self::_create_vertexbuffer::<T>(vertices)
     }
 
     pub fn bind_vertexbuffer<T: Vertex>(&self,vertexbuffer: &VertexBuffer<T>) {

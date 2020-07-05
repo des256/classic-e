@@ -1,10 +1,7 @@
 // E - PNG
 // Desmond Germans, 2020
 
-use crate::Mat;
-use crate::Zero;
-use crate::Vec4;
-use crate::prelude::*;
+use crate::*;
 
 // Inflate algorithm
 const LITLEN_LENGTH: [u16; 29] = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];

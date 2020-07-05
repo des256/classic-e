@@ -1,14 +1,10 @@
 // E - OpenGL - Texture2D
 // Desmond Germans, 2020
 
+use crate::*;
 use gl::types::GLuint;
-use crate::Mat;
 use std::ffi::c_void;
 use std::marker::PhantomData;
-use crate::Graphics;
-use crate::UIError;
-use crate::Vec2;
-use crate::OpenGLFormat;
 
 pub struct Texture2D<T: OpenGLFormat> {
     pub tex: GLuint,
@@ -24,8 +20,8 @@ impl<T: OpenGLFormat> Drop for Texture2D<T> {
     }
 }
 
-impl Graphics {
-    pub fn create_texture2d<T: OpenGLFormat>(&self,image: &Mat<T>) -> Result<Texture2D<T>,UIError> {
+impl OpenGL {
+    pub fn create_texture2d<T: OpenGLFormat>(&self,image: &Mat<T>) -> Result<Texture2D<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);

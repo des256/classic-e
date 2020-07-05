@@ -1,8 +1,7 @@
 // E - Rect
 // Desmond Germans, 2020
 
-use crate::Vec2;
-use crate::Zero;
+use crate::*;
 use std::ops::Add;
 use std::fmt::Display;
 use std::fmt::Formatter;
@@ -32,6 +31,13 @@ impl<T: Zero> Zero for Rect<T> where Vec2<T>: Zero {
 impl<T: Display> Display for Rect<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
         write!(f,"({},{} {}x{})",self.o.x,self.o.y,self.s.x,self.s.y)
+    }
+}
+
+pub fn init_rect<T>(o: crate::Vec2<T>,s: crate::Vec2<T>) -> crate::Rect<T> {
+    crate::Rect {
+        o: o,
+        s: s,
     }
 }
 

@@ -1,10 +1,8 @@
 // E - OpenGL - Framebuffer
 // Desmond Germans, 2020
 
-use crate::Graphics;
+use crate::*;
 use gl::types::GLuint;
-use crate::Vec2;
-use crate::UIError;
 
 pub struct Framebuffer {
     fbo: GLuint,
@@ -21,8 +19,8 @@ impl Drop for Framebuffer {
     }
 }
 
-impl Graphics {
-    pub fn create_framebuffer(&self,size: Vec2<usize>) -> Result<Framebuffer,UIError> {
+impl OpenGL {
+    pub fn create_framebuffer(&self,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
         let mut fbo: GLuint = 0;
         let mut tex: GLuint = 0;
         unsafe {
@@ -37,7 +35,7 @@ impl Graphics {
             gl::TexStorage2D(gl::TEXTURE_2D,1,gl::RGBA8,size.x as i32,size.y as i32);
             gl::FramebufferTexture(gl::FRAMEBUFFER,gl::COLOR_ATTACHMENT0,tex,0);
             if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
-                return Err(UIError::Generic);
+                return Err(SystemError::Generic);
             }
         }
         Ok(Framebuffer {
@@ -52,6 +50,19 @@ impl Graphics {
             gl::BindFramebuffer(gl::FRAMEBUFFER,framebuffer.fbo);
             gl::Viewport(0,0,framebuffer.size.x as i32,framebuffer.size.y as i32);
             gl::Scissor(0,0,framebuffer.size.x as i32,framebuffer.size.y as i32);
+        }
+    }
+
+    pub fn unbind_framebuffer(&self) {
+        unsafe {
+            gl::BindFramebuffer(gl::FRAMEBUFFER,0);
+        }
+    }
+
+    pub fn bind_framebuffer_as_texture2d(&self,layer: usize,framebuffer: &Framebuffer) {
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE0 + layer as u32);
+            gl::BindTexture(gl::TEXTURE_2D,framebuffer.tex);
         }
     }
 }

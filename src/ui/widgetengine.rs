@@ -1,10 +1,7 @@
 // E - UI - WidgetEngine
 // Desmond Germans, 2020
 
-use crate::HAlignment;
-use crate::VAlignment;
-use crate::Vec2;
-use crate::prelude::*;
+use crate::*;
 
 pub struct WidgetEngine {
     pub ha: HAlignment,

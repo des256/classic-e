@@ -1,83 +1,65 @@
 // E - Text test
 // Desmond Germans, 2020
 
-use e::UI;
-use e::Event;
-use e::Text;
-use e::Widget;
-use e::vec2;
-use e::prelude::*;
-use e::Rect;
+use e::*;
 use std::rc::Rc;
-use e::rect;
 use std::cell::RefCell;
-use e::HAlignment;
-use e::VAlignment;
-use e::ARGB8;
-use e::vec4;
 
-// App structure holds application-wide state. Here it's just a boolean
-// indicating if we're still running, and a text widget.
 struct App {
+    system: Rc<System>,
+    ui: Rc<UI>,
+    text: Text,
     running: bool,
-    tree: Text,  // The root object is a Text widget
 }
 
-// Event handler. Draws the text widget.
-fn handler(event: Event,app: &mut App) {
-    match event {
-        Event::Paint(graphics,space) => {
-
-            // clear the space to dark blue
-            graphics.clear(ARGB8::from(0xFF003F4F));
-
-            // draw the text widget over the whole space
-            app.tree.draw(graphics,Rect::<f32> { o: vec2!(0.0,0.0),s: space, });
-        },
-        Event::Close => {
-            app.running = false;
-        },
-        _ => { },
+impl Handler for App {
+    fn handle(&mut self,event: Event) {
+        match event {
+            Event::Paint(size,r) => {
+                let gc = GC::new(&self.ui).expect("what?");
+                self.system.clear(vec4!(0.0,0.3,0.4,1.0));
+                gc.set_size(vec2!(size.x as f32,size.y as f32));
+                // TODO: set proper ppu in gc
+                self.text.draw(&gc,rect!(r.o.x as f32,r.o.y as f32,r.s.x as f32,r.s.y as f32));
+            },
+            Event::Close => {
+                self.running = false;
+            },
+            _ => { },
+        }
     }
 }
 
 fn main() {
-    // initialize UI
-    let mut ui = match UI::new() {
-        Ok(ui) => ui,
-        Err(_) => { panic!("Cannot open UI."); },
-    };
+    {
+        let system = Rc::new(match System::new() {
+            Ok(system) => system,
+            Err(_) => { panic!("Cannot open system."); },
+        });
 
-    // create widget tree
-    let tree = Text::new(ui.graphics(),"Hello, World!")
-        .padding()
-        .halign(HAlignment::Center)
-        .valign(VAlignment::Top)
-        .color(ARGB8::from(vec4!(255,191,0,255)))
-    ;
+        let ui = Rc::new(match UI::new(&system) {
+            Ok(ui) => ui,
+            Err(_) => { panic!("Cannot initialize UI."); },
+        });
 
-    // create application state
-    let app = Rc::new(RefCell::new(App {
-        running: true,
-        tree: tree,
-    }));
+        let text = Text::new(&ui,"Hello, World!");
 
-    // clone pointer to give to window
-    let cloned_app = Rc::clone(&app);
+        let app = Rc::new(RefCell::new(App {
+            system: Rc::clone(&system),
+            ui: ui,
+            text: text,
+            running: true,
+        }));
 
-    // create the window
-    ui.create_window(
-        rect!(50,50,640,360),
-        "Test Window",
-        move |event| {
-            let mut app = cloned_app.borrow_mut();
-            handler(event,&mut app);
+        system.create_window(
+            rect!(50,50,640,360),
+            "Test Window",
+            app.clone()
+        );
+
+        while app.borrow().running {
+            system.wait();
+            system.pump();
         }
-    );
-
-    // event loop
-    while app.borrow().running {
-        ui.wait();
-        ui.pump();
     }
 }

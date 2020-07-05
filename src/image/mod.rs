@@ -1,9 +1,7 @@
 // E - image
 // Desmond Germans, 2020
 
-use crate::Mat;
-use crate::Zero;
-use crate::Vec4;
+use crate::*;
 
 pub mod bmp;
 pub mod png;

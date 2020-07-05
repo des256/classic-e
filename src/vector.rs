@@ -1,12 +1,12 @@
 // E - Vector
 // Desmond Germans, 2020
 
+use crate::*;
 use std::cmp::PartialEq;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fmt::Debug;
 use std::fmt::Result;
-use crate::Zero;
 use std::ops::Add;
 use std::ops::Sub;
 use std::ops::Mul;
@@ -170,6 +170,14 @@ macro_rules! impl_vec2_flt (
         }
     );
 );
+
+
+pub fn init_vec2<T>(x: T,y: T) -> crate::Vec2<T> {
+    crate::Vec2 {
+        x: x,
+        y: y,
+    }
+}
 
 #[macro_export]
 macro_rules! vec2 (
@@ -382,6 +390,14 @@ macro_rules! impl_vec3_flt (
         }
     );
 );
+
+pub fn init_vec3<T>(x: T,y: T,z: T) -> crate::Vec3<T> {
+    crate::Vec3 {
+        x: x,
+        y: y,
+        z: z,
+    }
+}
 
 #[macro_export]
 macro_rules! vec3 (
@@ -598,6 +614,15 @@ macro_rules! impl_vec4_flt (
         }
     );
 );
+
+pub fn init_vec4<T>(x: T,y: T,z: T,w: T) -> crate::Vec4<T> {
+    crate::Vec4 {
+        x: x,
+        y: y,
+        z: z,
+        w: w,
+    }
+}
 
 #[macro_export]
 macro_rules! vec4 (

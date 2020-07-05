@@ -1,6 +1,7 @@
 // E - OpenGL - Shader
 // Desmond Germans, 2020
 
+use crate::*;
 use std::ffi::CString;
 use std::ptr::null;
 use gl::types::GLint;
@@ -9,10 +10,6 @@ use gl::types::GLuint;
 use std::ptr::null_mut;
 use gl::types::GLchar;
 use gl::types::GLfloat;
-use crate::UIError;
-use crate::Graphics;
-use crate::Vec2;
-use crate::Vec4;
 
 pub struct Shader {
     pub(crate) sp: GLuint,
@@ -52,13 +49,13 @@ impl OpenGLUniform for u32 {
     }
 }
 
-impl Graphics {
+impl OpenGL {
     // API-wise, create_shader is caled from the Graphics object, but the Graphics object itself also needs to create some shaders in the constructor
     pub(crate) fn _create_shader(
         vertex_src: &str,
         geometry_src: Option<&str>,
         fragment_src: &str,
-    ) -> Result<Shader,UIError> {
+    ) -> Result<Shader,SystemError> {
         unsafe {
             let vs = gl::CreateShader(gl::VERTEX_SHADER);
             let vcstr = CString::new(vertex_src.as_bytes()).unwrap();
@@ -75,7 +72,7 @@ impl Graphics {
                 println!("Shader: vertex shader errors:\n{}\nvertex shader source:\n{}",str_slice,vertex_src);
             }
             if success != gl::TRUE as GLint {
-                return Err(UIError::Generic);
+                return Err(SystemError::Generic);
             }
 
             // compile geometry shader
@@ -96,7 +93,7 @@ impl Graphics {
                     println!("Shader: geometry shader errors:\n{}\ngeometry shader source:\n{}",str_slice,geometry_src);
                 }
                 if success != gl::TRUE as GLint {
-                    return Err(UIError::Generic);
+                    return Err(SystemError::Generic);
                 }
             }
 
@@ -113,7 +110,7 @@ impl Graphics {
                 println!("Shader: fragment shader errors:\n{}\nfragment shader source:\n{}",str_slice,fragment_src);
             }
             if success != gl::TRUE as GLint {
-                return Err(UIError::Generic);
+                return Err(SystemError::Generic);
             }
 
             // link shaders
@@ -132,7 +129,7 @@ impl Graphics {
                 println!("Shader: shader program errors:\n{}", str_slice);
             }
             if success != gl::TRUE as GLint {
-                return Err(UIError::Generic);
+                return Err(SystemError::Generic);
             }
 
             // and delete references to the separate shaders
@@ -152,7 +149,7 @@ impl Graphics {
         vertex_src: &str,
         geometry_src: Option<&str>,
         fragment_src: &str,
-    ) -> Result<Shader,UIError> {
+    ) -> Result<Shader,SystemError> {
         Self::_create_shader(vertex_src,geometry_src,fragment_src)
     }
 

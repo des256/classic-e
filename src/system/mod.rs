@@ -1,11 +1,10 @@
 // E - System
 // Desmond Germans, 2020
 
+use crate::*;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
-use crate::Vec2;
-use std::rc::Rc;
 
 pub enum Mouse {
     Left,
@@ -63,7 +62,7 @@ impl Debug for Wheel {
 }
 
 pub enum Event {
-    Paint(Rc<Graphics>,Vec2<f32>),
+    Paint(Vec2<usize>,Rect<isize>),
     KeyPress(u8),
     KeyRelease(u8),
     MousePress(Vec2<isize>,Mouse),
@@ -74,11 +73,11 @@ pub enum Event {
     Close,
 }
 
-pub enum UIError {
+pub enum SystemError {
     Generic,
 }
 
-impl Debug for UIError {
+impl Debug for SystemError {
     fn fmt(&self,f: &mut Formatter) -> std::fmt::Result {
         write!(f,"generic error")
     }

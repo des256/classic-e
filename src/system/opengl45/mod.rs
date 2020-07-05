@@ -1,18 +1,9 @@
 // E - OpenGL
 // Desmond Germans, 2020
 
-use crate::Vec2;
-use crate::Vec3;
-use crate::Vec4;
-use crate::Zero;
+use crate::*;
 use gl::types::GLuint;
 use gl::types::GLenum;
-use crate::R3G3B2;
-use crate::R5G6B5;
-use crate::ARGB4;
-use crate::A1RGB5;
-use crate::RGB8;
-use crate::ARGB8;
 
 pub trait OpenGLFormat: Clone + Copy + Zero {
     fn gl_internal_format() -> GLuint;
@@ -224,8 +215,8 @@ impl OpenGLFormat for ARGB8 {
     fn gl_type() -> GLenum { gl::UNSIGNED_INT_8_8_8_8_REV }
 }
 
-mod graphics;
-pub use graphics::*;
+mod opengl;
+pub use opengl::*;
 
 mod shader;
 pub use shader::*;
@@ -238,6 +229,3 @@ pub use framebuffer::*;
 
 mod vertexbuffer;
 pub use vertexbuffer::*;
-
-mod font;
-pub use font::*;
