@@ -62,7 +62,7 @@ impl Debug for Wheel {
 }
 
 pub enum Event {
-    Paint(Vec2<usize>,Rect<isize>),
+    Paint(Rect<isize>),
     KeyPress(u8),
     KeyRelease(u8),
     MousePress(Vec2<isize>,Mouse),

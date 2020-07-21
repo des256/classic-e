@@ -6,18 +6,18 @@ use std::rc::Rc;
 use std::cell::Cell;
 use std::cell::RefCell;
 
-pub struct Text {
-    ui: Rc<UI>,
+pub struct Text<'a> {
+    ui: &'a UI<'a>,
     engine: WidgetEngine,
     font: RefCell<Rc<Font>>,
     text: RefCell<String>,
     color: Cell<Vec4<f32>>,
 }
 
-impl Text {
-    pub fn new(ui: &Rc<UI>,text: &str) -> Text {
+impl<'a> Text<'a> {
+    pub fn new(ui: &'a UI<'a>,text: &str) -> Text<'a> {
         Text {
-            ui: Rc::clone(ui),
+            ui: ui,
             engine: WidgetEngine::new(),
             font: RefCell::new(ui.get_font("arialn.fnt",vec2!(14.0,14.0),0.0).expect("cannot load font")),
             text: RefCell::new(String::from(text)),
@@ -34,7 +34,7 @@ impl Text {
     }
 }
 
-impl Widget for Text {
+impl<'a> Widget for Text<'a> {
     fn draw(&self,gc: &GC,space: Rect<f32>) {
         let (size,offset) = self.font.borrow().measure(&self.text.borrow());
         let size = size + 2.0 * self.engine.padding;

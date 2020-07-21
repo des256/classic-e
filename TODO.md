@@ -110,3 +110,7 @@ System abstracts the windows, graphics, fonts, events, textures, vertex buffers,
 On top of System is UI for widgets, Engine for games, etc.
 
 ### Give Window struct to the user?
+
+===
+
+Initialization by functions that concatenate we'll look at later.

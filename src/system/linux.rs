@@ -26,6 +26,7 @@ use libc::epoll_wait;
 use std::cell::Cell;
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::sync::Arc;
 
 type GlXCreateContextAttribsARBProc = unsafe extern "C" fn(
     dpy: *mut Display,
@@ -52,10 +53,11 @@ pub trait Handler {
     fn handle(&mut self,event: Event);
 }
 
-struct Window {
-    window: XID,
-    size: Cell<Vec2<usize>>,
-    handler: Rc<RefCell<dyn Handler>>,
+pub struct Window<'a> {
+    system: &'a System,
+    id: XID,
+    //handler: Arc<RefCell<dyn Handler>>,
+    size: Vec2<usize>,
 }
 
 pub struct System {
@@ -74,14 +76,13 @@ pub struct System {
     _wm_net_type_utility: u32,
     _wm_net_state: u32,
     _wm_net_state_above: u32,
-    windows: RefCell<Vec<Window>>,
+    //windows: RefCell<Vec<Arc<RefCell<Window<'a>>>>>,
     epfd: c_int,
     pub(crate) opengl: OpenGL,
 }
 
-impl System {
+impl<'a> System {
     pub fn new() -> Result<System,SystemError> {
-
         let connection = match Connection::connect_with_xlib_display() {
             Ok((connection,_)) => connection,
             Err(_) => { return Err(SystemError::Generic); },
@@ -291,193 +292,202 @@ impl System {
             _wm_net_type_utility: wm_net_type_utility,
             _wm_net_state: wm_net_state,
             _wm_net_state_above: wm_net_state_above,
-            windows: RefCell::new(Vec::new()),
+            //windows: RefCell::new(Vec::new()),
             epfd: epfd,
             opengl: opengl,
         })
     }
 
-    pub fn create_window(&self,r: Rect<isize>,title: &str,handler: Rc<RefCell<dyn Handler>>) -> bool {
-        let window = self.connection.generate_id() as XID;
-        let values = [
-            (CW_EVENT_MASK,
-                EVENT_MASK_EXPOSURE
-                | EVENT_MASK_KEY_PRESS
-                | EVENT_MASK_KEY_RELEASE
-                | EVENT_MASK_BUTTON_PRESS
-                | EVENT_MASK_BUTTON_RELEASE
-                | EVENT_MASK_POINTER_MOTION
-                | EVENT_MASK_STRUCTURE_NOTIFY
-            ),
-            (CW_COLORMAP,self.colormap as u32),
-        ];
-        create_window(
-            &self.connection,
-            self.depth as u8,
-            window as u32,
-            self.rootwindow as u32,
-            r.o.x as i16,r.o.y as i16,r.s.x as u16,r.s.y as u16,
-            0,
-            WINDOW_CLASS_INPUT_OUTPUT as u16,
-            self.visualid as u32,
-            &values
-        );
-        unsafe {
-            map_window(&self.connection,window as u32);
-            self.connection.flush();
-            XSync(self.connection.get_raw_dpy(),False);
-        }
-        change_property(
-            &self.connection,
-            PROP_MODE_REPLACE as u8,
-            window as u32,
-            ATOM_WM_NAME,
-            ATOM_STRING,
-            8,
-            title.as_bytes()
-        );
-        let protocol_set = [self.wm_delete_window];
-        change_property(
-            &self.connection,
-            PROP_MODE_REPLACE as u8,
-            window as u32,
-            self.wm_protocols,
-            ATOM_ATOM,
-            32,
-            &protocol_set
-        );
-        self.connection.flush();
-        self.windows.borrow_mut().push(
-            Window {
-                window: window,
-                size: Cell::new(vec2!(r.s.x as usize,r.s.y as usize)),
-                handler: handler,
-            }
-        );
-        true
-    }
-
-    fn handle_event(&self,xcb_event: GenericEvent) {
-        let r = xcb_event.response_type() & !0x80;
-        match r {
-            EXPOSE => {
-                let expose: &ExposeEvent = unsafe { cast_event(&xcb_event) };
-                let r = rect!(expose.x() as isize,expose.y() as isize,expose.width() as isize,expose.height() as isize);
-                let id = expose.window() as XID;
-                for window in &*self.windows.borrow_mut() {
-                    if window.window == id {
-                        unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),window.window,self.context) };
-                        let size = window.size.get();
-                        unsafe { gl::Viewport(0,0,size.x as i32,size.y as i32) };
-                        unsafe { gl::Scissor(0,0,size.x as i32,size.y as i32) };
-                        window.handler.borrow_mut().handle(Event::Paint(size,r));
-                        unsafe { gl::Flush() };
-                        unsafe { glXSwapBuffers(self.connection.get_raw_dpy(),window.window) };    
-                    }
-                }
-            },
-            KEY_PRESS => {
-                let key_press: &KeyPressEvent = unsafe { cast_event(&xcb_event) };
-                let k = key_press.detail() as u8;
-                let id = key_press.event() as XID;
-                for window in &*self.windows.borrow_mut() {
-                    if window.window == id {
-                        window.handler.borrow_mut().handle(Event::KeyPress(k));
-                    }
-                }
-            },
-            KEY_RELEASE => {
-                let key_release: &KeyReleaseEvent = unsafe { cast_event(&xcb_event) };
-                let k = key_release.detail() as u8;
-                let id = key_release.event() as XID;
-                for window in &*self.windows.borrow_mut() {
-                    if window.window == id {
-                        window.handler.borrow_mut().handle(Event::KeyRelease(k));
-                    }
-                }
-            },
-            BUTTON_PRESS => {
-                let button_press: &ButtonPressEvent = unsafe { cast_event(&xcb_event) };
-                let p = vec2!(button_press.event_x() as isize,button_press.event_y() as isize);
-                let id = button_press.event() as XID;
-                for window in &*self.windows.borrow_mut() {
-                    if window.window == id {
-                        match button_press.detail() {
-                            1 => { window.handler.borrow_mut().handle(Event::MousePress(p,Mouse::Left)); },
-                            2 => { window.handler.borrow_mut().handle(Event::MousePress(p,Mouse::Middle)); },
-                            3 => { window.handler.borrow_mut().handle(Event::MousePress(p,Mouse::Right)); },
-                            4 => { window.handler.borrow_mut().handle(Event::MouseWheel(Wheel::Up)); },
-                            5 => { window.handler.borrow_mut().handle(Event::MouseWheel(Wheel::Down)); },
-                            6 => { window.handler.borrow_mut().handle(Event::MouseWheel(Wheel::Left)); },
-                            7 => { window.handler.borrow_mut().handle(Event::MouseWheel(Wheel::Right)); },
-                            _ => { },
-                        }
-                    }
-                }
-            },
-            BUTTON_RELEASE => {
-                let button_release: &ButtonReleaseEvent = unsafe { cast_event(&xcb_event) };
-                let p = vec2!(button_release.event_x() as isize,button_release.event_y() as isize);
-                let id = button_release.event() as XID;
-                for window in &*self.windows.borrow_mut() {
-                    if window.window == id {
-                        match button_release.detail() {
-                            1 => { window.handler.borrow_mut().handle(Event::MouseRelease(p,Mouse::Left)); },
-                            2 => { window.handler.borrow_mut().handle(Event::MouseRelease(p,Mouse::Middle)); },
-                            3 => { window.handler.borrow_mut().handle(Event::MouseRelease(p,Mouse::Right)); },
-                            _ => { },
-                        }
-                    }
-                }
-            },
-            MOTION_NOTIFY => {
-                let motion_notify: &MotionNotifyEvent = unsafe { cast_event(&xcb_event) };
-                let p = vec2!(motion_notify.event_x() as isize,motion_notify.event_y() as isize);
-                let id = motion_notify.event() as XID;
-                for window in &*self.windows.borrow_mut() {
-                    if window.window == id {
-                        window.handler.borrow_mut().handle(Event::MouseMove(p));
-                    }
-                }
-            },
-            CONFIGURE_NOTIFY => {
-                let configure_notify: &ConfigureNotifyEvent = unsafe { cast_event(&xcb_event) };
-                let s = vec2!(configure_notify.width() as isize,configure_notify.height() as isize);
-                let id = configure_notify.event() as XID;
-                for window in &*self.windows.borrow_mut() {
-                    if window.window == id {
-                        window.size.set(vec2!(s.x as usize,s.y as usize));
-                        window.handler.borrow_mut().handle(Event::Resize(s));
-                    }
-                }
-            },
-            CLIENT_MESSAGE => {
-                let client_message : &ClientMessageEvent = unsafe { cast_event(&xcb_event) };
-                let data = &client_message.data().data;
-                let atom = (data[0] as u32) | ((data[1] as u32) << 8) | ((data[2] as u32) << 16) | ((data[3] as u32) << 24);
-                if atom == self.wm_delete_window {
-                    let id = client_message.window() as XID;
-                    for window in &*self.windows.borrow_mut() {
-                        if window.window == id {
-                            window.handler.borrow_mut().handle(Event::Close);
-                        }
-                    }
-                }
-            },
-            _ => { },
-        }
-    }
-
-    pub fn pump(&self) {
+    pub fn poll<'b>(&'b self,windows: Vec<&'b mut Window<'b>>) -> Vec<(&'b mut Window<'b>,Event)> {
+        let mut triggers: Vec<(&mut Window<'b>,Event)> = Vec::new();
         while let Some(xcb_event) = self.connection.poll_for_event() {
-            self.handle_event(xcb_event);
+            let r = xcb_event.response_type() & !0x80;
+            match r {
+                EXPOSE => {
+                    let expose: &ExposeEvent = unsafe { cast_event(&xcb_event) };
+                    let r = rect!(expose.x() as isize,expose.y() as isize,expose.width() as isize,expose.height() as isize);
+                    let id = expose.window() as XID;
+                    for window in &mut windows {
+                        if window.id == id {
+                            triggers.push((*window,Event::Paint(r)));
+                        }
+                    }
+                    /*for cell in windows {
+                        let window = cell.borrow_mut();
+                        if window.id == id {
+                            unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),window.id,self.context) };
+                            unsafe { gl::Viewport(0,0,window.size.x as i32,window.size.y as i32) };
+                            unsafe { gl::Scissor(0,0,window.size.x as i32,window.size.y as i32) };
+                            let mut handler = window.handler.borrow_mut();
+                            handler.handle(Event::Paint(window.size,r));
+                            unsafe { gl::Flush() };
+                            unsafe { glXSwapBuffers(self.connection.get_raw_dpy(),window.id) };
+                        }
+                    }*/
+                },
+                KEY_PRESS => {
+                    let key_press: &KeyPressEvent = unsafe { cast_event(&xcb_event) };
+                    let k = key_press.detail() as u8;
+                    let id = key_press.event() as XID;
+                    for window in &mut windows {
+                        if window.id == id {
+                            triggers.push((*window,Event::KeyPress(k)));
+                        }
+                    }
+                    /*for cell in windows {
+                        let window = cell.borrow_mut();
+                        if window.id == id {
+                            let mut handler = window.handler.borrow_mut();
+                            handler.handle(Event::KeyPress(k));
+                        }
+                    }*/
+                },
+                KEY_RELEASE => {
+                    let key_release: &KeyReleaseEvent = unsafe { cast_event(&xcb_event) };
+                    let k = key_release.detail() as u8;
+                    let id = key_release.event() as XID;
+                    for window in &mut windows {
+                        if window.id == id {
+                            triggers.push((*window,Event::KeyRelease(k)));
+                        }
+                    }
+                    /*for cell in windows {
+                        let window = cell.borrow_mut();
+                        if window.id == id {
+                            let mut handler = window.handler.borrow_mut();
+                            handler.handle(Event::KeyRelease(k));
+                        }
+                    }*/
+                },
+                BUTTON_PRESS => {
+                    let button_press: &ButtonPressEvent = unsafe { cast_event(&xcb_event) };
+                    let p = vec2!(button_press.event_x() as isize,button_press.event_y() as isize);
+                    let id = button_press.event() as XID;
+                    for window in &mut windows {
+                        if window.id == id {
+                            match button_press.detail() {
+                                1 => { triggers.push((*window,Event::MousePress(p,Mouse::Left))); },
+                                2 => { triggers.push((*window,Event::MousePress(p,Mouse::Middle))); },
+                                3 => { triggers.push((*window,Event::MousePress(p,Mouse::Right))); },
+                                4 => { triggers.push((*window,Event::MouseWheel(Wheel::Up))); },
+                                5 => { triggers.push((*window,Event::MouseWheel(Wheel::Down))); },
+                                6 => { triggers.push((*window,Event::MouseWheel(Wheel::Left))); },
+                                7 => { triggers.push((*window,Event::MouseWheel(Wheel::Right))); },
+                                _ => { },
+                            }                            
+                        }
+                    }
+                    /*let windows = &*self.windows.borrow();
+                    for cell in windows {
+                        let window = cell.borrow_mut();
+                        if window.id == id {
+                            let mut handler = window.handler.borrow_mut();
+                            match button_press.detail() {
+                                1 => { handler.handle(Event::MousePress(p,Mouse::Left)); },
+                                2 => { handler.handle(Event::MousePress(p,Mouse::Middle)); },
+                                3 => { handler.handle(Event::MousePress(p,Mouse::Right)); },
+                                4 => { handler.handle(Event::MouseWheel(Wheel::Up)); },
+                                5 => { handler.handle(Event::MouseWheel(Wheel::Down)); },
+                                6 => { handler.handle(Event::MouseWheel(Wheel::Left)); },
+                                7 => { handler.handle(Event::MouseWheel(Wheel::Right)); },
+                                _ => { },
+                            }
+                        }
+                    }*/
+                },
+                BUTTON_RELEASE => {
+                    let button_release: &ButtonReleaseEvent = unsafe { cast_event(&xcb_event) };
+                    let p = vec2!(button_release.event_x() as isize,button_release.event_y() as isize);
+                    let id = button_release.event() as XID;
+                    for window in &mut windows {
+                        if window.id == id {
+                            match button_release.detail() {
+                                1 => { triggers.push((*window,Event::MouseRelease(p,Mouse::Left))); },
+                                2 => { triggers.push((*window,Event::MouseRelease(p,Mouse::Middle))); },
+                                3 => { triggers.push((*window,Event::MouseRelease(p,Mouse::Right))); },
+                                _ => { },
+                            }
+                        }
+                    }
+                    /*for cell in windows {
+                        let window = cell.borrow_mut();
+                        if window.id == id {
+                            let mut handler = window.handler.borrow_mut();
+                            match button_release.detail() {
+                                1 => { handler.handle(Event::MouseRelease(p,Mouse::Left)); },
+                                2 => { handler.handle(Event::MouseRelease(p,Mouse::Middle)); },
+                                3 => { handler.handle(Event::MouseRelease(p,Mouse::Right)); },
+                                _ => { },
+                            }
+                        }
+                    }*/
+                },
+                MOTION_NOTIFY => {
+                    let motion_notify: &MotionNotifyEvent = unsafe { cast_event(&xcb_event) };
+                    let p = vec2!(motion_notify.event_x() as isize,motion_notify.event_y() as isize);
+                    let id = motion_notify.event() as XID;
+                    for window in &mut windows {
+                        if window.id == id {
+                            triggers.push((*window,Event::MouseMove(p)));
+                        }
+                    }
+                    /*let windows = &*self.windows.borrow();
+                    for cell in windows {
+                        let window = cell.borrow_mut();
+                        if window.id == id {
+                            let mut handler = window.handler.borrow_mut();
+                            handler.handle(Event::MouseMove(p));
+                        }
+                    }*/
+                },
+                CONFIGURE_NOTIFY => {
+                    let configure_notify: &ConfigureNotifyEvent = unsafe { cast_event(&xcb_event) };
+                    let s = vec2!(configure_notify.width() as isize,configure_notify.height() as isize);
+                    let id = configure_notify.event() as XID;
+                    for window in &mut windows {
+                        if window.id == id {
+                            window.size = vec2!(s.x as usize,s.y as usize);
+                            triggers.push((*window,Event::Resize(s)));
+                        }
+                    }
+                    /*for cell in windows {
+                        let mut window = cell.borrow_mut();
+                        if window.id == id {
+                            let mut handler = window.handler.borrow_mut();
+                            handler.handle(Event::Resize(s));
+                        }
+                    }*/
+                },
+                CLIENT_MESSAGE => {
+                    let client_message : &ClientMessageEvent = unsafe { cast_event(&xcb_event) };
+                    let data = &client_message.data().data;
+                    let atom = (data[0] as u32) | ((data[1] as u32) << 8) | ((data[2] as u32) << 16) | ((data[3] as u32) << 24);
+                    if atom == self.wm_delete_window {
+                        let id = client_message.window() as XID;
+                        for window in &mut windows {
+                            if window.id == id {
+                                triggers.push((*window,Event::Close));
+                            }
+                        }
+                        /*for cell in windows {
+                            let window = cell.borrow_mut();
+                            if window.id == id {
+                                let mut handler = window.handler.borrow_mut();
+                                handler.handle(Event::Close);
+                            }
+                        }*/
+                    }
+                },
+                _ => { },
+            }
         }
+        triggers
     }
-
+    
     pub fn wait(&self) {
         let mut epe = [epoll_event { events: EPOLLIN as u32,u64: 0, }];
         unsafe { epoll_wait(self.epfd,epe.as_mut_ptr(),1,-1) };
-    }
+    }    
 
     pub fn clear<T>(&self,color: T) where Vec4<f32>: From<T> {
         self.opengl.clear(color);
@@ -559,12 +569,75 @@ impl System {
 impl Drop for System {
     fn drop(&mut self) {
         unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),0,null_mut()); }
-        for window in &*self.windows.borrow() {
-            unmap_window(&self.connection,window.window as u32);
-            destroy_window(&self.connection,window.window as u32);
-        }
         destroy_window(&self.connection,self.hidden_window as u32);
         unsafe { glXDestroyContext(self.connection.get_raw_dpy(),self.context); }
+    }
+}
+
+impl<'a> Window<'a> {
+    pub fn new(system: &'a System,r: Rect<isize>,title: &str) -> Result<Window<'a>,SystemError> {
+        let id = system.connection.generate_id() as XID;
+        let values = [
+            (CW_EVENT_MASK,
+                EVENT_MASK_EXPOSURE
+                | EVENT_MASK_KEY_PRESS
+                | EVENT_MASK_KEY_RELEASE
+                | EVENT_MASK_BUTTON_PRESS
+                | EVENT_MASK_BUTTON_RELEASE
+                | EVENT_MASK_POINTER_MOTION
+                | EVENT_MASK_STRUCTURE_NOTIFY
+            ),
+            (CW_COLORMAP,system.colormap as u32),
+        ];
+        create_window(
+            &system.connection,
+            system.depth as u8,
+            id as u32,
+            system.rootwindow as u32,
+            r.o.x as i16,r.o.y as i16,r.s.x as u16,r.s.y as u16,
+            0,
+            WINDOW_CLASS_INPUT_OUTPUT as u16,
+            system.visualid as u32,
+            &values
+        );
+        unsafe {
+            map_window(&system.connection,id as u32);
+            system.connection.flush();
+            XSync(system.connection.get_raw_dpy(),False);
+        }
+        change_property(
+            &system.connection,
+            PROP_MODE_REPLACE as u8,
+            id as u32,
+            ATOM_WM_NAME,
+            ATOM_STRING,
+            8,
+            title.as_bytes()
+        );
+        let protocol_set = [system.wm_delete_window];
+        change_property(
+            &system.connection,
+            PROP_MODE_REPLACE as u8,
+            id as u32,
+            system.wm_protocols,
+            ATOM_ATOM,
+            32,
+            &protocol_set
+        );
+        system.connection.flush();
+        Ok(Window {
+            system: system,
+            id: id,
+            size: vec2!(r.s.x as usize,r.s.y as usize),
+        })
+    }
+}
+
+impl<'a> Drop for Window<'a> {
+    fn drop(&mut self) {
+        unsafe { glXMakeCurrent(self.system.connection.get_raw_dpy(),self.system.hidden_window,null_mut()); }
+        unmap_window(&self.system.connection,self.id as u32);
+        destroy_window(&self.system.connection,self.id as u32);
     }
 }
 

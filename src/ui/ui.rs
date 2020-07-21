@@ -7,15 +7,15 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::prelude::*;
 
-pub struct UI {
-    pub system: Rc<System>,
+pub struct UI<'a> {
+    pub system: &'a System,
     pub msdf_shader: Shader,
     pub font_protos: RefCell<Vec<Rc<FontProto>>>,
     pub fonts: RefCell<Vec<Rc<Font>>>,
 }
 
-impl<'a> UI {
-    pub fn new(system: &Rc<System>) -> Result<UI,SystemError> {
+impl<'a> UI<'a> {
+    pub fn new(system: &'a System) -> Result<UI<'a>,SystemError> {
 
         let vs = r#"
             #version 420 core
@@ -60,7 +60,7 @@ impl<'a> UI {
         let msdf_shader = system.create_shader(vs,None,fs).expect("what?");
 
         Ok(UI {
-            system: Rc::clone(system),
+            system: system,
             msdf_shader: msdf_shader,
             font_protos: RefCell::new(Vec::new()),
             fonts: RefCell::new(Vec::new()),

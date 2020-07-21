@@ -2,11 +2,10 @@
 // Desmond Germans, 2020
 
 use e::*;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::cell::RefCell;
 
 struct App {
-    system: Rc<System>,
     running: bool,
 }
 
@@ -46,26 +45,22 @@ impl Handler for App {
 }
 
 fn main() {
-    let system = Rc::new(match System::new() {
+    let system = match System::new() {
         Ok(system) => system,
         Err(_) => { panic!("Cannot open system."); },
-    });
-
-    let app = Rc::new(RefCell::new(App {
-        system: Rc::clone(&system),
-        running: true,
-    }));
-
-    // create the window
-    system.create_window(
-        rect!(50,50,640,360),
-        "Test Window",
-        app.clone()
-    );
-
-    // event loop
-    while app.borrow().running {
-        system.wait();
-        system.pump();
+    };
+    {
+        let mut app = Arc::new(RefCell::new(App { running: true, }));
+        let mut generic_app: Arc<RefCell<dyn Handler>> = app;
+        let window = Window::new(
+            &system,
+            rect!(50,50,640,360),
+            "Test Window",
+            Arc::clone(&generic_app)
+        );
+        while app.borrow().running {
+            system.wait();
+            system.pump();
+        }
     }
 }

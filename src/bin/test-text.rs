@@ -20,7 +20,7 @@ impl Handler for App {
                 self.system.clear(vec4!(0.0,0.3,0.4,1.0));
                 gc.set_size(vec2!(size.x as f32,size.y as f32));
                 // TODO: set proper ppu in gc
-                self.text.draw(&gc,rect!(r.o.x as f32,r.o.y as f32,r.s.x as f32,r.s.y as f32));
+                self.text.draw(&gc,rect!(0.0,0.0,size.x as f32,size.y as f32));
             },
             Event::Close => {
                 self.running = false;
@@ -43,6 +43,7 @@ fn main() {
         });
 
         let text = Text::new(&ui,"Hello, World!");
+        text.set_color(vec4!(1.0,0.5,0.0,1.0));
 
         let app = Rc::new(RefCell::new(App {
             system: Rc::clone(&system),

@@ -6,8 +6,8 @@ use std::rc::Rc;
 use std::cell::Cell;
 use std::cell::RefCell;
 
-pub struct GC {
-    pub(crate) ui: Rc<UI>,
+pub struct GC<'a> {
+    pub(crate) ui: &'a UI<'a>,
     font: RefCell<Rc<Font>>,
     color: Cell<Vec4<f32>>,
     ppu: Cell<Vec2<f32>>,  // pixels per unit
@@ -16,10 +16,10 @@ pub struct GC {
 
 const SCREEN: Vec2<f32> = Vec2 { x: 1.0,y: 1.0, };
 
-impl<'a> GC {
-    pub fn new(ui: &Rc<UI>) -> Result<GC,SystemError> {
+impl<'a> GC<'a> {
+    pub fn new(ui: &'a UI<'a>) -> Result<GC<'a>,SystemError> {
         Ok(GC {
-            ui: Rc::clone(ui),
+            ui: ui,
             font: RefCell::new(ui.get_font("arialn.fnt",vec2!(14.0,14.0),0.0).expect("cannot load font")),
             color: Cell::new(vec4!(1.0,1.0,1.0,1.0)),
             ppu: Cell::new(SCREEN),
