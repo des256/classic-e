@@ -4,7 +4,6 @@
 use crate::*;
 use winapi::shared::windef::*;
 use winapi::shared::minwindef::*;
-use winapi::shared::basetsd::*;
 use winapi::um::winuser::*;
 use winapi::um::wingdi::*;
 use winapi::um::libloaderapi::*;
@@ -16,7 +15,6 @@ use std::ffi::CString;
 use std::ffi::c_void;
 use std::mem::transmute;
 use std::os::raw::c_int;
-use std::cell::Cell;
 use std::rc::Rc;
 
 const WGL_DRAW_TO_WINDOW_ARB: c_int = 0x2001;
@@ -53,17 +51,16 @@ type WglCreateContextAttribsARBProc = unsafe extern "C" fn(
 ) -> HGLRC;
 
 pub struct System {
-    hinstance: HINSTANCE,
-    pfid: i32,
-    pfd: PIXELFORMATDESCRIPTOR,
-    hglrc: HGLRC,
-    hidden_hdc: HDC,
-    hidden_hwnd: HWND,
-    queued_events: Vec<(HWND,Event)>,
+    pub(crate) hinstance: HINSTANCE,
+    pub(crate) pfid: i32,
+    pub(crate) pfd: PIXELFORMATDESCRIPTOR,
+    pub(crate) hglrc: HGLRC,
+    pub(crate) hidden_hdc: HDC,
+    pub(crate) hidden_hwnd: HWND,
     pub(crate) opengl: OpenGL,
 }
 
-fn win32_string(value: &str) -> Vec<u16> {
+pub(crate) fn win32_string(value: &str) -> Vec<u16> {
     OsStr::new(value).encode_wide().chain(once(0)).collect()
 }
 
@@ -73,12 +70,20 @@ unsafe extern "system" fn win32_proc(
     wparam: WPARAM,
     lparam: LPARAM
 ) -> LRESULT {
-    let system_ptr = GetWindowLongPtrW(hwnd,GWLP_USERDATA);
-    if system_ptr == 0 {
-        return DefWindowProcW(hwnd,message,wparam,lparam);
+    // HACK: WM_SIZE and WM_CLOSE appear not to be handled over the queue, so when the window proc gets these messages, send them back as WM_USER messages to the queue
+    match message {
+        WM_SIZE => {
+            PostMessageW(hwnd,WM_USER,WM_SIZE as usize,lparam);
+            0
+        },
+        WM_CLOSE => {
+            PostMessageW(hwnd,WM_USER,WM_CLOSE as usize,0);
+            0
+        },
+        _ => {
+            DefWindowProcW(hwnd,message,wparam,lparam)
+        }
     }
-    let system = system_ptr as *mut System;
-    (*system).handle_event(hwnd,message,wparam,lparam)
 }
 
 fn load_function(hinstance: HINSTANCE,name: &str) -> *mut c_void {
@@ -102,7 +107,7 @@ fn load_function(hinstance: HINSTANCE,name: &str) -> *mut c_void {
 }
 
 impl System {
-    pub fn new() -> Result<System,UIError> {
+    pub fn new() -> Result<System,SystemError> {
         let hinstance = unsafe { GetModuleHandleW(null_mut()) };
         let wc = WNDCLASSW {
             style: CS_HREDRAW | CS_VREDRAW | CS_OWNDC,
@@ -320,52 +325,49 @@ impl System {
             hglrc: hglrc,
             hidden_hdc: hidden_hdc,
             hidden_hwnd: hidden_hwnd,
-            windows: Vec::new(),
             opengl: opengl,
         })
     }
 
-    fn handle_event(&mut self,hwnd: HWND,message: UINT,wparam: WPARAM,lparam: LPARAM) -> LRESULT {
-
-        let hglrc = self.hglrc;
-        let wparam_hi = (wparam >> 16) as u16;
-        let wparam_lo = (wparam & 0x0000FFFF) as u16;
-        let lparam_hi = (lparam >> 16) as u16;
-        let lparam_lo = (lparam & 0x0000FFFF) as u16;
-        match message {
+    fn parse_message(&self,message: MSG) -> Option<(HWND,Event)> {
+        let wparam_hi = (message.wParam >> 16) as u16;
+        let wparam_lo = (message.wParam & 0x0000FFFF) as u16;
+        let lparam_hi = (message.lParam >> 16) as u16;
+        let lparam_lo = (message.lParam & 0x0000FFFF) as u16;
+        match message.message {
             WM_KEYDOWN => {
-                self.queued_events.push((hwnd,Event::KeyPress(wparam_lo as u8)));
+                Some((message.hwnd,Event::KeyPress(wparam_lo as u8)))
             },
             WM_KEYUP => {
-                self.queued_events.push((hwnd,Event::KeyRelease(wparam_lo as u8)));
+                Some((message.hwnd,Event::KeyRelease(wparam_lo as u8)))
             },
             WM_LBUTTONDOWN => {
-                self.queued_events.push((hwnd,Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Left));
+                Some((message.hwnd,Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Left)))
             },
             WM_LBUTTONUP => {
-                self.queued_events.push((hwnd,Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Left));
+                Some((message.hwnd,Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Left)))
             },
             WM_MBUTTONDOWN => {
-                self.queued_events.push((hwnd,Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Middle));
+                Some((message.hwnd,Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Middle)))
             },
             WM_MBUTTONUP => {
-                self.queued_events.push((hwnd,Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Middle));
+                Some((message.hwnd,Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Middle)))
             },
             WM_RBUTTONDOWN => {
-                self.queued_events.push((hwnd,Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Right));
+                Some((message.hwnd,Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Right)))
             },
             WM_RBUTTONUP => {
-                self.queued_events.push((hwnd,Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Right));
+                Some((message.hwnd,Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Right)))
             },
             WM_MOUSEWHEEL => {
                 if wparam_hi >= 0x8000 {
-                    self.queued_events.push((hwnd,Event::MouseWheel(Wheel::Down)));
+                    Some((message.hwnd,Event::MouseWheel(Wheel::Down)))
                 } else {
-                    self.queued_events.push((hwnd,Event::MouseWheel(Wheel::Up)));
+                    Some((message.hwnd,Event::MouseWheel(Wheel::Up)))
                 }
             },
             WM_MOUSEMOVE => {
-                self.queued_events.push((hwnd,Event::MouseMove(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize))));
+                Some((message.hwnd,Event::MouseMove(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize))))
             },
             WM_PAINT => {
                 let mut paintstruct = PAINTSTRUCT {
@@ -381,42 +383,36 @@ impl System {
                     fIncUpdate: FALSE,
                     rgbReserved: [0; 32],
                 };
-                unsafe { BeginPaint(hwnd,&mut paintstruct) };
-                self.queued_events.push((hwnd,Event::Paint(rect!(paintstruct.rcPaint.left,paintstruct.rcPaint.top,paintstruct.rcPaint.right - paintstruct.rcPaint.left,paintstruct.rcPaint.bottom - paintstruct.rcPaint.top))));
+                unsafe { BeginPaint(message.hwnd,&mut paintstruct) };
+                unsafe { EndPaint(message.hwnd,&paintstruct) };
+                Some((message.hwnd,Event::Paint(rect!(
+                    paintstruct.rcPaint.left as isize,
+                    paintstruct.rcPaint.top as isize,
+                    (paintstruct.rcPaint.right - paintstruct.rcPaint.left) as isize,
+                    (paintstruct.rcPaint.bottom - paintstruct.rcPaint.top) as isize
+                ))))
             },
-            WM_SIZE => {
-                self.queued_events.push((hwnd,Event::Resize(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize))));
-            },
-            WM_CLOSE => {
-                self.queued_events.push((hwnd,Event::Close));
+            WM_USER => {
+                match message.wParam as u32 {
+                    WM_SIZE => {
+                        Some((message.hwnd,Event::Resize(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize))))
+                    },
+                    WM_CLOSE => {
+                        Some((message.hwnd,Event::Close))
+                    },
+                    _ => {
+                        None
+                    }
+                }
             },
             _ => {
-                return unsafe { DefWindowProcW(hwnd,message,wparam,lparam) };
+                None
             },
-        }
-        0    
+        }   
     }
 
     pub fn poll<T: Pollable>(&self,targets: &T) -> T::Result {
-        // record all currently available messages
-        self.queued_events.clear();
-        let mut msg = MSG {
-            hwnd: null_mut(),
-            message: 0,
-            wParam: 0,
-            lParam: 0,
-            time: 0,
-            pt: POINT { x: 0,y: 0, },
-        };
-        unsafe {
-            while PeekMessageW(&mut msg,null_mut(),0,0,PM_REMOVE) != 0 {
-                TranslateMessage(&msg);
-                DispatchMessageW(&msg);
-            }
-        }
-
-        // and process them
-        targets.poll(&self)
+        targets.do_poll(&self)
     }
     
     pub fn wait(&self) {
@@ -515,16 +511,30 @@ impl Drop for System {
 
 pub trait Pollable {
     type Result;
-    fn poll(&self,system: &System) -> <Self as Pollable>::Result;
+    fn do_poll(&self,system: &System) -> <Self as Pollable>::Result;
 }
 
 impl Pollable for Rc<Window> {
     type Result = Vec<Event>;
-    fn poll(&self,system: &System) -> <Self as Pollable>::Result {
+    fn do_poll(&self,system: &System) -> <Self as Pollable>::Result {
         let mut events: Vec<Event> = Vec::new();
-        for hwnd_event in self.queued_events.iter() {
-            if hwnd_event.0 == self.hwnd {
-                events.push(hwnd_event.1);
+        let mut msg = MSG {
+            hwnd: null_mut(),
+            message: 0,
+            wParam: 0,
+            lParam: 0,
+            time: 0,
+            pt: POINT { x: 0,y: 0, },
+        };
+        unsafe {
+            while PeekMessageW(&mut msg,null_mut(),0,0,PM_REMOVE) != 0 {
+                TranslateMessage(&msg);
+                if let Some((hwnd,event)) = system.parse_message(msg) {
+                    if hwnd == self.hwnd {
+                        events.push(event);
+                    }
+                }
+                DispatchMessageW(&msg);
             }
         }
         events
@@ -533,30 +543,30 @@ impl Pollable for Rc<Window> {
 
 impl Pollable for Vec<Rc<Window>> {
     type Result = Vec<(Rc<Window>,Event)>;
-    fn poll(&self,system: &System) -> <Self as Pollable>::Result {
+    fn do_poll(&self,system: &System) -> <Self as Pollable>::Result {
         let mut events: Vec<(Rc<Window>,Event)> = Vec::new();
-        for hwnd_events in self.queued_events.iter() {
-            for window in self.iter() {
-                if hwnd_events.0 == window.hwnd {
-                    events.push((Rc::clone(window),event));
-                    break;
+        let mut msg = MSG {
+            hwnd: null_mut(),
+            message: 0,
+            wParam: 0,
+            lParam: 0,
+            time: 0,
+            pt: POINT { x: 0,y: 0, },
+        };
+        unsafe {
+            while PeekMessageW(&mut msg,null_mut(),0,0,PM_REMOVE) != 0 {
+                TranslateMessage(&msg);
+                if let Some((hwnd,event)) = system.parse_message(msg) {
+                    for window in self.iter() {
+                        if hwnd == window.hwnd {
+                            events.push((Rc::clone(window),event));
+                            break;
+                        }
+                    }    
                 }
+                DispatchMessageW(&msg);
             }
         }
         events
     }
 }
-
-/*
-unsafe { wglMakeCurrent(window.hdc,hglrc) };
-let size = window.size.get();
-println!("window size retrieved at WM_PAINT {}",size);
-unsafe { gl::Viewport(0,0,size.x as i32,size.y as i32) };
-unsafe { gl::Scissor(0,0,size.x as i32,size.y as i32) };
-self.graphics.set_window_size(size);
-let space = self.graphics.get_space();
-println!("space at WM_PAINT {}",space);
-unsafe { gl::Flush() };
-unsafe { SwapBuffers(window.hdc) };
-unsafe { EndPaint(hwnd,&paintstruct) };
-*/

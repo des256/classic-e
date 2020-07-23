@@ -4,6 +4,7 @@
 use crate::*;
 use std::fmt::{Debug,Display,Formatter};
 
+#[derive(Copy,Clone)]
 pub enum Mouse {
     Left,
     Middle,
@@ -30,6 +31,7 @@ impl Debug for Mouse {
     }
 }
 
+#[derive(Copy,Clone)]
 pub enum Wheel {
     Up,
     Down,
@@ -59,6 +61,7 @@ impl Debug for Wheel {
     }
 }
 
+#[derive(Copy,Clone)]
 pub enum Event {
     Paint(Rect<isize>),
     KeyPress(u8),

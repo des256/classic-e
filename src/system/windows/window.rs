@@ -4,23 +4,14 @@
 use crate::*;
 use winapi::shared::windef::*;
 use winapi::shared::minwindef::*;
-use winapi::shared::basetsd::*;
 use winapi::um::winuser::*;
 use winapi::um::wingdi::*;
-use winapi::um::libloaderapi::*;
 use std::ptr::null_mut;
-use std::ffi::OsStr;
-use std::os::windows::ffi::OsStrExt;
-use std::iter::once;
-use std::ffi::CString;
-use std::ffi::c_void;
-use std::mem::transmute;
-use std::os::raw::c_int;
 use std::cell::Cell;
 use std::rc::Rc;
 
-struct Window {
-    system: Rc<System>,
+pub struct Window {
+    pub(crate) system: Rc<System>,
     pub(crate) hwnd: HWND,
     pub(crate) hdc: HDC,
     pub size: Cell<Vec2<usize>>,
@@ -55,7 +46,7 @@ impl Window {
             rc.bottom - rc.top,
             null_mut(),
             null_mut(),
-            self.hinstance,
+            system.hinstance,
             null_mut())
         };
         if hwnd == null_mut() {
@@ -67,18 +58,23 @@ impl Window {
             hwnd: hwnd,
             hdc: hdc,
             size: Cell::new(vec2!(r.s.x as usize,r.s.y as usize)),
-        }
-        unsafe { SetPixelFormat(hdc,self.pfid,&self.pfd) };
-        unsafe {
-            SetWindowLongPtrW(
-                hwnd,
-                GWLP_USERDATA,
-                system as *mut System as LONG_PTR
-            )
         };
+        unsafe { SetPixelFormat(hdc,system.pfid,&system.pfd) };
         unsafe { ShowWindow(hwnd,SW_SHOW) };
         unsafe { SetForegroundWindow(hwnd) };
         unsafe { SetFocus(hwnd) };
         Ok(window)
+    }
+
+    pub fn begin_paint(&self) {
+        unsafe { wglMakeCurrent(self.hdc,self.system.hglrc) };
+        let size = self.size.get();
+        unsafe { gl::Viewport(0,0,size.x as i32,size.y as i32) };
+        unsafe { gl::Scissor(0,0,size.x as i32,size.y as i32) };
+    }
+
+    pub fn end_paint(&self) {
+        unsafe { gl::Flush() };
+        unsafe { SwapBuffers(self.hdc) };
     }
 }
