@@ -3,19 +3,8 @@
 
 use crate::*;
 use std::cmp::PartialEq;
-use std::fmt::Display;
-use std::fmt::Formatter;
-use std::fmt::Result;
-use std::fmt::Debug;
-use std::ops::Add;
-use std::ops::Sub;
-use std::ops::Neg;
-use std::ops::Mul;
-use std::ops::Div;
-use std::ops::AddAssign;
-use std::ops::SubAssign;
-use std::ops::MulAssign;
-use std::ops::DivAssign;
+use std::fmt::{Display,Formatter,Result,Debug};
+use std::ops::{Add,Sub,Neg,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign};
 
 #[derive(Copy,Clone)]
 pub struct Mat2x2<T> {

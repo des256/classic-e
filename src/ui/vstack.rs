@@ -6,17 +6,17 @@ use std::rc::Rc;
 use std::cell::Cell;
 use std::cell::RefCell;
 
-pub struct VStack<'a> {
-    ui: &'a UI<'a>,
+pub struct VStack {
+    ui: Rc<UI>,
     engine: WidgetEngine,
     widgets: RefCell<Vec<Box<dyn Widget>>>,
     ca: Cell<HAlignment>,
 }
 
-impl<'a> VStack<'a> {
-    pub fn new(ui: &'a UI<'a>) -> VStack<'a> {
+impl VStack {
+    pub fn new(ui: &Rc<UI>) -> VStack {
         VStack {
-            ui: ui,
+            ui: Rc::clone(ui),
             engine: WidgetEngine::new(),
             widgets: RefCell::new(Vec::new()),
             ca: Cell::new(HAlignment::Left),
@@ -28,8 +28,8 @@ impl<'a> VStack<'a> {
     }
 }
 
-impl<'a> Widget for VStack<'a> {
-    fn draw(&self,gc: &GC,space: Rect<f32>) {
+impl Widget for VStack {
+    fn draw(&self,gc: &Rc<GC>,space: Rect<f32>) {
         
     }
 

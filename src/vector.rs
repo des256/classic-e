@@ -3,19 +3,8 @@
 
 use crate::*;
 use std::cmp::PartialEq;
-use std::fmt::Display;
-use std::fmt::Formatter;
-use std::fmt::Debug;
-use std::fmt::Result;
-use std::ops::Add;
-use std::ops::Sub;
-use std::ops::Mul;
-use std::ops::Div;
-use std::ops::AddAssign;
-use std::ops::SubAssign;
-use std::ops::MulAssign;
-use std::ops::DivAssign;
-use std::ops::Neg;
+use std::fmt::{Display,Formatter,Debug,Result};
+use std::ops::{Add,Sub,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign,Neg};
 
 #[derive(Copy,Clone)]
 pub struct Vec2<T> {

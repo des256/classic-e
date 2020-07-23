@@ -3,64 +3,53 @@
 
 use e::*;
 use std::rc::Rc;
-use std::cell::RefCell;
-
-struct App {
-    system: Rc<System>,
-    ui: Rc<UI>,
-    text: Text,
-    running: bool,
-}
-
-impl Handler for App {
-    fn handle(&mut self,event: Event) {
-        match event {
-            Event::Paint(size,r) => {
-                let gc = GC::new(&self.ui).expect("what?");
-                self.system.clear(vec4!(0.0,0.3,0.4,1.0));
-                gc.set_size(vec2!(size.x as f32,size.y as f32));
-                // TODO: set proper ppu in gc
-                self.text.draw(&gc,rect!(0.0,0.0,size.x as f32,size.y as f32));
-            },
-            Event::Close => {
-                self.running = false;
-            },
-            _ => { },
-        }
-    }
-}
 
 fn main() {
-    {
-        let system = Rc::new(match System::new() {
-            Ok(system) => system,
-            Err(_) => { panic!("Cannot open system."); },
-        });
 
-        let ui = Rc::new(match UI::new(&system) {
-            Ok(ui) => ui,
-            Err(_) => { panic!("Cannot initialize UI."); },
-        });
+    // initialize system
+    let system = Rc::new(System::new().expect("Cannot open system."));
 
-        let text = Text::new(&ui,"Hello, World!");
-        text.set_color(vec4!(1.0,0.5,0.0,1.0));
+    // initialize UI
+    let ui = Rc::new(UI::new(&system).expect("Cannot open UI."));
 
-        let app = Rc::new(RefCell::new(App {
-            system: Rc::clone(&system),
-            ui: ui,
-            text: text,
-            running: true,
-        }));
+    // create window
+    let window = Rc::new(Window::new(
+        &system,
+        rect!(50,50,640,360),
+        "Test Window"
+    ).expect("unable to create window"));
 
-        system.create_window(
-            rect!(50,50,640,360),
-            "Test Window",
-            app.clone()
-        );
+    // create text widget
+    let text = Rc::new(Text::new(&ui,"Hello, World!").expect("Cannot create text."));
+    text.set_color(vec4!(1.0,0.5,0.0,1.0));
 
-        while app.borrow().running {
-            system.wait();
-            system.pump();
+    // main loop
+    let mut running = true;
+    while running {
+
+        // wait for event to happen
+        system.wait();
+
+        // process all current events
+        for event in system.poll(&window) {
+            match event {
+
+                Event::Paint(_) => {
+                    window.begin_paint();
+                    let gc = Rc::new(GC::new(&ui).expect("what?"));
+                    system.clear(vec4!(0.0,0.3,0.4,1.0));
+                    let size = window.size.get();
+                    gc.set_size(vec2!(size.x as f32,size.y as f32));
+                    text.draw(&gc,rect!(0.0,0.0,size.x as f32,size.y as f32));
+                    window.end_paint();
+                },
+
+                Event::Close => {
+                    running = false;
+                },
+
+                _ => { },
+            }
         }
     }
 }

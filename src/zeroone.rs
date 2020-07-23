@@ -1,8 +1,6 @@
 // E - ZeroOne
 // Desmond Germans, 2020
 
-use crate::*;
-
 pub trait Zero {
     fn zero() -> Self;
 }

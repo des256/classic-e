@@ -2,8 +2,10 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use gl::types::GLuint;
-use gl::types::GLenum;
+use gl::types::{
+    GLuint,
+    GLenum,
+};
 
 pub trait OpenGLFormat: Clone + Copy + Zero {
     fn gl_internal_format() -> GLuint;

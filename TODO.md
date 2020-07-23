@@ -87,30 +87,16 @@ Probably better to use i32/u32 everywhere. And most likely i32 is enough. Except
 
 Currently, events are passed via an enum to a closure, windows are owned by UI, and a Graphics object is used to load fonts, etc. Ideally, the UI object and the Graphics object are the same, and can be used ubiquitously. The closure can technically be a trait as well, one for each window.
 
-### UI, GC, etc.
+Improved, no ownership problems.
 
-UI is the system that abstracts away user interface access to the machine. It deals with windows, graphics abstraction, events, etc. UI supplies textures, vertex buffers, draw commands, image loading, and many more things.
+### System, UI, GC, etc.
 
-maybe: UI also provides a basic coordinate system abstraction that allows proper zooming/DPI/etc.
+System does hardware abstraction.
 
-On top of UI, you can build AR/VR, widgets, games, etc. each requiring a slightly different approach to things.
+On top of System resides UI. UI does fonts, widgets, event routing, etc.
 
-For widgets we use a GC that abstracts away fonts, rectangles, icons, and other 2D primitives. All built on top of UI.
+Around UI there is GC. GC does management of drawing for widgets.
 
-For games, we use Engine that abstracts away fonts, sprite sheets, map drawing and layers. All built on top of UI.
+On top of System resides Engine. Engine does game stuff. Engine manages layers, etc. This is done in G, not E.
 
-maybe: Fonts are more primitive, so they should be supported in UI instead.
-
-UI is a more suitable name for widgets than the underlying layer, so the underlying layer should be called Windows? System? Video? System.
-
-===
-
-System abstracts the windows, graphics, fonts, events, textures, vertex buffers, draw commands, image loading, etc.
-
-On top of System is UI for widgets, Engine for games, etc.
-
-### Give Window struct to the user?
-
-===
-
-Initialization by functions that concatenate we'll look at later.
+### 

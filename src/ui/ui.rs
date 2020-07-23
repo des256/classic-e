@@ -7,15 +7,15 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::prelude::*;
 
-pub struct UI<'a> {
-    pub system: &'a System,
+pub struct UI {
+    pub system: Rc<System>,
     pub msdf_shader: Shader,
     pub font_protos: RefCell<Vec<Rc<FontProto>>>,
     pub fonts: RefCell<Vec<Rc<Font>>>,
 }
 
-impl<'a> UI<'a> {
-    pub fn new(system: &'a System) -> Result<UI<'a>,SystemError> {
+impl UI {
+    pub fn new(system: &Rc<System>) -> Result<UI,SystemError> {
 
         let vs = r#"
             #version 420 core
@@ -60,7 +60,7 @@ impl<'a> UI<'a> {
         let msdf_shader = system.create_shader(vs,None,fs).expect("what?");
 
         Ok(UI {
-            system: system,
+            system: Rc::clone(system),
             msdf_shader: msdf_shader,
             font_protos: RefCell::new(Vec::new()),
             fonts: RefCell::new(Vec::new()),
@@ -72,9 +72,9 @@ impl<'a> UI<'a> {
         // see if font already exists, and refer to that
         {
             let fonts = self.fonts.borrow();
-            for font in &*fonts {
+            for font in fonts.iter() {
                 if (name == font.proto.name) && (size == font.size) && (spacing == font.spacing) {
-                    return Ok(Rc::clone(&font));
+                    return Ok(Rc::clone(font));
                 }
             }
         }
@@ -82,7 +82,7 @@ impl<'a> UI<'a> {
         // see if proto already exists, and create new font for it
         {
             let protos = self.font_protos.borrow();
-            for proto in &*protos {
+            for proto in protos.iter() {
                 if name == proto.name {
                     let font = Rc::new(Font::new(&proto,size,spacing));
                     self.fonts.borrow_mut().push(Rc::clone(&font));

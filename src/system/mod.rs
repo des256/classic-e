@@ -2,9 +2,7 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use std::fmt::Debug;
-use std::fmt::Display;
-use std::fmt::Formatter;
+use std::fmt::{Debug,Display,Formatter};
 
 pub enum Mouse {
     Left,

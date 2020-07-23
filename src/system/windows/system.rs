@@ -1,8 +1,7 @@
-// E - System - Windows
+// E - System - Windows - System
 // Desmond Germans, 2020
 
 use crate::*;
-use crate::prelude::*;
 use winapi::shared::windef::*;
 use winapi::shared::minwindef::*;
 use winapi::shared::basetsd::*;
@@ -53,22 +52,15 @@ type WglCreateContextAttribsARBProc = unsafe extern "C" fn(
     attribList: *const c_int
 ) -> HGLRC;
 
-struct Window<'a> {
-    hwnd: HWND,
-    hdc: HDC,
-    size: Cell<Vec2<usize>>,
-    handler: Box<dyn Fn(Event) + 'a>,
-}
-
-pub struct UI<'a> {
+pub struct System {
     hinstance: HINSTANCE,
     pfid: i32,
     pfd: PIXELFORMATDESCRIPTOR,
     hglrc: HGLRC,
     hidden_hdc: HDC,
     hidden_hwnd: HWND,
-    windows: Vec<Window<'a>>,
-    graphics: Rc<Graphics>,
+    queued_events: Vec<(HWND,Event)>,
+    pub(crate) opengl: OpenGL,
 }
 
 fn win32_string(value: &str) -> Vec<u16> {
@@ -81,12 +73,12 @@ unsafe extern "system" fn win32_proc(
     wparam: WPARAM,
     lparam: LPARAM
 ) -> LRESULT {
-    let ui_ptr = GetWindowLongPtrW(hwnd,GWLP_USERDATA);
-    if ui_ptr == 0 {
+    let system_ptr = GetWindowLongPtrW(hwnd,GWLP_USERDATA);
+    if system_ptr == 0 {
         return DefWindowProcW(hwnd,message,wparam,lparam);
     }
-    let ui = ui_ptr as *mut UI;
-    (*ui).handle_event(hwnd,message,wparam,lparam)
+    let system = system_ptr as *mut System;
+    (*system).handle_event(hwnd,message,wparam,lparam)
 }
 
 fn load_function(hinstance: HINSTANCE,name: &str) -> *mut c_void {
@@ -109,8 +101,8 @@ fn load_function(hinstance: HINSTANCE,name: &str) -> *mut c_void {
     pointer
 }
 
-impl<'a> UI<'a> {
-    pub fn new() -> Result<UI<'a>,UIError> {
+impl System {
+    pub fn new() -> Result<System,UIError> {
         let hinstance = unsafe { GetModuleHandleW(null_mut()) };
         let wc = WNDCLASSW {
             style: CS_HREDRAW | CS_VREDRAW | CS_OWNDC,
@@ -125,7 +117,7 @@ impl<'a> UI<'a> {
             lpszClassName: win32_string("E").as_ptr(),
         };
         if unsafe { RegisterClassW(&wc as *const WNDCLASSW) } == 0 {
-            return Err(UIError::Generic);
+            return Err(SystemError::Generic);
         }
 
         let fake_hwnd = unsafe {
@@ -145,7 +137,7 @@ impl<'a> UI<'a> {
             )
         };
         if fake_hwnd == null_mut() {
-            return Err(UIError::Generic);
+            return Err(SystemError::Generic);
         }
         let fake_hdc = unsafe { GetDC(fake_hwnd) };
         let fake_pfd = PIXELFORMATDESCRIPTOR {
@@ -181,23 +173,23 @@ impl<'a> UI<'a> {
         };
         let fake_pfdid = unsafe { ChoosePixelFormat(fake_hdc,&fake_pfd) };
         if fake_pfdid == 0 {
-            return Err(UIError::Generic);
+            return Err(SystemError::Generic);
         }
         if unsafe { SetPixelFormat(fake_hdc,fake_pfdid,&fake_pfd) } == 0 {
-            return Err(UIError::Generic);
+            return Err(SystemError::Generic);
         }
         let fake_hglrc = unsafe { wglCreateContext(fake_hdc) };
         if fake_hglrc == null_mut() {
-            return Err(UIError::Generic);
+            return Err(SystemError::Generic);
         }
         if unsafe { wglMakeCurrent(fake_hdc,fake_hglrc) } == 0 {
-            return Err(UIError::Generic);
+            return Err(SystemError::Generic);
         }
         let opengl32_hinstance = unsafe {
             LoadLibraryW(win32_string("opengl32.dll").as_ptr())
         };
         if opengl32_hinstance == null_mut() {
-            return Err(UIError::Generic);
+            return Err(SystemError::Generic);
         }
         let wgl_choose_pixel_format: WglChoosePixelFormatARBProc = unsafe {
             transmute(
@@ -230,7 +222,7 @@ impl<'a> UI<'a> {
             )
         };
         if hidden_hwnd == null_mut() {
-            return Err(UIError::Generic);
+            return Err(SystemError::Generic);
         }
         let hidden_hdc = unsafe { GetDC(hidden_hwnd) };
         let pfattribs = [
@@ -257,10 +249,10 @@ impl<'a> UI<'a> {
             &mut pfid,
             &mut numformats
         ) } == 0 {
-            return Err(UIError::Generic);
+            return Err(SystemError::Generic);
         }
         if numformats == 0 {
-            return Err(UIError::Generic);
+            return Err(SystemError::Generic);
         }
         let mut pfd = PIXELFORMATDESCRIPTOR {
             nSize: 40,
@@ -309,14 +301,19 @@ impl<'a> UI<'a> {
             )
         };
         if hglrc == null_mut() {
-            return Err(UIError::Generic);
+            return Err(SystemError::Generic);
         }
         unsafe { wglMakeCurrent(null_mut(),null_mut()) };
         if unsafe { wglMakeCurrent(hidden_hdc,hglrc) } == 0 {
-            return Err(UIError::Generic);
+            return Err(SystemError::Generic);
         }
 
-        Ok(UI {
+        let opengl = match OpenGL::new() {
+            Ok(opengl) => opengl,
+            Err(_) => { return Err(SystemError::Generic) },
+        };
+
+        Ok(System {
             hinstance: hinstance,
             pfid: pfid,
             pfd: pfd,
@@ -324,67 +321,51 @@ impl<'a> UI<'a> {
             hidden_hdc: hidden_hdc,
             hidden_hwnd: hidden_hwnd,
             windows: Vec::new(),
-            graphics: Rc::new(Graphics::new()),
+            opengl: opengl,
         })
-    }
-
-    fn find_window(&self,hwnd: HWND) -> Option<&Window<'a>> {
-        for window in &self.windows {
-            if window.hwnd == hwnd {
-                return Some(window);
-            }
-        }
-        None
     }
 
     fn handle_event(&mut self,hwnd: HWND,message: UINT,wparam: WPARAM,lparam: LPARAM) -> LRESULT {
 
         let hglrc = self.hglrc;
-
-        let window = self.find_window(hwnd);
-        if let None = window {
-            return unsafe { DefWindowProcW(hwnd,message,wparam,lparam) };
-        }
-        let window = window.unwrap();
-
         let wparam_hi = (wparam >> 16) as u16;
         let wparam_lo = (wparam & 0x0000FFFF) as u16;
         let lparam_hi = (lparam >> 16) as u16;
         let lparam_lo = (lparam & 0x0000FFFF) as u16;
         match message {
             WM_KEYDOWN => {
-                (window.handler)(Event::KeyPress(wparam_lo as u8));
+                self.queued_events.push((hwnd,Event::KeyPress(wparam_lo as u8)));
             },
             WM_KEYUP => {
-                (window.handler)(Event::KeyRelease(wparam_lo as u8));
+                self.queued_events.push((hwnd,Event::KeyRelease(wparam_lo as u8)));
             },
             WM_LBUTTONDOWN => {
-                (window.handler)(Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Left));
+                self.queued_events.push((hwnd,Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Left));
             },
             WM_LBUTTONUP => {
-                (window.handler)(Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Left));
+                self.queued_events.push((hwnd,Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Left));
             },
             WM_MBUTTONDOWN => {
-                (window.handler)(Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Middle));
+                self.queued_events.push((hwnd,Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Middle));
             },
             WM_MBUTTONUP => {
-                (window.handler)(Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Middle));
+                self.queued_events.push((hwnd,Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Middle));
             },
             WM_RBUTTONDOWN => {
-                (window.handler)(Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Right));
+                self.queued_events.push((hwnd,Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Right));
             },
             WM_RBUTTONUP => {
-                (window.handler)(Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Right));
+                self.queued_events.push((hwnd,Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Right));
             },
             WM_MOUSEWHEEL => {
                 if wparam_hi >= 0x8000 {
-                    (window.handler)(Event::MouseWheel(Wheel::Down));
+                    self.queued_events.push((hwnd,Event::MouseWheel(Wheel::Down)));
                 } else {
-                    (window.handler)(Event::MouseWheel(Wheel::Up));
+                    self.queued_events.push((hwnd,Event::MouseWheel(Wheel::Up)));
                 }
             },
             WM_MOUSEMOVE => {
-                (window.handler)(Event::MouseMove(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
+                self.queued_events.push((hwnd,Event::MouseMove(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize))));
             },
             WM_PAINT => {
                 let mut paintstruct = PAINTSTRUCT {
@@ -401,28 +382,13 @@ impl<'a> UI<'a> {
                     rgbReserved: [0; 32],
                 };
                 unsafe { BeginPaint(hwnd,&mut paintstruct) };
-                unsafe { wglMakeCurrent(window.hdc,hglrc) };
-                let size = window.size.get();
-                println!("window size retrieved at WM_PAINT {}",size);
-                unsafe { gl::Viewport(0,0,size.x as i32,size.y as i32) };
-                unsafe { gl::Scissor(0,0,size.x as i32,size.y as i32) };
-                self.graphics.set_window_size(size);
-                let space = self.graphics.get_space();
-                println!("space at WM_PAINT {}",space);
-                (window.handler)(Event::Paint(Rc::clone(&self.graphics),space));
-                unsafe { gl::Flush() };
-                unsafe { SwapBuffers(window.hdc) };
-                unsafe { EndPaint(hwnd,&paintstruct) };
+                self.queued_events.push((hwnd,Event::Paint(rect!(paintstruct.rcPaint.left,paintstruct.rcPaint.top,paintstruct.rcPaint.right - paintstruct.rcPaint.left,paintstruct.rcPaint.bottom - paintstruct.rcPaint.top))));
             },
             WM_SIZE => {
-                window.size.set(vec2!(lparam_lo as usize,lparam_hi as usize));
-                (window.handler)(Event::Resize(vec2!(
-                    lparam_lo as i16 as isize,
-                    lparam_hi as i16 as isize
-                )));
+                self.queued_events.push((hwnd,Event::Resize(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize))));
             },
             WM_CLOSE => {
-                (window.handler)(Event::Close);
+                self.queued_events.push((hwnd,Event::Close));
             },
             _ => {
                 return unsafe { DefWindowProcW(hwnd,message,wparam,lparam) };
@@ -431,64 +397,9 @@ impl<'a> UI<'a> {
         0    
     }
 
-    pub fn create_window(&mut self,r: Rect<isize>,title: &str,handler: impl Fn(Event) + 'a) -> bool {
-        let window_style = WS_OVERLAPPEDWINDOW;
-        let window_exstyle = WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
-        let mut rc = RECT {
-            left: r.o.x as i32,
-            right: r.o.x as i32 + r.s.x as i32,
-            top: r.o.y as i32,
-            bottom: r.o.y as i32 + r.s.y as i32,
-        };
-        unsafe {
-            AdjustWindowRectEx(
-                &mut rc as *mut RECT,
-                window_style,
-                FALSE,
-                window_exstyle
-            )
-        };
-        let hwnd = unsafe { CreateWindowExW(
-            window_exstyle,
-            win32_string("E").as_ptr(),
-            win32_string(title).as_ptr(),
-            WS_CLIPSIBLINGS | WS_CLIPCHILDREN | window_style,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            rc.right - rc.left,
-            rc.bottom - rc.top,
-            null_mut(),
-            null_mut(),
-            self.hinstance,
-            null_mut())
-        };
-        if hwnd == null_mut() {
-            return false;
-        }
-        let hdc = unsafe { GetDC(hwnd) };
-        println!("window size initiated to {}",vec2!(r.s.x as usize,r.s.y as usize));
-        let window = Window {
-            hwnd: hwnd,
-            hdc: hdc,
-            size: Cell::new(vec2!(r.s.x as usize,r.s.y as usize)),
-            handler: Box::new(handler),
-        };
-        unsafe { SetPixelFormat(hdc,self.pfid,&self.pfd) };
-        unsafe {
-            SetWindowLongPtrW(
-                hwnd,
-                GWLP_USERDATA,
-                self as *mut UI as LONG_PTR
-            )
-        };
-        unsafe { ShowWindow(hwnd,SW_SHOW) };
-        unsafe { SetForegroundWindow(hwnd) };
-        unsafe { SetFocus(hwnd) };
-        self.windows.push(window);
-        true
-    }
-
-    pub fn pump(&mut self) {
+    pub fn poll<T: Pollable>(&self,targets: &T) -> T::Result {
+        // record all currently available messages
+        self.queued_events.clear();
         let mut msg = MSG {
             hwnd: null_mut(),
             message: 0,
@@ -503,20 +414,95 @@ impl<'a> UI<'a> {
                 DispatchMessageW(&msg);
             }
         }
-    }
 
+        // and process them
+        targets.poll(&self)
+    }
+    
     pub fn wait(&self) {
         unsafe {
             WaitMessage();
         }
+    }    
+
+    pub fn clear<T>(&self,color: T) where Vec4<f32>: From<T> {
+        self.opengl.clear(color);
     }
 
-    pub fn graphics(&'a self) -> Rc<Graphics> {
-        Rc::clone(&self.graphics)
+    pub fn draw_triangle_fan(&self,n: i32) {
+        self.opengl.draw_triangle_fan(n);
+    }
+
+    pub fn draw_triangles(&self,n: i32) {
+        self.opengl.draw_triangles(n);
+    }
+
+    pub fn set_blend(&self,mode: BlendMode) {
+        self.opengl.set_blend(mode);
+    }
+
+    pub fn create_shader(&self,
+        vertex_src: &str,
+        geometry_src: Option<&str>,
+        fragment_src: &str,
+    ) -> Result<Shader,SystemError> {
+        self.opengl.create_shader(vertex_src,geometry_src,fragment_src)
+    }
+
+    pub fn bind_shader(&self,shader: &Shader) {
+        self.opengl.bind_shader(shader);
+    }
+
+    pub fn unbind_shader(&self) {
+        self.opengl.unbind_shader();
+    }
+
+    pub fn set_uniform<T: OpenGLUniform>(&self,name: &str,value: T) {
+        self.opengl.set_uniform(name,value);
+    }
+
+    pub fn create_vertexbuffer<T: Vertex>(&self,vertices: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
+        self.opengl.create_vertexbuffer(vertices)
+    }
+
+    pub fn bind_vertexbuffer<T: Vertex>(&self,vertexbuffer: &VertexBuffer<T>) {
+        self.opengl.bind_vertexbuffer(vertexbuffer);
+    }
+
+    pub fn unbind_vertexbuffer(&self) {
+        self.opengl.unbind_vertexbuffer();
+    }
+
+    pub fn create_framebuffer(&self,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
+        self.opengl.create_framebuffer(size)
+    }
+
+    pub fn bind_framebuffer(&self,framebuffer: &Framebuffer) {
+        self.opengl.bind_framebuffer(framebuffer);
+    }
+
+    pub fn unbind_framebuffer(&self) {
+        self.opengl.unbind_framebuffer();
+    }
+
+    pub fn bind_framebuffer_as_texture2d(&self,layer: usize,framebuffer: &Framebuffer) {
+        self.opengl.bind_framebuffer_as_texture2d(layer,framebuffer);
+    }
+
+    pub fn create_texture2d<T: OpenGLFormat>(&self,image: &Mat<T>) -> Result<Texture2D<T>,SystemError> {
+        self.opengl.create_texture2d(image)
+    }
+
+    pub fn bind_texture2d<T: OpenGLFormat>(&self,layer: usize,texture: &Texture2D<T>) {
+        self.opengl.bind_texture2d(layer,texture);
+    }
+
+    pub fn unbind_texture2d(&self,layer: usize) {
+        self.opengl.unbind_texture2d(layer);
     }
 }
 
-impl<'a> Drop for UI<'a> {
+impl Drop for System {
     fn drop(&mut self) {
         unsafe {
             wglMakeCurrent(null_mut(),null_mut());
@@ -526,3 +512,51 @@ impl<'a> Drop for UI<'a> {
         }
     }
 }
+
+pub trait Pollable {
+    type Result;
+    fn poll(&self,system: &System) -> <Self as Pollable>::Result;
+}
+
+impl Pollable for Rc<Window> {
+    type Result = Vec<Event>;
+    fn poll(&self,system: &System) -> <Self as Pollable>::Result {
+        let mut events: Vec<Event> = Vec::new();
+        for hwnd_event in self.queued_events.iter() {
+            if hwnd_event.0 == self.hwnd {
+                events.push(hwnd_event.1);
+            }
+        }
+        events
+    }
+}
+
+impl Pollable for Vec<Rc<Window>> {
+    type Result = Vec<(Rc<Window>,Event)>;
+    fn poll(&self,system: &System) -> <Self as Pollable>::Result {
+        let mut events: Vec<(Rc<Window>,Event)> = Vec::new();
+        for hwnd_events in self.queued_events.iter() {
+            for window in self.iter() {
+                if hwnd_events.0 == window.hwnd {
+                    events.push((Rc::clone(window),event));
+                    break;
+                }
+            }
+        }
+        events
+    }
+}
+
+/*
+unsafe { wglMakeCurrent(window.hdc,hglrc) };
+let size = window.size.get();
+println!("window size retrieved at WM_PAINT {}",size);
+unsafe { gl::Viewport(0,0,size.x as i32,size.y as i32) };
+unsafe { gl::Scissor(0,0,size.x as i32,size.y as i32) };
+self.graphics.set_window_size(size);
+let space = self.graphics.get_space();
+println!("space at WM_PAINT {}",space);
+unsafe { gl::Flush() };
+unsafe { SwapBuffers(window.hdc) };
+unsafe { EndPaint(hwnd,&paintstruct) };
+*/

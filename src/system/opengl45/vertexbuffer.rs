@@ -2,9 +2,11 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use gl::types::GLuint;
+use gl::types::{
+    GLuint,
+    GLvoid,
+};
 use std::ffi::c_void;
-use gl::types::GLvoid;
 
 pub trait Vertex {
     fn bind() -> Vec<GLuint>;

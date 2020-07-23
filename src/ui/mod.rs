@@ -2,6 +2,7 @@
 // Desmond Germans, 2020
 
 use crate::*;
+use std::rc::Rc;
 
 pub enum HAlignment {
     Left,
@@ -18,7 +19,7 @@ pub enum VAlignment {
 }
 
 pub trait Widget {
-    fn draw(&self,gc: &GC,r: Rect<f32>);
+    fn draw(&self,gc: &Rc<GC>,r: Rect<f32>);
     fn measure(&self) -> Vec2<f32>;
 }
 

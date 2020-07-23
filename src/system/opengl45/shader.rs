@@ -2,14 +2,20 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use std::ffi::CString;
-use std::ptr::null;
-use gl::types::GLint;
-use std::ffi::CStr;
-use gl::types::GLuint;
-use std::ptr::null_mut;
-use gl::types::GLchar;
-use gl::types::GLfloat;
+use std::ffi::{
+    CString,
+    CStr
+};
+use std::ptr::{
+    null,
+    null_mut,
+};
+use gl::types::{
+    GLint,
+    GLuint,
+    GLchar,
+    GLfloat,
+};
 
 pub struct Shader {
     pub(crate) sp: GLuint,

@@ -3,9 +3,7 @@
 
 use crate::*;
 use std::ops::Add;
-use std::fmt::Display;
-use std::fmt::Formatter;
-use std::fmt::Result;
+use std::fmt::{Display,Formatter,Result};
 
 #[derive(Copy,Clone)]
 pub struct Rect<T> {

@@ -3,8 +3,10 @@
 
 use crate::*;
 use gl::types::GLuint;
-use std::ffi::c_void;
-use std::marker::PhantomData;
+use std::{
+    ffi::c_void,
+    marker::PhantomData,
+};
 
 pub struct Texture2D<T: OpenGLFormat> {
     pub tex: GLuint,
