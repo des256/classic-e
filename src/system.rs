@@ -1,108 +1,185 @@
 // E - System
 // Desmond Germans, 2020
 
-use crate::*;
-use std::{
-    os::{
-        raw::{
-            c_void,
-            c_int,
+use {
+    crate::*,
+    std::{
+        os::{
+            raw::{
+                c_void,
+                c_int,
+            },
         },
-        unix::io::AsRawFd,
+        ffi::CString,
+        mem::transmute,
+        ptr::null_mut,
+        rc::Rc,
     },
-    ffi::{
-        CString,
-        CStr,
+};
+
+#[cfg(target_os="linux")]
+use {
+    std::{
+        os::unix::ui::AsRawFd,
+        ffi::CStr,
     },
-    mem::transmute,
-    ptr::null_mut,
-    rc::Rc,
+    x11::{
+        xlib::{
+            XID,
+            VisualID,
+            Display,
+            Bool,
+            XFree,
+            XSync,
+            False,
+            True,
+        },
+        glx::*,
+        glx::arb::*,
+    },
+    xcb::{
+        base::{
+            Connection,
+            EventQueueOwner,
+        },
+        xproto::{
+            intern_atom,
+            create_colormap,
+            COLORMAP_ALLOC_NONE,
+            CW_EVENT_MASK,
+            EVENT_MASK_EXPOSURE,
+            EVENT_MASK_KEY_PRESS,
+            EVENT_MASK_KEY_RELEASE,
+            EVENT_MASK_BUTTON_PRESS,
+            EVENT_MASK_BUTTON_RELEASE,
+            EVENT_MASK_POINTER_MOTION,
+            EVENT_MASK_STRUCTURE_NOTIFY,
+            CW_COLORMAP,
+            create_window,
+            WINDOW_CLASS_INPUT_OUTPUT,
+            change_property,
+            PROP_MODE_REPLACE,
+            ATOM_ATOM,
+            ExposeEvent,
+            KeyPressEvent,
+            KeyReleaseEvent,
+            ButtonPressEvent,
+            ButtonReleaseEvent,
+            MotionNotifyEvent,
+            ConfigureNotifyEvent,
+            ClientMessageEvent,
+            destroy_window,
+            EXPOSE,
+            KEY_PRESS,
+            KEY_RELEASE,
+            BUTTON_PRESS,
+            BUTTON_RELEASE,
+            MOTION_NOTIFY,
+            CONFIGURE_NOTIFY,
+            CLIENT_MESSAGE,
+        },
+        cast_event,
+        GenericEvent,
+    },
+    libc::{
+        epoll_create1,
+        epoll_ctl,
+        EPOLL_CTL_ADD,
+        epoll_event,
+        EPOLLIN,
+        epoll_wait,
+    },
 };
 #[cfg(target_os="windows")]
-use std::{
-    os::windows::ffi::OsStrExt,
-    ffi::OsStr,
-    iter::once,
-};
-#[cfg(target_os="linux")]
-use x11::{
-    xlib::{
-        XID,
-        VisualID,
-        Display,
-        Bool,
-        XFree,
-        XSync,
-        False,
-        True,
+use {
+    std::{
+        os::windows::ffi::OsStrExt,
+        ffi::OsStr,
+        iter::once,
     },
-    glx::*,
-    glx::arb::*,
-};
-#[cfg(target_os="linux")]
-use xcb::{
-    base::{
-        Connection,
-        EventQueueOwner,
-    },
-    xproto::{
-        intern_atom,
-        create_colormap,
-        COLORMAP_ALLOC_NONE,
-        CW_EVENT_MASK,
-        EVENT_MASK_EXPOSURE,
-        EVENT_MASK_KEY_PRESS,
-        EVENT_MASK_KEY_RELEASE,
-        EVENT_MASK_BUTTON_PRESS,
-        EVENT_MASK_BUTTON_RELEASE,
-        EVENT_MASK_POINTER_MOTION,
-        EVENT_MASK_STRUCTURE_NOTIFY,
-        CW_COLORMAP,
-        create_window,
-        WINDOW_CLASS_INPUT_OUTPUT,
-        change_property,
-        PROP_MODE_REPLACE,
-        ATOM_ATOM,
-        ExposeEvent,
-        KeyPressEvent,
-        KeyReleaseEvent,
-        ButtonPressEvent,
-        ButtonReleaseEvent,
-        MotionNotifyEvent,
-        ConfigureNotifyEvent,
-        ClientMessageEvent,
-        destroy_window,
-        EXPOSE,
-        KEY_PRESS,
-        KEY_RELEASE,
-        BUTTON_PRESS,
-        BUTTON_RELEASE,
-        MOTION_NOTIFY,
-        CONFIGURE_NOTIFY,
-        CLIENT_MESSAGE,
-    },
-    cast_event,
-    GenericEvent,
-};
-#[cfg(target_os="linux")]
-use libc::{
-    epoll_create1,
-    epoll_ctl,
-    EPOLL_CTL_ADD,
-    epoll_event,
-    EPOLLIN,
-    epoll_wait,
-};
-#[cfg(target_os="windows")]
-use winapi::{
-    shared::{
-        windef::*,
-        minwindef::*,
-    },
-    um::{
-        winuser::*,
-        wingdi::*,
-        libloaderapi::*,
+    winapi::{
+        shared::{
+            windef::{
+                HDC,
+                HGLRC,
+                HWND,
+                RECT,
+                POINT,
+            },
+            minwindef::{
+                UINT,
+                LPARAM,
+                WPARAM,
+                HINSTANCE,
+                LRESULT,
+                FLOAT,
+                BOOL,
+                FALSE,
+            },
+        },
+        um::{
+            winuser::{
+                PostMessageW,
+                WM_USER,
+                WM_SIZE,
+                WM_CLOSE,
+                WM_KEYDOWN,
+                WM_KEYUP,
+                WM_LBUTTONDOWN,
+                WM_LBUTTONUP,
+                WM_MBUTTONDOWN,
+                WM_MBUTTONUP,
+                WM_RBUTTONDOWN,
+                WM_RBUTTONUP,
+                WM_MOUSEWHEEL,
+                WM_MOUSEMOVE,
+                WM_PAINT,
+                DefWindowProcW,
+                WNDCLASSW,
+                CS_VREDRAW,
+                CS_HREDRAW,
+                CS_OWNDC,
+                LoadIconW,
+                LoadCursorW,
+                IDI_WINLOGO,
+                IDC_ARROW,
+                RegisterClassW,
+                CreateWindowExW,
+                WS_CLIPSIBLINGS,
+                WS_CLIPCHILDREN,
+                GetDC,
+                ReleaseDC,
+                DestroyWindow,
+                MSG,
+                BeginPaint,
+                EndPaint,
+                PAINTSTRUCT,
+                WaitMessage,
+                PeekMessageW,
+                PM_REMOVE,
+                TranslateMessage,
+                DispatchMessageW,
+            },
+            wingdi::{
+                wglGetProcAddress,
+                PIXELFORMATDESCRIPTOR,
+                PFD_DRAW_TO_WINDOW,
+                PFD_SUPPORT_OPENGL,
+                PFD_DOUBLEBUFFER,
+                PFD_TYPE_RGBA,
+                ChoosePixelFormat,
+                SetPixelFormat,
+                DescribePixelFormat,
+                wglCreateContext,
+                wglMakeCurrent,
+                wglDeleteContext,
+            },
+            libloaderapi::{
+                GetProcAddress,
+                GetModuleHandleW,
+                LoadLibraryW,
+            },
+        },
     },
 };
 
@@ -233,485 +310,464 @@ fn load_function(hinstance: HINSTANCE,name: &str) -> *mut c_void {
 }
 
 /// System context.
+#[cfg(target_os="linux")]
 pub struct System {
-#[cfg(target_os="linux")]
     pub(crate) connection: Connection,
-#[cfg(target_os="linux")]
     pub(crate) hidden_window: XID,
-#[cfg(target_os="linux")]
     pub(crate) context: GLXContext,
-#[cfg(target_os="linux")]
     pub(crate) wm_delete_window: u32,
-#[cfg(target_os="linux")]
     pub(crate) rootwindow: XID,
-#[cfg(target_os="linux")]
     pub(crate) visualid: VisualID,
-#[cfg(target_os="linux")]
     pub(crate) depth: u8,
-#[cfg(target_os="linux")]
     pub(crate) wm_protocols: u32,
-#[cfg(target_os="linux")]
     pub(crate) colormap: XID,
-#[cfg(target_os="linux")]
     _wm_motif_hints: u32,
-#[cfg(target_os="linux")]
     _wm_transient_for: u32,
-#[cfg(target_os="linux")]
     _wm_net_type: u32,
-#[cfg(target_os="linux")]
     _wm_net_type_utility: u32,
-#[cfg(target_os="linux")]
     _wm_net_state: u32,
-#[cfg(target_os="linux")]
     _wm_net_state_above: u32,
-#[cfg(target_os="linux")]
     epfd: c_int,
+}
 #[cfg(target_os="windows")]
+pub struct System {
     pub(crate) hinstance: HINSTANCE,
-#[cfg(target_os="windows")]
     pub(crate) pfid: i32,
-#[cfg(target_os="windows")]
     pub(crate) pfd: PIXELFORMATDESCRIPTOR,
-#[cfg(target_os="windows")]
     pub(crate) hglrc: HGLRC,
-#[cfg(target_os="windows")]
     pub(crate) hidden_hdc: HDC,
-#[cfg(target_os="windows")]
     pub(crate) hidden_hwnd: HWND,
 }
 
 impl System {
+    #[cfg(target_os="linux")]
     pub fn new() -> Result<System,SystemError> {
-#[cfg(target_os="linux")]
-        {
-            let connection = match Connection::connect_with_xlib_display() {
-                Ok((connection,_)) => connection,
-                Err(_) => { return Err(SystemError::Generic); },
-            };
-            connection.set_event_queue_owner(EventQueueOwner::Xcb);
-            let fd = connection.as_raw_fd();
+        let connection = match Connection::connect_with_xlib_display() {
+            Ok((connection,_)) => connection,
+            Err(_) => { return Err(SystemError::Generic); },
+        };
+        connection.set_event_queue_owner(EventQueueOwner::Xcb);
+        let fd = connection.as_raw_fd();
 
-            let (visual_screen,visualid,depth,fbconfig,glx_create_context_attribs) = {
-                let mut glxmaj: c_int = 0;
-                let mut glxmin: c_int = 0;
-                unsafe {
-                    if glXQueryVersion(
-                        connection.get_raw_dpy(),
-                        &mut glxmaj as *mut c_int,
-                        &mut glxmin as *mut c_int
-                    ) == 0 {
-                        return Err(SystemError::Generic);
-                    }
-                }
-                if (glxmaj * 100 + glxmin) < 103 {
-                    return Err(SystemError::Generic);
-                }
-                let attribs = [
-                    GLX_X_RENDERABLE,  1,
-                    GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
-                    GLX_RENDER_TYPE,   GLX_RGBA_BIT,
-                    GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR,
-                    GLX_RED_SIZE,      8,
-                    GLX_GREEN_SIZE,    8,
-                    GLX_BLUE_SIZE,     8,
-                    GLX_ALPHA_SIZE,    8,
-                    GLX_DEPTH_SIZE,    24,
-                    GLX_STENCIL_SIZE,  8,
-                    GLX_DOUBLEBUFFER,  1,
-                    0,
-                ];
-                let mut fbcount: c_int = 0;
-                let fbconfigs = unsafe {
-                    glXChooseFBConfig(
-                        connection.get_raw_dpy(),
-                        0,
-                        attribs.as_ptr(),
-                        &mut fbcount as *mut c_int
-                    )
-                };
-                if fbcount == 0 {
-                    return Err(SystemError::Generic);
-                }
-                let fbconfig = unsafe { *fbconfigs };
-                unsafe { XFree(fbconfigs as *mut c_void); }
-                let visual = unsafe { glXGetVisualFromFBConfig(connection.get_raw_dpy(),fbconfig) };
-                let screen = unsafe { (*visual).screen };
-                let visual_screen = connection.get_setup().roots().nth(screen as usize).unwrap();
-                let depth = unsafe { (*visual).depth } as u8;
-                let visualid = unsafe { (*visual).visualid };
-                let extensions = unsafe {
-                    CStr::from_ptr(glXQueryExtensionsString(connection.get_raw_dpy(),screen))
-                }.to_str().unwrap();
-                let mut found = false;
-                for extension in extensions.split(" ") {
-                    if extension == "GLX_ARB_create_context" {
-                        found = true;
-                        break;
-                    }
-                }
-                if !found {
-                    return Err(SystemError::Generic);
-                }
-                let glx_create_context_attribs: GlXCreateContextAttribsARBProc = unsafe {
-                    transmute(load_function("glXCreateContextAttribsARB"))
-                };
-                (visual_screen,visualid,depth,fbconfig,glx_create_context_attribs)
-            };
-
-            let protocols_com = intern_atom(&connection,false,"WM_PROTOCOLS");
-            let delete_window_com = intern_atom(&connection,false,"WM_DELETE_WINDOW");
-            let motif_hints_com = intern_atom(&connection,false,"_MOTIF_WM_HINTS");
-            let transient_for_com = intern_atom(&connection,false,"WM_TRANSIENT_FOR");
-            let net_type_com = intern_atom(&connection,false,"_NET_WM_TYPE");
-            let net_type_utility_com = intern_atom(&connection,false,"_NET_WM_TYPE_UTILITY");
-            let net_state_com = intern_atom(&connection,false,"_NET_WM_STATE");
-            let net_state_above_com = intern_atom(&connection,false,"_NET_WM_STATE_ABOVE");
-            let wm_protocols = match protocols_com.get_reply() {
-                Ok(protocols) => protocols.atom(),
-                Err(_) => { return Err(SystemError::Generic); },
-            };
-            let wm_delete_window = match delete_window_com.get_reply() {
-                Ok(delete_window) => delete_window.atom(),
-                Err(_) => { return Err(SystemError::Generic); },
-            };
-            let wm_motif_hints = match motif_hints_com.get_reply() {
-                Ok(motif_hints) => motif_hints.atom(),
-                Err(_) => { return Err(SystemError::Generic); },
-            };
-            let wm_transient_for = match transient_for_com.get_reply() {
-                Ok(transient_for) => transient_for.atom(),
-                Err(_) => { return Err(SystemError::Generic); },
-            };
-            let wm_net_type = match net_type_com.get_reply() {
-                Ok(net_type) => net_type.atom(),
-                Err(_) => { return Err(SystemError::Generic); },
-            };
-            let wm_net_type_utility = match net_type_utility_com.get_reply() {
-                Ok(net_type_utility) => net_type_utility.atom(),
-                Err(_) => { return Err(SystemError::Generic); },
-            };
-            let wm_net_state = match net_state_com.get_reply() {
-                Ok(net_state) => net_state.atom(),
-                Err(_) => { return Err(SystemError::Generic); },
-            };
-            let wm_net_state_above = match net_state_above_com.get_reply() {
-                Ok(net_state_above) => net_state_above.atom(),
-                Err(_) => { return Err(SystemError::Generic); },
-            };
-            
-            let rootwindow = visual_screen.root() as XID;
-            let hidden_window = connection.generate_id() as XID;
-            let colormap = connection.generate_id() as XID;
-            create_colormap(
-                &connection,
-                COLORMAP_ALLOC_NONE as u8,
-                colormap as u32,
-                rootwindow as u32,
-                visualid as u32
-            );
-            let values = [
-                (CW_EVENT_MASK,
-                    EVENT_MASK_EXPOSURE
-                    | EVENT_MASK_KEY_PRESS
-                    | EVENT_MASK_KEY_RELEASE
-                    | EVENT_MASK_BUTTON_PRESS
-                    | EVENT_MASK_BUTTON_RELEASE
-                    | EVENT_MASK_POINTER_MOTION
-                    | EVENT_MASK_STRUCTURE_NOTIFY
-                ),
-                (CW_COLORMAP,colormap as u32),
-            ];
-            create_window(
-                &connection,
-                depth,
-                hidden_window as u32,
-                rootwindow as u32,
-                0,0,1,1,
-                0,
-                WINDOW_CLASS_INPUT_OUTPUT as u16,
-                visualid as u32,
-                &values
-            );
+        let (visual_screen,visualid,depth,fbconfig,glx_create_context_attribs) = {
+            let mut glxmaj: c_int = 0;
+            let mut glxmin: c_int = 0;
             unsafe {
-                connection.flush();
-                XSync(connection.get_raw_dpy(),False);
+                if glXQueryVersion(
+                    connection.get_raw_dpy(),
+                    &mut glxmaj as *mut c_int,
+                    &mut glxmin as *mut c_int
+                ) == 0 {
+                    return Err(SystemError::Generic);
+                }
             }
-
-            let protocol_set = [wm_delete_window];
-            change_property(&connection,PROP_MODE_REPLACE as u8,hidden_window as u32,wm_protocols,ATOM_ATOM,32,&protocol_set);
-
-            let context = {
-                let context_attribs: [c_int; 5] = [
-                    GLX_CONTEXT_MAJOR_VERSION_ARB as c_int,4,
-                    GLX_CONTEXT_MINOR_VERSION_ARB as c_int,5,
+            if (glxmaj * 100 + glxmin) < 103 {
+                return Err(SystemError::Generic);
+            }
+            let attribs = [
+                GLX_X_RENDERABLE,  1,
+                GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+                GLX_RENDER_TYPE,   GLX_RGBA_BIT,
+                GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR,
+                GLX_RED_SIZE,      8,
+                GLX_GREEN_SIZE,    8,
+                GLX_BLUE_SIZE,     8,
+                GLX_ALPHA_SIZE,    8,
+                GLX_DEPTH_SIZE,    24,
+                GLX_STENCIL_SIZE,  8,
+                GLX_DOUBLEBUFFER,  1,
+                0,
+            ];
+            let mut fbcount: c_int = 0;
+            let fbconfigs = unsafe {
+                glXChooseFBConfig(
+                    connection.get_raw_dpy(),
                     0,
-                ];
-                let context = unsafe {
-                    glx_create_context_attribs(
-                        connection.get_raw_dpy(),
-                        fbconfig,
-                        null_mut(),
-                        True,
-                        &context_attribs[0] as *const c_int
-                    )
-                };
-                connection.flush();
-                unsafe { XSync(connection.get_raw_dpy(),False) };
-                if context.is_null() {
-                    return Err(SystemError::Generic);
-                }
-                if unsafe { glXIsDirect(connection.get_raw_dpy(),context) } == 0 {
-                    return Err(SystemError::Generic);
-                }
-                unsafe { glXMakeCurrent(connection.get_raw_dpy(),hidden_window,context) };
-                gl::load_with(|symbol| load_function(&symbol));
-                context
+                    attribs.as_ptr(),
+                    &mut fbcount as *mut c_int
+                )
             };
+            if fbcount == 0 {
+                return Err(SystemError::Generic);
+            }
+            let fbconfig = unsafe { *fbconfigs };
+            unsafe { XFree(fbconfigs as *mut c_void); }
+            let visual = unsafe { glXGetVisualFromFBConfig(connection.get_raw_dpy(),fbconfig) };
+            let screen = unsafe { (*visual).screen };
+            let visual_screen = connection.get_setup().roots().nth(screen as usize).unwrap();
+            let depth = unsafe { (*visual).depth } as u8;
+            let visualid = unsafe { (*visual).visualid };
+            let extensions = unsafe {
+                CStr::from_ptr(glXQueryExtensionsString(connection.get_raw_dpy(),screen))
+            }.to_str().unwrap();
+            let mut found = false;
+            for extension in extensions.split(" ") {
+                if extension == "GLX_ARB_create_context" {
+                    found = true;
+                    break;
+                }
+            }
+            if !found {
+                return Err(SystemError::Generic);
+            }
+            let glx_create_context_attribs: GlXCreateContextAttribsARBProc = unsafe {
+                transmute(load_function("glXCreateContextAttribsARB"))
+            };
+            (visual_screen,visualid,depth,fbconfig,glx_create_context_attribs)
+        };
 
-            let epfd = unsafe { epoll_create1(0) };
-            let mut epe = [epoll_event { events: EPOLLIN as u32,u64: 0, }];
-            unsafe { epoll_ctl(epfd,EPOLL_CTL_ADD,fd,epe.as_mut_ptr()) };
-
-            Ok(System {
-                connection: connection,
-                hidden_window: hidden_window,
-                context: context,
-                wm_delete_window: wm_delete_window,
-                rootwindow: rootwindow,
-                visualid: visualid,
-                depth: depth,
-                wm_protocols: wm_protocols,
-                colormap: colormap,
-                _wm_motif_hints: wm_motif_hints,
-                _wm_transient_for: wm_transient_for,
-                _wm_net_type: wm_net_type,
-                _wm_net_type_utility: wm_net_type_utility,
-                _wm_net_state: wm_net_state,
-                _wm_net_state_above: wm_net_state_above,
-                epfd: epfd,
-            })
+        let protocols_com = intern_atom(&connection,false,"WM_PROTOCOLS");
+        let delete_window_com = intern_atom(&connection,false,"WM_DELETE_WINDOW");
+        let motif_hints_com = intern_atom(&connection,false,"_MOTIF_WM_HINTS");
+        let transient_for_com = intern_atom(&connection,false,"WM_TRANSIENT_FOR");
+        let net_type_com = intern_atom(&connection,false,"_NET_WM_TYPE");
+        let net_type_utility_com = intern_atom(&connection,false,"_NET_WM_TYPE_UTILITY");
+        let net_state_com = intern_atom(&connection,false,"_NET_WM_STATE");
+        let net_state_above_com = intern_atom(&connection,false,"_NET_WM_STATE_ABOVE");
+        let wm_protocols = match protocols_com.get_reply() {
+            Ok(protocols) => protocols.atom(),
+            Err(_) => { return Err(SystemError::Generic); },
+        };
+        let wm_delete_window = match delete_window_com.get_reply() {
+            Ok(delete_window) => delete_window.atom(),
+            Err(_) => { return Err(SystemError::Generic); },
+        };
+        let wm_motif_hints = match motif_hints_com.get_reply() {
+            Ok(motif_hints) => motif_hints.atom(),
+            Err(_) => { return Err(SystemError::Generic); },
+        };
+        let wm_transient_for = match transient_for_com.get_reply() {
+            Ok(transient_for) => transient_for.atom(),
+            Err(_) => { return Err(SystemError::Generic); },
+        };
+        let wm_net_type = match net_type_com.get_reply() {
+            Ok(net_type) => net_type.atom(),
+            Err(_) => { return Err(SystemError::Generic); },
+        };
+        let wm_net_type_utility = match net_type_utility_com.get_reply() {
+            Ok(net_type_utility) => net_type_utility.atom(),
+            Err(_) => { return Err(SystemError::Generic); },
+        };
+        let wm_net_state = match net_state_com.get_reply() {
+            Ok(net_state) => net_state.atom(),
+            Err(_) => { return Err(SystemError::Generic); },
+        };
+        let wm_net_state_above = match net_state_above_com.get_reply() {
+            Ok(net_state_above) => net_state_above.atom(),
+            Err(_) => { return Err(SystemError::Generic); },
+        };
+        
+        let rootwindow = visual_screen.root() as XID;
+        let hidden_window = connection.generate_id() as XID;
+        let colormap = connection.generate_id() as XID;
+        create_colormap(
+            &connection,
+            COLORMAP_ALLOC_NONE as u8,
+            colormap as u32,
+            rootwindow as u32,
+            visualid as u32
+        );
+        let values = [
+            (CW_EVENT_MASK,
+                EVENT_MASK_EXPOSURE
+                | EVENT_MASK_KEY_PRESS
+                | EVENT_MASK_KEY_RELEASE
+                | EVENT_MASK_BUTTON_PRESS
+                | EVENT_MASK_BUTTON_RELEASE
+                | EVENT_MASK_POINTER_MOTION
+                | EVENT_MASK_STRUCTURE_NOTIFY
+            ),
+            (CW_COLORMAP,colormap as u32),
+        ];
+        create_window(
+            &connection,
+            depth,
+            hidden_window as u32,
+            rootwindow as u32,
+            0,0,1,1,
+            0,
+            WINDOW_CLASS_INPUT_OUTPUT as u16,
+            visualid as u32,
+            &values
+        );
+        unsafe {
+            connection.flush();
+            XSync(connection.get_raw_dpy(),False);
         }
+
+        let protocol_set = [wm_delete_window];
+        change_property(&connection,PROP_MODE_REPLACE as u8,hidden_window as u32,wm_protocols,ATOM_ATOM,32,&protocol_set);
+
+        let context = {
+            let context_attribs: [c_int; 5] = [
+                GLX_CONTEXT_MAJOR_VERSION_ARB as c_int,4,
+                GLX_CONTEXT_MINOR_VERSION_ARB as c_int,5,
+                0,
+            ];
+            let context = unsafe {
+                glx_create_context_attribs(
+                    connection.get_raw_dpy(),
+                    fbconfig,
+                    null_mut(),
+                    True,
+                    &context_attribs[0] as *const c_int
+                )
+            };
+            connection.flush();
+            unsafe { XSync(connection.get_raw_dpy(),False) };
+            if context.is_null() {
+                return Err(SystemError::Generic);
+            }
+            if unsafe { glXIsDirect(connection.get_raw_dpy(),context) } == 0 {
+                return Err(SystemError::Generic);
+            }
+            unsafe { glXMakeCurrent(connection.get_raw_dpy(),hidden_window,context) };
+            gl::load_with(|symbol| load_function(&symbol));
+            context
+        };
+
+        let epfd = unsafe { epoll_create1(0) };
+        let mut epe = [epoll_event { events: EPOLLIN as u32,u64: 0, }];
+        unsafe { epoll_ctl(epfd,EPOLL_CTL_ADD,fd,epe.as_mut_ptr()) };
+
+        Ok(System {
+            connection: connection,
+            hidden_window: hidden_window,
+            context: context,
+            wm_delete_window: wm_delete_window,
+            rootwindow: rootwindow,
+            visualid: visualid,
+            depth: depth,
+            wm_protocols: wm_protocols,
+            colormap: colormap,
+            _wm_motif_hints: wm_motif_hints,
+            _wm_transient_for: wm_transient_for,
+            _wm_net_type: wm_net_type,
+            _wm_net_type_utility: wm_net_type_utility,
+            _wm_net_state: wm_net_state,
+            _wm_net_state_above: wm_net_state_above,
+            epfd: epfd,
+        })
+    }
 
 #[cfg(target_os="windows")]
-        {
-            let hinstance = unsafe { GetModuleHandleW(null_mut()) };
-            let wc = WNDCLASSW {
-                style: CS_HREDRAW | CS_VREDRAW | CS_OWNDC,
-                lpfnWndProc: Some(win32_proc),
-                cbClsExtra: 0,
-                cbWndExtra: 0,
-                hInstance: hinstance,
-                hIcon: unsafe { LoadIconW(null_mut(),IDI_WINLOGO) },
-                hCursor: unsafe { LoadCursorW(null_mut(),IDC_ARROW) },
-                hbrBackground: null_mut(),
-                lpszMenuName: null_mut(),
-                lpszClassName: win32_string("E").as_ptr(),
-            };
-            if unsafe { RegisterClassW(&wc as *const WNDCLASSW) } == 0 {
-                return Err(SystemError::Generic);
-            }
-    
-            let fake_hwnd = unsafe {
-                CreateWindowExW(
-                    0,
-                    win32_string("E").as_ptr(),
-                    win32_string("").as_ptr(),
-                    WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-                    0,
-                    0,
-                    1,
-                    1,
-                    null_mut(),
-                    null_mut(),
-                    hinstance,
-                    null_mut()
-                )
-            };
-            if fake_hwnd == null_mut() {
-                return Err(SystemError::Generic);
-            }
-            let fake_hdc = unsafe { GetDC(fake_hwnd) };
-            let fake_pfd = PIXELFORMATDESCRIPTOR {
-                nSize: 40,
-                nVersion: 1,
-                dwFlags:
-                    PFD_DRAW_TO_WINDOW |
-                    PFD_SUPPORT_OPENGL |
-                    PFD_DOUBLEBUFFER,
-                iPixelType: PFD_TYPE_RGBA,
-                cColorBits: 32,
-                cRedBits: 0,
-                cRedShift: 0,
-                cGreenBits: 0,
-                cGreenShift: 0,
-                cBlueBits: 0,
-                cBlueShift: 0,
-                cAlphaBits: 8,
-                cAlphaShift: 0,
-                cAccumBits: 0,
-                cAccumRedBits: 0,
-                cAccumGreenBits: 0,
-                cAccumBlueBits: 0,
-                cAccumAlphaBits: 0,
-                cDepthBits: 24,
-                cStencilBits: 0,
-                cAuxBuffers: 0,
-                iLayerType: 0,
-                bReserved: 0,
-                dwLayerMask: 0,
-                dwVisibleMask: 0,
-                dwDamageMask: 0,
-            };
-            let fake_pfdid = unsafe { ChoosePixelFormat(fake_hdc,&fake_pfd) };
-            if fake_pfdid == 0 {
-                return Err(SystemError::Generic);
-            }
-            if unsafe { SetPixelFormat(fake_hdc,fake_pfdid,&fake_pfd) } == 0 {
-                return Err(SystemError::Generic);
-            }
-            let fake_hglrc = unsafe { wglCreateContext(fake_hdc) };
-            if fake_hglrc == null_mut() {
-                return Err(SystemError::Generic);
-            }
-            if unsafe { wglMakeCurrent(fake_hdc,fake_hglrc) } == 0 {
-                return Err(SystemError::Generic);
-            }
-            let opengl32_hinstance = unsafe {
-                LoadLibraryW(win32_string("opengl32.dll").as_ptr())
-            };
-            if opengl32_hinstance == null_mut() {
-                return Err(SystemError::Generic);
-            }
-            let wgl_choose_pixel_format: WglChoosePixelFormatARBProc = unsafe {
-                transmute(
-                    load_function(opengl32_hinstance,"wglChoosePixelFormatARB")
-                )
-            };
-            let wgl_create_context_attribs: WglCreateContextAttribsARBProc = unsafe {
-                transmute(
-                    load_function(opengl32_hinstance,"wglCreateContextAttribsARB")
-                )
-            };
-            gl::load_with(|s| load_function(opengl32_hinstance,s));
-            unsafe { wglDeleteContext(fake_hglrc) };
-            unsafe { ReleaseDC(fake_hwnd,fake_hdc) };
-            unsafe { DestroyWindow(fake_hwnd) };
-            let hidden_hwnd = unsafe {
-                CreateWindowExW(
-                    0,
-                    win32_string("E").as_ptr(),
-                    win32_string("").as_ptr(),
-                    WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-                    0,
-                    0,
-                    1,
-                    1,
-                    null_mut(),
-                    null_mut(),
-                    hinstance,
-                    null_mut()
-                )
-            };
-            if hidden_hwnd == null_mut() {
-                return Err(SystemError::Generic);
-            }
-            let hidden_hdc = unsafe { GetDC(hidden_hwnd) };
-            let pfattribs = [
-                WGL_DRAW_TO_WINDOW_ARB,gl::TRUE as c_int,
-                WGL_SUPPORT_OPENGL_ARB,gl::TRUE as c_int,
-                WGL_DOUBLE_BUFFER_ARB,gl::TRUE as c_int,
-                WGL_PIXEL_TYPE_ARB,WGL_TYPE_RGBA_ARB,
-                WGL_ACCELERATION_ARB,WGL_FULL_ACCELERATION_ARB,
-                WGL_COLOR_BITS_ARB,32,
-                WGL_ALPHA_BITS_ARB,8,
-                WGL_DEPTH_BITS_ARB,24,
-                WGL_STENCIL_BITS_ARB,8,
-                WGL_SAMPLE_BUFFERS_ARB,gl::TRUE as c_int,
-                WGL_SAMPLES_ARB,1,
-                0,
-            ];
-            let mut pfid = 0i32;
-            let mut numformats: UINT = 0;
-            if unsafe { wgl_choose_pixel_format(
-                hidden_hdc,
-                &pfattribs as *const c_int,
-                null_mut(),
-                1,
-                &mut pfid,
-                &mut numformats
-            ) } == 0 {
-                return Err(SystemError::Generic);
-            }
-            if numformats == 0 {
-                return Err(SystemError::Generic);
-            }
-            let mut pfd = PIXELFORMATDESCRIPTOR {
-                nSize: 40,
-                nVersion: 1,
-                dwFlags:
-                    PFD_DRAW_TO_WINDOW |
-                    PFD_SUPPORT_OPENGL |
-                    PFD_DOUBLEBUFFER,
-                iPixelType: PFD_TYPE_RGBA,
-                cColorBits: 32,
-                cRedBits: 0,
-                cRedShift: 0,
-                cGreenBits: 0,
-                cGreenShift: 0,
-                cBlueBits: 0,
-                cBlueShift: 0,
-                cAlphaBits: 8,
-                cAlphaShift: 0,
-                cAccumBits: 0,
-                cAccumRedBits: 0,
-                cAccumGreenBits: 0,
-                cAccumBlueBits: 0,
-                cAccumAlphaBits: 0,
-                cDepthBits: 24,
-                cStencilBits: 0,
-                cAuxBuffers: 0,
-                iLayerType: 0,
-                bReserved: 0,
-                dwLayerMask: 0,
-                dwVisibleMask: 0,
-                dwDamageMask: 0,
-            };
-            unsafe { DescribePixelFormat(hidden_hdc,pfid,40,&mut pfd) };
-            unsafe { SetPixelFormat(hidden_hdc,pfid,&pfd) };
-            let ctxattribs = [
-                WGL_CONTEXT_MAJOR_VERSION_ARB,4,
-                WGL_CONTEXT_MINOR_VERSION_ARB,5,
-                WGL_CONTEXT_PROFILE_MASK_ARB,WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-                0,
-            ];
-            let hglrc = unsafe {
-                wgl_create_context_attribs(
-                    hidden_hdc,
-                    null_mut(),
-                    &ctxattribs as *const c_int
-                )
-            };
-            if hglrc == null_mut() {
-                return Err(SystemError::Generic);
-            }
-            unsafe { wglMakeCurrent(null_mut(),null_mut()) };
-            if unsafe { wglMakeCurrent(hidden_hdc,hglrc) } == 0 {
-                return Err(SystemError::Generic);
-            }
-    
-            Ok(System {
-                hinstance: hinstance,
-                pfid: pfid,
-                pfd: pfd,
-                hglrc: hglrc,
-                hidden_hdc: hidden_hdc,
-                hidden_hwnd: hidden_hwnd,
-            })    
+    pub fn new() -> Result<System,SystemError> {
+        let hinstance = unsafe { GetModuleHandleW(null_mut()) };
+        let wc = WNDCLASSW {
+            style: CS_HREDRAW | CS_VREDRAW | CS_OWNDC,
+            lpfnWndProc: Some(win32_proc),
+            cbClsExtra: 0,
+            cbWndExtra: 0,
+            hInstance: hinstance,
+            hIcon: unsafe { LoadIconW(null_mut(),IDI_WINLOGO) },
+            hCursor: unsafe { LoadCursorW(null_mut(),IDC_ARROW) },
+            hbrBackground: null_mut(),
+            lpszMenuName: null_mut(),
+            lpszClassName: win32_string("E").as_ptr(),
+        };
+        if unsafe { RegisterClassW(&wc as *const WNDCLASSW) } == 0 {
+            return Err(SystemError::Generic);
         }
+
+        let fake_hwnd = unsafe {
+            CreateWindowExW(
+                0,
+                win32_string("E").as_ptr(),
+                win32_string("").as_ptr(),
+                WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
+                0,
+                0,
+                1,
+                1,
+                null_mut(),
+                null_mut(),
+                hinstance,
+                null_mut()
+            )
+        };
+        if fake_hwnd == null_mut() {
+            return Err(SystemError::Generic);
+        }
+        let fake_hdc = unsafe { GetDC(fake_hwnd) };
+        let fake_pfd = PIXELFORMATDESCRIPTOR {
+            nSize: 40,
+            nVersion: 1,
+            dwFlags:
+                PFD_DRAW_TO_WINDOW |
+                PFD_SUPPORT_OPENGL |
+                PFD_DOUBLEBUFFER,
+            iPixelType: PFD_TYPE_RGBA,
+            cColorBits: 32,
+            cRedBits: 0,
+            cRedShift: 0,
+            cGreenBits: 0,
+            cGreenShift: 0,
+            cBlueBits: 0,
+            cBlueShift: 0,
+            cAlphaBits: 8,
+            cAlphaShift: 0,
+            cAccumBits: 0,
+            cAccumRedBits: 0,
+            cAccumGreenBits: 0,
+            cAccumBlueBits: 0,
+            cAccumAlphaBits: 0,
+            cDepthBits: 24,
+            cStencilBits: 0,
+            cAuxBuffers: 0,
+            iLayerType: 0,
+            bReserved: 0,
+            dwLayerMask: 0,
+            dwVisibleMask: 0,
+            dwDamageMask: 0,
+        };
+        let fake_pfdid = unsafe { ChoosePixelFormat(fake_hdc,&fake_pfd) };
+        if fake_pfdid == 0 {
+            return Err(SystemError::Generic);
+        }
+        if unsafe { SetPixelFormat(fake_hdc,fake_pfdid,&fake_pfd) } == 0 {
+            return Err(SystemError::Generic);
+        }
+        let fake_hglrc = unsafe { wglCreateContext(fake_hdc) };
+        if fake_hglrc == null_mut() {
+            return Err(SystemError::Generic);
+        }
+        if unsafe { wglMakeCurrent(fake_hdc,fake_hglrc) } == 0 {
+            return Err(SystemError::Generic);
+        }
+        let opengl32_hinstance = unsafe {
+            LoadLibraryW(win32_string("opengl32.dll").as_ptr())
+        };
+        if opengl32_hinstance == null_mut() {
+            return Err(SystemError::Generic);
+        }
+        let wgl_choose_pixel_format: WglChoosePixelFormatARBProc = unsafe {
+            transmute(
+                load_function(opengl32_hinstance,"wglChoosePixelFormatARB")
+            )
+        };
+        let wgl_create_context_attribs: WglCreateContextAttribsARBProc = unsafe {
+            transmute(
+                load_function(opengl32_hinstance,"wglCreateContextAttribsARB")
+            )
+        };
+        gl::load_with(|s| load_function(opengl32_hinstance,s));
+        unsafe { wglDeleteContext(fake_hglrc) };
+        unsafe { ReleaseDC(fake_hwnd,fake_hdc) };
+        unsafe { DestroyWindow(fake_hwnd) };
+        let hidden_hwnd = unsafe {
+            CreateWindowExW(
+                0,
+                win32_string("E").as_ptr(),
+                win32_string("").as_ptr(),
+                WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
+                0,
+                0,
+                1,
+                1,
+                null_mut(),
+                null_mut(),
+                hinstance,
+                null_mut()
+            )
+        };
+        if hidden_hwnd == null_mut() {
+            return Err(SystemError::Generic);
+        }
+        let hidden_hdc = unsafe { GetDC(hidden_hwnd) };
+        let pfattribs = [
+            WGL_DRAW_TO_WINDOW_ARB,gl::TRUE as c_int,
+            WGL_SUPPORT_OPENGL_ARB,gl::TRUE as c_int,
+            WGL_DOUBLE_BUFFER_ARB,gl::TRUE as c_int,
+            WGL_PIXEL_TYPE_ARB,WGL_TYPE_RGBA_ARB,
+            WGL_ACCELERATION_ARB,WGL_FULL_ACCELERATION_ARB,
+            WGL_COLOR_BITS_ARB,32,
+            WGL_ALPHA_BITS_ARB,8,
+            WGL_DEPTH_BITS_ARB,24,
+            WGL_STENCIL_BITS_ARB,8,
+            WGL_SAMPLE_BUFFERS_ARB,gl::TRUE as c_int,
+            WGL_SAMPLES_ARB,1,
+            0,
+        ];
+        let mut pfid = 0i32;
+        let mut numformats: UINT = 0;
+        if unsafe { wgl_choose_pixel_format(
+            hidden_hdc,
+            &pfattribs as *const c_int,
+            null_mut(),
+            1,
+            &mut pfid,
+            &mut numformats
+        ) } == 0 {
+            return Err(SystemError::Generic);
+        }
+        if numformats == 0 {
+            return Err(SystemError::Generic);
+        }
+        let mut pfd = PIXELFORMATDESCRIPTOR {
+            nSize: 40,
+            nVersion: 1,
+            dwFlags:
+                PFD_DRAW_TO_WINDOW |
+                PFD_SUPPORT_OPENGL |
+                PFD_DOUBLEBUFFER,
+            iPixelType: PFD_TYPE_RGBA,
+            cColorBits: 32,
+            cRedBits: 0,
+            cRedShift: 0,
+            cGreenBits: 0,
+            cGreenShift: 0,
+            cBlueBits: 0,
+            cBlueShift: 0,
+            cAlphaBits: 8,
+            cAlphaShift: 0,
+            cAccumBits: 0,
+            cAccumRedBits: 0,
+            cAccumGreenBits: 0,
+            cAccumBlueBits: 0,
+            cAccumAlphaBits: 0,
+            cDepthBits: 24,
+            cStencilBits: 0,
+            cAuxBuffers: 0,
+            iLayerType: 0,
+            bReserved: 0,
+            dwLayerMask: 0,
+            dwVisibleMask: 0,
+            dwDamageMask: 0,
+        };
+        unsafe { DescribePixelFormat(hidden_hdc,pfid,40,&mut pfd) };
+        unsafe { SetPixelFormat(hidden_hdc,pfid,&pfd) };
+        let ctxattribs = [
+            WGL_CONTEXT_MAJOR_VERSION_ARB,4,
+            WGL_CONTEXT_MINOR_VERSION_ARB,5,
+            WGL_CONTEXT_PROFILE_MASK_ARB,WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+            0,
+        ];
+        let hglrc = unsafe {
+            wgl_create_context_attribs(
+                hidden_hdc,
+                null_mut(),
+                &ctxattribs as *const c_int
+            )
+        };
+        if hglrc == null_mut() {
+            return Err(SystemError::Generic);
+        }
+        unsafe { wglMakeCurrent(null_mut(),null_mut()) };
+        if unsafe { wglMakeCurrent(hidden_hdc,hglrc) } == 0 {
+            return Err(SystemError::Generic);
+        }
+
+        Ok(System {
+            hinstance: hinstance,
+            pfid: pfid,
+            pfd: pfd,
+            hglrc: hglrc,
+            hidden_hdc: hidden_hdc,
+            hidden_hwnd: hidden_hwnd,
+        })    
     }
 
 #[cfg(target_os="linux")]
-#[doc(hidden)]
     fn parse_xevent(&self,xcb_event: GenericEvent) -> Option<(XID,Event)> {
         let r = xcb_event.response_type() & !0x80;
         match r {
@@ -786,7 +842,6 @@ impl System {
     }
 
 #[cfg(target_os="windows")]
-#[doc(hidden)]
     fn parse_message(&self,message: MSG) -> Option<(HWND,Event)> {
         let wparam_hi = (message.wParam >> 16) as u16;
         let wparam_lo = (message.wParam & 0x0000FFFF) as u16;
@@ -873,13 +928,14 @@ impl System {
         targets.do_poll(&self)
     }
     
-    pub fn wait(&self) {
 #[cfg(target_os="linux")]
-        {
-            let mut epe = [epoll_event { events: EPOLLIN as u32,u64: 0, }];
-            unsafe { epoll_wait(self.epfd,epe.as_mut_ptr(),1,-1) };
-        }
+    pub fn wait(&self) {
+        let mut epe = [epoll_event { events: EPOLLIN as u32,u64: 0, }];
+        unsafe { epoll_wait(self.epfd,epe.as_mut_ptr(),1,-1) };
+    }
+
 #[cfg(target_os="windows")]
+    pub fn wait(&self) {
         unsafe {
             WaitMessage();
         }
@@ -887,14 +943,15 @@ impl System {
 }
 
 impl Drop for System {
-    fn drop(&mut self) {
 #[cfg(target_os="linux")]
-        {
-            unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),0,null_mut()); }
-            destroy_window(&self.connection,self.hidden_window as u32);
-            unsafe { glXDestroyContext(self.connection.get_raw_dpy(),self.context); }
-        }
+    fn drop(&mut self) {
+        unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),0,null_mut()); }
+        destroy_window(&self.connection,self.hidden_window as u32);
+        unsafe { glXDestroyContext(self.connection.get_raw_dpy(),self.context); }
+    }
+
 #[cfg(target_os="windows")]
+    fn drop(&mut self) {
         unsafe {
             wglMakeCurrent(null_mut(),null_mut());
             wglDeleteContext(self.hglrc);

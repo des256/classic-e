@@ -1,32 +1,60 @@
 // E - Window
 // Desmond Germans, 2020
 
-use crate::*;
-use std::{
-    cell::Cell,
-    rc::Rc
+use {
+    crate::*,
+    std::{
+        cell::Cell,
+        rc::Rc
+    },
 };
+
 #[cfg(target_os="linux")]
-use x11::xlib::{
-    XID,
-    XSync,
-    False
+use {
+    x11::xlib::{
+        XID,
+        XSync,
+        False,
+    },
+    x11::glx::*,
+    xcb::xproto::*,
 };
-#[cfg(target_os="linux")]
-use x11::glx::*;
-#[cfg(target_os="linux")]
-use xcb::xproto::*;
+
 #[cfg(target_os="windows")]
-use std::ptr::null_mut;
-#[cfg(target_os="windows")]
-use winapi::shared::{
-    windef::*,
-    minwindef::*,
-};
-#[cfg(target_os="windows")]
-use winapi::um::{
-    winuser::*,
-    wingdi::*,
+use {
+    std::ptr::null_mut,
+    winapi::shared::{
+        windef::{
+            HWND,
+            HDC,
+            RECT,
+        },
+        minwindef::FALSE,
+    },
+    winapi::um::{
+        winuser::{
+            WS_OVERLAPPEDWINDOW,
+            WS_EX_APPWINDOW,
+            WS_EX_WINDOWEDGE,
+            AdjustWindowRectEx,
+            CreateWindowExW,
+            WS_CLIPSIBLINGS,
+            WS_CLIPCHILDREN,
+            CW_USEDEFAULT,
+            GetDC,
+            ShowWindow,
+            SW_SHOW,
+            SetForegroundWindow,
+            SetFocus,
+            ReleaseDC,
+            DestroyWindow,
+        },
+        wingdi::{
+            SetPixelFormat,
+            wglMakeCurrent,
+            SwapBuffers,
+        },
+    },
 };
 
 /// OS window (for desktop environments).
@@ -39,7 +67,6 @@ pub struct Window {
     pub(crate) hwnd: HWND,
 #[cfg(target_os="windows")]
     pub(crate) hdc: HDC,
-
 }
 
 impl Window {
@@ -177,9 +204,18 @@ impl Window {
 
 impl Drop for Window {
     fn drop(&mut self) {
-        unsafe { glXMakeCurrent(self.system.connection.get_raw_dpy(),self.system.hidden_window,self.system.context); }
-        unmap_window(&self.system.connection,self.id as u32);
-        destroy_window(&self.system.connection,self.id as u32);
+#[cfg(target_os="linux")]
+        {
+            unsafe { glXMakeCurrent(self.system.connection.get_raw_dpy(),self.system.hidden_window,self.system.context); }
+            unmap_window(&self.system.connection,self.id as u32);
+            destroy_window(&self.system.connection,self.id as u32);
+        }
+#[cfg(target_os="windows")]
+        unsafe {
+            wglMakeCurrent(self.system.hidden_hdc,self.system.hglrc);
+            ReleaseDC(self.hwnd,self.hdc);
+            DestroyWindow(self.hwnd);
+        }
     }
 }
 
