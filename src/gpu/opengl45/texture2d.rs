@@ -18,7 +18,7 @@ pub struct Texture2D<T: gpu::OpenGLFormat> {
 
 impl<T: gpu::OpenGLFormat> Texture2D<T> {    
     /// (temporary) Create new 2D texture for a GPU.
-    pub fn new(gpu: &Rc<gpu::GPU>,image: &Mat<T>) -> Result<Texture2D<T>,SystemError> {
+    pub fn new(_gpu: &Rc<gpu::GPU>,image: &Mat<T>) -> Result<Texture2D<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);

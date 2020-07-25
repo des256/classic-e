@@ -170,6 +170,7 @@ pub fn init_vec2<T>(x: T,y: T) -> crate::Vec2<T> {
     }
 }
 
+/// Create 2-vector.
 #[macro_export]
 macro_rules! vec2 (
     ($x:expr,$y:expr) => (
@@ -392,6 +393,7 @@ pub fn init_vec3<T>(x: T,y: T,z: T) -> crate::Vec3<T> {
     }
 }
 
+/// Create 3-vector.
 #[macro_export]
 macro_rules! vec3 (
     ($x:expr,$y:expr,$z:expr) => (
@@ -619,6 +621,7 @@ pub fn init_vec4<T>(x: T,y: T,z: T,w: T) -> crate::Vec4<T> {
     }
 }
 
+/// Create 4-vector.
 #[macro_export]
 macro_rules! vec4 (
     ($x:expr,$y:expr,$z:expr,$w:expr) => (

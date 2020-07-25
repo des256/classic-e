@@ -11,12 +11,17 @@ use {
 
 #[cfg(target_os="linux")]
 use {
-    x11::xlib::{
-        XID,
-        XSync,
-        False,
+    x11::{
+        xlib::{
+            XID,
+            XSync,
+            False,
+        },
+        glx::{
+            glXMakeCurrent,
+            glXSwapBuffers,
+        },
     },
-    x11::glx::*,
     xcb::xproto::*,
 };
 

@@ -1,6 +1,8 @@
 // E - image - JPEG
 // Desmond Germans, 2020
 
+//! JPEG
+
 use crate::*;
 
 #[derive(Copy,Clone)]

@@ -27,7 +27,7 @@ pub struct Shader {
 
 impl Shader {
     /// Create new shader for a GPU.
-    pub fn new(gpu: &Rc<gpu::GPU>,vertex_src: &str,geometry_src: Option<&str>,fragment_src: &str) -> Result<Shader,SystemError> {
+    pub fn new(_gpu: &Rc<gpu::GPU>,vertex_src: &str,geometry_src: Option<&str>,fragment_src: &str) -> Result<Shader,SystemError> {
         unsafe {
             let vs = gl::CreateShader(gl::VERTEX_SHADER);
             let vcstr = CString::new(vertex_src.as_bytes()).unwrap();

@@ -8,7 +8,7 @@ use std::cell::RefCell;
 
 /// Text widget.
 pub struct Text {
-    ui: Rc<ui::UI>,
+    _ui: Rc<ui::UI>,
     engine: ui::WidgetEngine,
     font: RefCell<Rc<ui::Font>>,
     text: RefCell<String>,
@@ -18,7 +18,7 @@ pub struct Text {
 impl Text {
     pub fn new(ui: &Rc<ui::UI>,text: &str) -> Result<Text,SystemError> {
         Ok(Text {
-            ui: Rc::clone(ui),
+            _ui: Rc::clone(ui),
             engine: ui::WidgetEngine::new(),
             font: RefCell::new(ui.get_font("arialn.fnt",vec2!(14.0,14.0),0.0).expect("cannot load font")),
             text: RefCell::new(String::from(text)),

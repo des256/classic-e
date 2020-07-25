@@ -20,7 +20,7 @@ use {
 #[cfg(target_os="linux")]
 use {
     std::{
-        os::unix::ui::AsRawFd,
+        os::unix::io::AsRawFd,
         ffi::CStr,
     },
     x11::{
@@ -34,8 +34,36 @@ use {
             False,
             True,
         },
-        glx::*,
-        glx::arb::*,
+        glx::{
+            GLXFBConfig,
+            GLXContext,
+            glXGetProcAddress,
+            glXQueryVersion,
+            GLX_X_RENDERABLE,
+            GLX_DRAWABLE_TYPE,
+            GLX_WINDOW_BIT,
+            GLX_RENDER_TYPE,
+            GLX_RGBA_BIT,
+            GLX_X_VISUAL_TYPE,
+            GLX_TRUE_COLOR,
+            GLX_RED_SIZE,
+            GLX_GREEN_SIZE,
+            GLX_BLUE_SIZE,
+            GLX_ALPHA_SIZE,
+            GLX_DEPTH_SIZE,
+            GLX_STENCIL_SIZE,
+            GLX_DOUBLEBUFFER,
+            glXChooseFBConfig,
+            glXGetVisualFromFBConfig,
+            glXQueryExtensionsString,
+            glXIsDirect,
+            glXMakeCurrent,
+            glXDestroyContext,
+            arb::{
+                GLX_CONTEXT_MAJOR_VERSION_ARB,
+                GLX_CONTEXT_MINOR_VERSION_ARB,
+            },
+        },
     },
     xcb::{
         base::{
@@ -182,6 +210,90 @@ use {
         },
     },
 };
+
+/// Mouse button.
+#[derive(Copy,Clone)]
+pub enum Mouse {
+    Left,
+    Middle,
+    Right,
+}
+
+impl std::fmt::Display for Mouse {
+    fn fmt(&self,f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Mouse::Left => { write!(f,"left") },
+            Mouse::Middle => { write!(f,"middle") },
+            Mouse::Right => { write!(f,"right") },
+        }
+    }
+}
+
+impl std::fmt::Debug for Mouse {
+    fn fmt(&self,f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Mouse::Left => { write!(f,"left") },
+            Mouse::Middle => { write!(f,"middle") },
+            Mouse::Right => { write!(f,"right") },
+        }
+    }
+}
+
+/// Mouse wheel direction.
+#[derive(Copy,Clone)]
+pub enum Wheel {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+impl std::fmt::Display for Wheel {
+    fn fmt(&self,f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Wheel::Up => { write!(f,"up") },
+            Wheel::Down => { write!(f,"down") },
+            Wheel::Left => { write!(f,"left") },
+            Wheel::Right => { write!(f,"right") },
+        }
+    }
+}
+
+impl std::fmt::Debug for Wheel {
+    fn fmt(&self,f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Wheel::Up => { write!(f,"up") },
+            Wheel::Down => { write!(f,"down") },
+            Wheel::Left => { write!(f,"left") },
+            Wheel::Right => { write!(f,"right") },
+        }
+    }
+}
+
+/// User interaction event.
+#[derive(Copy,Clone)]
+pub enum Event {
+    Paint(Rect<isize>),
+    KeyPress(u8),
+    KeyRelease(u8),
+    MousePress(Vec2<isize>,Mouse),
+    MouseRelease(Vec2<isize>,Mouse),
+    MouseWheel(Wheel),
+    MouseMove(Vec2<isize>),
+    Resize(Vec2<isize>),
+    Close,
+}
+
+/// System error result.
+pub enum SystemError {
+    Generic,
+}
+
+impl std::fmt::Debug for SystemError {
+    fn fmt(&self,f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f,"generic error")
+    }
+}
 
 #[cfg(target_os="linux")]
 #[doc(hidden)]

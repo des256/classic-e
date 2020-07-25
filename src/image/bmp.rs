@@ -1,6 +1,8 @@
 // E - image - BMP
 // Desmond Germans, 2020
 
+//! BMP
+
 use crate::*;
 
 #[derive(Clone,Copy)]

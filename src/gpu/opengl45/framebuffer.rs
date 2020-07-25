@@ -14,7 +14,7 @@ pub struct Framebuffer {
 
 impl Framebuffer {
     /// Create new framebuffer for a GPU.
-    pub fn new(gpu: &Rc<gpu::GPU>,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
+    pub fn new(_gpu: &Rc<gpu::GPU>,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
         let mut fbo: GLuint = 0;
         let mut tex: GLuint = 0;
         unsafe {

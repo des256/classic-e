@@ -1,6 +1,8 @@
 // E - image - PBM
 // Desmond Germans, 2020
 
+//! PBM
+
 use crate::*;
 
 pub fn test(_src: &[u8]) -> Option<(u32,u32)> {

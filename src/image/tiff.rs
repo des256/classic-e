@@ -1,6 +1,8 @@
 // E - image - TIFF
 // Desmond Germans, 2020
 
+//! TIFF
+
 use crate::*;
 
 pub fn test(_src: &[u8]) -> Option<(u32,u32)> {

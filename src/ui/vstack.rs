@@ -8,18 +8,18 @@ use std::cell::RefCell;
 
 /// Vertical stack widget.
 pub struct VStack {
-    ui: Rc<ui::UI>,
-    engine: ui::WidgetEngine,
-    widgets: RefCell<Vec<Box<dyn ui::Widget>>>,
+    _ui: Rc<ui::UI>,
+    _engine: ui::WidgetEngine,
+    _widgets: RefCell<Vec<Box<dyn ui::Widget>>>,
     ca: Cell<ui::HAlignment>,
 }
 
 impl VStack {
     pub fn new(ui: &Rc<ui::UI>) -> VStack {
         VStack {
-            ui: Rc::clone(ui),
-            engine: ui::WidgetEngine::new(),
-            widgets: RefCell::new(Vec::new()),
+            _ui: Rc::clone(ui),
+            _engine: ui::WidgetEngine::new(),
+            _widgets: RefCell::new(Vec::new()),
             ca: Cell::new(ui::HAlignment::Left),
         }
     }
@@ -30,7 +30,7 @@ impl VStack {
 }
 
 impl ui::Widget for VStack {
-    fn draw(&self,gc: &Rc<ui::GC>,space: Rect<f32>) {
+    fn draw(&self,_gc: &Rc<ui::GC>,_space: Rect<f32>) {
         
     }
 

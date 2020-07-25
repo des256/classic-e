@@ -1,6 +1,8 @@
 // E - PNG
 // Desmond Germans, 2020
 
+//! PNG
+
 use crate::*;
 
 // Inflate algorithm

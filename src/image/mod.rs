@@ -15,6 +15,12 @@ pub mod tiff;
 pub mod xbm;
 pub mod webp;
 
+/// Test if a slice can be decoded.
+/// # Arguments
+/// * `src` - Slice to test.
+/// # Returns
+/// * `None` - Slice cannot be decoded.
+/// * `Some((width,height))` - Slice can be decoded and `width`,`height` are the dimensions of the image.
 #[allow(dead_code)]
 pub fn test(src: &[u8]) -> Option<(u32,u32)> {
     if let Some(size) = bmp::test(src) {
@@ -49,6 +55,14 @@ pub fn test(src: &[u8]) -> Option<(u32,u32)> {
     }
 }
 
+/// Decode a slice.
+/// # Generic
+/// * `T` - The resulting pixel format. 
+/// # Arguments
+/// * `src` - Slice to decode.
+/// # Returns
+/// * `None` - Slice could not be decoded.
+/// * `Some(mat)` - Slice is decoded into `mat`.
 #[allow(dead_code)]
 pub fn decode<T: Copy + Clone + Zero>(src: &[u8]) -> Option<Mat<T>> where T: From<Vec4<u8>>,Vec4<u8>: From<T> {
     if let Some(image) = bmp::decode::<T>(src) {

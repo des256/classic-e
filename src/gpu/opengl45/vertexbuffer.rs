@@ -53,7 +53,7 @@ pub struct VertexBuffer<T: GLVertex> {
 
 impl<T: GLVertex> VertexBuffer<T> {
     /// Create new vertex buffer for a GPU.
-    pub fn new(gpu: &Rc<gpu::GPU>,vertices: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
+    pub fn new(_gpu: &Rc<gpu::GPU>,vertices: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
         let mut vbo: GLuint = 0;
         unsafe {
             gl::GenBuffers(1,&mut vbo);

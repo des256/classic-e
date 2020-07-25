@@ -41,6 +41,7 @@ pub fn init_rect<T>(o: crate::Vec2<T>,s: crate::Vec2<T>) -> crate::Rect<T> {
     }
 }
 
+/// Create rectangle.
 #[macro_export]
 macro_rules! rect (
     ($o:expr,$s:expr) => (

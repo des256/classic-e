@@ -8,7 +8,7 @@ use std::cell::Cell;
 
 /// GPU context.
 pub struct GPU {
-    system: Rc<System>,
+    _system: Rc<System>,
     pub(crate) sp: Cell<GLuint>,
     pub(crate) vaas: Cell<Vec<GLuint>>,
 }
@@ -28,7 +28,7 @@ impl GPU {
             gl::BindVertexArray(vao);
         }
         Ok(GPU {
-            system: Rc::clone(system),
+            _system: Rc::clone(system),
             sp: Cell::new(0),
             vaas: Cell::new(Vec::new()),
         })
