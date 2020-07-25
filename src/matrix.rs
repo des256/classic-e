@@ -16,6 +16,10 @@ pub struct Mat2x2<T> {
 macro_rules! impl_mat2x2 (
     ($t:ty) => (
         impl Mat2x2<$t> {
+            /// Create 2x2-matrix.
+            /// # Arguments
+            /// * `x` - First column 2-vector.
+            /// * `y` - Last column 2-vector.
             pub fn new(x: &Vec2<$t>,y: &Vec2<$t>) -> Mat2x2<$t> {
                 Mat2x2 {
                     x: *x,
@@ -44,6 +48,7 @@ macro_rules! impl_mat2x2 (
         }
         
         impl Zero for Mat2x2<$t> {
+            /// Return empty 2x2-matrix.
             fn zero() -> Mat2x2<$t> {
                 Mat2x2 {
                     x: Vec2::zero(),
@@ -53,6 +58,7 @@ macro_rules! impl_mat2x2 (
         }
 
         impl One for Mat2x2<$t> {
+            /// Return unit 2x2-matrix.
             fn one() -> Mat2x2<$t> {
                 Mat2x2 {
                     x: vec2!(1.0,0.0),
@@ -203,6 +209,11 @@ pub struct Mat3x3<T> {
 macro_rules! impl_mat3x3 (
     ($t:ty) => (
         impl Mat3x3<$t> {
+            /// Create 3x3-matrix.
+            /// # Arguments
+            /// * `x` - First column 3-vector.
+            /// * `y` - Middle column 3-vector.
+            /// * `z` - Last column 3-vector.
             pub fn new(x: Vec3<$t>,y: Vec3<$t>,z: Vec3<$t>) -> Mat3x3<$t> {
                 Mat3x3 {
                     x: x,
@@ -211,6 +222,9 @@ macro_rules! impl_mat3x3 (
                 }
             }
 
+            /// Create scale matrix.
+            /// # Arguments
+            /// * `s` - Scale 3-vector.
             pub fn scale(s: Vec3<$t>) -> Mat3x3<$t> {
                 Mat3x3 {
                     x: vec3!(s.x,0.0,0.0),
@@ -219,6 +233,12 @@ macro_rules! impl_mat3x3 (
                 }
             }
 
+            /// Create rotation matrix from quaternion.
+            /// # Arguments
+            /// * `r` - Real component.
+            /// * `i` - I-component.
+            /// * `j` - J-component.
+            /// * `k` - K-component.
             pub fn rotate(r: $t,i: $t,j: $t,k: $t) -> Mat3x3<$t> {
                 let mut rr = r * r;
                 let mut ii = i * i;
@@ -247,6 +267,9 @@ macro_rules! impl_mat3x3 (
                 }
             }
 
+            /// Create pitch rotation matrix (rotation in YZ-plane).
+            /// # Arguments
+            /// * `a` - Angle (in radians).
             pub fn pitch(a: $t) -> Mat3x3<$t> {
                 let sa = a.sin();
                 let ca = a.cos();
@@ -257,6 +280,9 @@ macro_rules! impl_mat3x3 (
                 }
             }
 
+            /// Create yaw rotation matrix (rotation in XZ-plane).
+            /// # Arguments
+            /// * `a` - Angle (in radians).
             pub fn yaw(a: $t) -> Mat3x3<$t> {
                 let sa = a.sin();
                 let ca = a.cos();
@@ -267,6 +293,9 @@ macro_rules! impl_mat3x3 (
                 }
             }
 
+            /// Create roll rotation matrix (rotation in XY-plane).
+            /// # Arguments
+            /// * `a` - Angle (in radians).
             pub fn roll(a: $t) -> Mat3x3<$t> {
                 let sa = a.sin();
                 let ca = a.cos();
@@ -277,6 +306,8 @@ macro_rules! impl_mat3x3 (
                 }
             }
 
+            /// Create normal transformation matrix corresponding to
+            /// homogenous transformation.
             pub fn normal_from(m: Mat4x4<$t>) -> Mat3x3<$t> {
                 Mat3x3 {
                     x: vec3!(m.x.x,m.x.y,m.x.z),
@@ -285,6 +316,7 @@ macro_rules! impl_mat3x3 (
                 }.inverse().transpose()
             }
 
+            /// Calculate determinant of 3x3-matrix.
             pub fn det(&self) -> $t {
                 let a = self.x.x;
                 let b = self.y.x;
@@ -301,6 +333,7 @@ macro_rules! impl_mat3x3 (
                 a * cofa - b * cofb + c * cofc
             }
 
+            /// Calculate inverse of 3x3-matrix.
             pub fn inverse(&self) -> Mat3x3<$t> {
                 let a = self.x.x;
                 let b = self.y.x;
@@ -333,6 +366,7 @@ macro_rules! impl_mat3x3 (
                 }
             }
 
+            /// Calculate transpose of 3x3-matrix.
             pub fn transpose(&self) -> Mat3x3<$t> {
                 Mat3x3 {
                     x: vec3!(self.x.x,self.y.x,self.z.x),
@@ -363,6 +397,7 @@ macro_rules! impl_mat3x3 (
         }
         
         impl Zero for Mat3x3<$t> {
+            /// Return empty 3x3-matrix.
             fn zero() -> Mat3x3<$t> {
                 Mat3x3 {
                     x: Vec3::zero(),
@@ -373,6 +408,7 @@ macro_rules! impl_mat3x3 (
         }
 
         impl One for Mat3x3<$t> {
+            /// Return unit 3x3-matrix.
             fn one() -> Mat3x3<$t> {
                 Mat3x3 {
                     x: vec3!(1.0,0.0,0.0),
@@ -550,6 +586,12 @@ pub struct Mat4x4<T> {
 macro_rules! impl_mat4x4 (
     ($t:ty) => (
         impl Mat4x4<$t> {
+            /// Create 4x4-matrix.
+            /// # Arguments
+            /// * `x` - First column 4-vector.
+            /// * `y` - Second column 4-vector.
+            /// * `z` - Third column 4-vector.
+            /// * `w` - Last column 4-vector.
             pub fn new(x: Vec4<$t>,y: Vec4<$t>,z: Vec4<$t>,w: Vec4<$t>) -> Mat4x4<$t> {
                 Mat4x4 {
                     x: x,
@@ -558,7 +600,8 @@ macro_rules! impl_mat4x4 (
                     w: w,
                 }
             }
-        
+ 
+            /// Calculate determinant of 4x4-matrix.
             pub fn det(&self) -> $t {
                 let a = self.x.x;
                 let b = self.y.x;
@@ -589,6 +632,7 @@ macro_rules! impl_mat4x4 (
                 a * cofa - b * cofb + c * cofc - d * cofd
             }
 
+            /// Calculate inverse of 4x4-matrix.
             pub fn inverse(&self) -> Mat4x4<$t> {
                 let a = self.x.x;
                 let b = self.y.x;
@@ -649,6 +693,7 @@ macro_rules! impl_mat4x4 (
                 }
             }
 
+            /// Calculate transpose of 4x4-matrix.
             pub fn transpose(&self) -> Mat4x4<$t> {
                 Mat4x4 {
                     x: vec4!(self.x.x,self.y.x,self.z.x,self.w.x),
@@ -658,6 +703,14 @@ macro_rules! impl_mat4x4 (
                 }
             }
 
+            /// Create homogenous orthogonal projection matrix.
+            /// # Arguments
+            /// * `l` - Left (minimum X).
+            /// * `r` - Right (maximum X).
+            /// * `b` - Bottom (minimum Y).
+            /// * `t` - Top (maximum Y).
+            /// * `n` - Near (minimum Z).
+            /// * `f` - Far (maximum Z).
             pub fn ortho(l: $t,r: $t,b: $t,t: $t,n: $t,f: $t) -> Mat4x4<$t> {
                 let dx = r - l;
                 let dy = t - b;
@@ -673,6 +726,12 @@ macro_rules! impl_mat4x4 (
                 }
             }
 
+            /// Create homogenous perspective projection matrix.
+            /// # Arguments
+            /// * `fovy` - Vertical field-of-view angle (in radians).
+            /// * `aspect` - Horizontal/vertical aspect ratio.
+            /// * `n` - Near (minimum Z).
+            /// * `f` - Far (maximum Z).
             pub fn perspective(fovy: $t,aspect: $t,n: $t,f: $t) -> Mat4x4<$t> {
                 let q = 1.0 / (fovy.to_radians() / 2.0).tan();
                 Mat4x4 {
@@ -683,6 +742,9 @@ macro_rules! impl_mat4x4 (
                 }
             }
 
+            /// Create homogenous translation matrix.
+            /// # Arguments
+            /// * `t` - Translation 3-vector.
             pub fn translate(t: Vec3<$t>) -> Mat4x4<$t> {
                 Mat4x4 {
                     x: vec4!(1.0,0.0,0.0,0.0),
@@ -692,6 +754,9 @@ macro_rules! impl_mat4x4 (
                 }
             }
 
+            /// Create homogenous scaling matrix.
+            /// # Arguments
+            /// * `s` - Scaling 3-vector.
             pub fn scale(s: Vec3<$t>) -> Mat4x4<$t> {
                 Mat4x4 {
                     x: vec4!(s.x,0.0,0.0,0.0),
@@ -701,6 +766,12 @@ macro_rules! impl_mat4x4 (
                 }
             }
 
+            /// Create homogenous rotation matrix from quaternion.
+            /// # Arguments
+            /// * `r` - Real component.
+            /// * `i` - I-component.
+            /// * `j` - J-component.
+            /// * `k` - K-component.
             pub fn rotate(r: $t,i: $t,j: $t,k: $t) -> Mat4x4<$t> {
                 let mut rr = r * r;
                 let mut ii = i * i;
@@ -730,6 +801,9 @@ macro_rules! impl_mat4x4 (
                 }
             }
 
+            /// Create homogenous pitch rotation matrix (rotation in YZ-plane).
+            /// # Arguments
+            /// * `a` - Angle (in radians).
             pub fn pitch(a: $t) -> Mat4x4<$t> {
                 let sa = a.sin();
                 let ca = a.cos();
@@ -741,6 +815,9 @@ macro_rules! impl_mat4x4 (
                 }
             }
 
+            /// Create homogenous yaw rotation matrix (rotation in XZ-plane).
+            /// # Arguments
+            /// * `a` - Angle (in radians).
             pub fn yaw(a: $t) -> Mat4x4<$t> {
                 let sa = a.sin();
                 let ca = a.cos();
@@ -752,6 +829,9 @@ macro_rules! impl_mat4x4 (
                 }
             }
 
+            /// Create homogenous roll rotation matrix (rotation in XY-plane).
+            /// # Arguments
+            /// * `a` - Angle (in radians).
             pub fn roll(a: $t) -> Mat4x4<$t> {
                 let sa = a.sin();
                 let ca = a.cos();
@@ -786,6 +866,7 @@ macro_rules! impl_mat4x4 (
         }
         
         impl Zero for Mat4x4<$t> {
+            /// Return empty 4x4-matrix.
             fn zero() -> Mat4x4<$t> {
                 Mat4x4 {
                     x: Vec4::zero(),
@@ -797,6 +878,7 @@ macro_rules! impl_mat4x4 (
         }
 
         impl One for Mat4x4<$t> {
+            /// Return unit 4x4-matrix.
             fn one() -> Mat4x4<$t> {
                 Mat4x4 {
                     x: vec4!(1.0,0.0,0.0,0.0),

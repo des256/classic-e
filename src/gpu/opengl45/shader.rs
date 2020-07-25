@@ -26,7 +26,15 @@ pub struct Shader {
 }
 
 impl Shader {
-    /// Create new shader for a GPU.
+    /// Create new shader program.
+    /// # Arguments
+    /// * `gpu` - GPU context to create shader for.
+    /// * `vertex_src` - Vertex shader source.
+    /// * `geometry_src` - Geometry shader source (or `None`).
+    /// * `fragment_src` - Fragment shader source.
+    /// # Returns
+    /// * `Ok(Shader)` - The created shader program.
+    /// * `Err(SystemError)` - The shader progam could not be created.
     pub fn new(_gpu: &Rc<gpu::GPU>,vertex_src: &str,geometry_src: Option<&str>,fragment_src: &str) -> Result<Shader,SystemError> {
         unsafe {
             let vs = gl::CreateShader(gl::VERTEX_SHADER);
@@ -160,19 +168,24 @@ impl OpenGLUniform for u32 {
 }
 
 impl gpu::GPU {
-    /// (temporary) Bind shader.
+    /// (temporary) Bind current shader program.
+    /// # Arguments
+    /// * `shader` - Shader program.
     pub fn bind_shader(&self,shader: &Shader) {
         unsafe { gl::UseProgram(shader.sp); }
         self.sp.set(shader.sp);
     }
 
-    /// (temporary) Unbind shader.
+    /// (temporary) Unbind current shader program.
     pub fn unbind_shader(&self) {
         unsafe { gl::UseProgram(0); }
         self.sp.set(0);
     }
 
-    /// (temporary) Set uniform value for current shader.
+    /// (temporary) Set uniform value for current shader program.
+    /// # Arguments
+    /// * `name` - Variable name referenced in the shader program.
+    /// * `value` - Value of the uniform.
     pub fn set_uniform<T: OpenGLUniform>(&self,name: &str,value: T) {
         let cname = CString::new(name).unwrap();
         let res = unsafe { gl::GetUniformLocation(self.sp.get(),cname.as_ptr() as *const GLchar) };

@@ -17,7 +17,10 @@ pub struct Texture2D<T: gpu::OpenGLFormat> {
 }
 
 impl<T: gpu::OpenGLFormat> Texture2D<T> {    
-    /// (temporary) Create new 2D texture for a GPU.
+    /// (temporary) Create new 2D texture.
+    /// # Arguments
+    /// * `gpu` - GPU context to create texture for.
+    /// * `image` - Mat to upload to the GPU.
     pub fn new(_gpu: &Rc<gpu::GPU>,image: &Mat<T>) -> Result<Texture2D<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
@@ -48,6 +51,9 @@ impl<T: gpu::OpenGLFormat> Drop for Texture2D<T> {
 
 impl gpu::GPU {
     /// (temporary) Bind current 2D texture to a layer.
+    /// # Arguments
+    /// * `layer` - Texture layer to bind to.
+    /// * `texture` - Texture to bind.
     pub fn bind_texture2d<T: gpu::OpenGLFormat>(&self,layer: usize,texture: &Texture2D<T>) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + layer as u32);
@@ -56,6 +62,8 @@ impl gpu::GPU {
     }
 
     /// (temporary) Unbind current 2D texture to a layer.
+    /// # Arguments
+    /// * `layer` - Texture layer to unbind.
     pub fn unbind_texture2d(&self,layer: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + layer as u32);

@@ -22,11 +22,8 @@ pub use matrix::*;
 mod rect;
 pub use rect::*;
 
-mod system;
-pub use system::*;
-
-mod window;
-pub use window::*;
+mod platform;
+pub use platform::*;
 
 pub mod pixel;
 

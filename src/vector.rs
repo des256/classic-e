@@ -35,6 +35,7 @@ macro_rules! impl_vec2 (
         }
 
         impl Zero for Vec2<$t> {
+            /// Return 2-vector at the origin.
             fn zero() -> Vec2<$t> {
                 Vec2 {
                     x: <$t>::zero(),
@@ -140,21 +141,29 @@ macro_rules! impl_vec2_neg (
 macro_rules! impl_vec2_flt (
     ($t:ty) => (
         impl Vec2<$t> {
+            /// Calculate 2-vector dot-product.
+            /// # Arguments
+            /// * `a` - First 2-vector.
+            /// * `b` - Second 2-vector.
+            /// # Returns
+            /// The dot-product of `a` and `b`.
             pub fn dot(a: Vec2<$t>,b: Vec2<$t>) -> $t {
                 a.x * b.x + a.y * b.y
             }
 
+            /// Calculate length or absolute value of a 2-vector.
             pub fn abs(&self) -> $t {
                 (self.x * self.x + self.y * self.y).sqrt()
             }
 
-            pub fn norm(self) -> Vec2<$t> {
+            /// Calculate norm of 2-vector (scaled to unit length).
+            pub fn norm(&self) -> Vec2<$t> {
                 let d = self.abs();
                 if d != <$t>::zero() {
-                    self / d
+                    *self / d
                 }
                 else {
-                    self
+                    *self
                 }
             }
         }
@@ -231,6 +240,7 @@ macro_rules! impl_vec3 (
         }
 
         impl Zero for Vec3<$t> {
+            /// Return 3-vector at the origin.
             fn zero() -> Vec3<$t> {
                 Vec3 {
                     x: <$t>::zero(),
@@ -355,6 +365,12 @@ macro_rules! impl_vec3_neg (
 macro_rules! impl_vec3_flt (
     ($t:ty) => (
         impl Vec3<$t> {
+            /// Calculate 3-vector cross-product.
+            /// # Arguments
+            /// * `a` - First 3-vector.
+            /// * `b` - Second 3-vector.
+            /// # Returns
+            /// Cross-product of `a` and `b`.
             pub fn cross(a: Vec3<$t>,b: Vec3<$t>) -> Vec3<$t> {
                 Vec3 {
                     x: a.y * b.z - a.z * b.y,
@@ -363,21 +379,29 @@ macro_rules! impl_vec3_flt (
                 }
             }
 
+            /// Calculate 3-vector dot-product.
+            /// # Arguments
+            /// * `a` - First 3-vector.
+            /// * `b` - Second 3-vector.
+            /// # Returns
+            /// Dot-product of `a` and `b`.
             pub fn dot(a: Vec3<$t>,b: Vec3<$t>) -> $t {
                 a.x * b.x + a.y * b.y + a.z * b.z
             }
 
+            /// Calculate length or absolute value of a 3-vector.
             pub fn abs(&self) -> $t {
                 (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
             }
 
-            pub fn norm(self) -> Vec3<$t> {
+            /// Calculate norm of 3-vector (scaled to unit length).
+            pub fn norm(&self) -> Vec3<$t> {
                 let d = self.abs();
                 if d != <$t>::zero() {
-                    self / d
+                    *self / d
                 }
                 else {
-                    self
+                    *self
                 }
             }
         }
@@ -456,6 +480,7 @@ macro_rules! impl_vec4 (
         }
 
         impl Zero for Vec4<$t> {
+            /// Return 4-vector at the origin. 
             fn zero() -> Vec4<$t> {
                 Vec4 {
                     x: <$t>::zero(),
@@ -590,21 +615,29 @@ macro_rules! impl_vec4_neg (
 macro_rules! impl_vec4_flt (
     ($t:ty) => (
         impl Vec4<$t> {
+            /// Calculate 4-vector dot-product.
+            /// # Arguments
+            /// * `a` - First 4-vector.
+            /// * `b` - Second 4-vector.
+            /// # Returns
+            /// Dot-product of `a` and `b`.
             pub fn dot(a: Vec4<$t>,b: Vec4<$t>) -> $t {
                 a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w
             }
 
+            /// Calculate length or absolute value of 4-vector.
             pub fn abs(&self) -> $t {
                 (self.x * self.x + self.y * self.y + self.z * self.z + self.w * self.w).sqrt()
             }
 
-            pub fn norm(self) -> Vec4<$t> {
+            /// Calculate norm of 4-vector (scaled to unit length).
+            pub fn norm(&self) -> Vec4<$t> {
                 let d = self.abs();
                 if d != <$t>::zero() {
-                    self / d
+                    *self / d
                 }
                 else {
-                    self
+                    *self
                 }
             }
         }

@@ -20,7 +20,12 @@ pub enum BlendMode {
 }
 
 impl GPU {
-    /// Create new GPU context for a system.
+    /// Create new GPU context.
+    /// # Arguments
+    /// * `system` - System to create the GPU context for.
+    /// # Returns
+    /// * `Ok(GPU)` - The created GPU context.
+    /// * `Err(SystemError)` - The GPU context could not be created.
     pub fn new(system: &Rc<System>) -> Result<GPU,SystemError> {
         let mut vao: GLuint = 0;
         unsafe {
@@ -35,6 +40,8 @@ impl GPU {
     }
 
     /// (temporary) Clear GPU context.
+    /// # Arguments
+    /// * `color` - Color to clear with.
     pub fn clear<T>(&self,color: T) where Vec4<f32>: From<T> {
         let color = Vec4::<f32>::from(color);
         unsafe {
@@ -44,16 +51,22 @@ impl GPU {
     }
 
     /// (temporary) Draw triangle fan.
+    /// # Arguments
+    /// * `n` - Number of vertices.
     pub fn draw_triangle_fan(&self,n: i32) {
         unsafe { gl::DrawArrays(gl::TRIANGLE_FAN,0,n) };
     }
 
     /// (temporary) Draw traingles.
+    /// # Arguments
+    /// * `n` - Number of vertices.
     pub fn draw_triangles(&self,n: i32) {
         unsafe { gl::DrawArrays(gl::TRIANGLES,0,n) };
     }
 
     /// (temporary) Set blending mode.
+    /// # Arguments
+    /// * `mode` - Blending mode.
     pub fn set_blend(&self,mode: BlendMode) {
         match mode {
             BlendMode::Replace => unsafe { gl::Disable(gl::BLEND); },

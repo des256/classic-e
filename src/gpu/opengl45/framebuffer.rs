@@ -14,6 +14,12 @@ pub struct Framebuffer {
 
 impl Framebuffer {
     /// Create new framebuffer for a GPU.
+    /// # Arguments
+    /// * `gpu` - GPU to create the framebuffer for.
+    /// * `size` - Dimensions of the framebuffer.
+    /// # Returns
+    /// * `Ok(Framebuffer)` - The new framebuffer.
+    /// * `Err(SystemError)` - The framebuffer could not be created.
     pub fn new(_gpu: &Rc<gpu::GPU>,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
         let mut fbo: GLuint = 0;
         let mut tex: GLuint = 0;
@@ -50,7 +56,9 @@ impl Drop for Framebuffer {
 }
 
 impl gpu::GPU {
-    /// (temporary) Bind framebuffer as current target.
+    /// (temporary) Bind current framebuffer.
+    /// # Arguments
+    /// * `framebuffer` - The framebuffer to bind.
     pub fn bind_framebuffer(&self,framebuffer: &Framebuffer) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER,framebuffer.fbo);
@@ -59,14 +67,17 @@ impl gpu::GPU {
         }
     }
 
-    /// (temporary) Unbind framebuffer as current target.
+    /// (temporary) Unbind current framebuffer.
     pub fn unbind_framebuffer(&self) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER,0);
         }
     }
 
-    /// (temporary) Bind framebuffer as 2D texture.
+    /// (temporary) Bind framebuffer as current 2D texture.
+    /// # Arguments
+    /// * `layer` - Texture layer to bind to.
+    /// * `framebuffer` - The framebuffer to bind.
     pub fn bind_framebuffer_as_texture2d(&self,layer: usize,framebuffer: &Framebuffer) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + layer as u32);

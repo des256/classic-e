@@ -52,7 +52,10 @@ pub struct VertexBuffer<T: GLVertex> {
 }
 
 impl<T: GLVertex> VertexBuffer<T> {
-    /// Create new vertex buffer for a GPU.
+    /// (temporary) Create new vertex buffer.
+    /// # Arguments
+    /// * `gpu` - GPU context to create vertexbuffer for.
+    /// * `vertices` - Vector of vertices to upload.
     pub fn new(_gpu: &Rc<gpu::GPU>,vertices: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
         let mut vbo: GLuint = 0;
         unsafe {
@@ -77,6 +80,8 @@ impl<T: GLVertex> Drop for VertexBuffer<T> {
 
 impl gpu::GPU {
     /// (temporary) Bind current vertex buffer.
+    /// # Arguments
+    /// * `vertexbuffer` - Vertexbuffer to bind.
     pub fn bind_vertexbuffer<T: GLVertex>(&self,vertexbuffer: &VertexBuffer<T>) {
         unsafe { gl::BindBuffer(gl::ARRAY_BUFFER,vertexbuffer.vbo) };
         self.vaas.set(T::bind());
