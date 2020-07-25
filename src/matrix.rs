@@ -6,6 +6,7 @@ use std::cmp::PartialEq;
 use std::fmt::{Display,Formatter,Result,Debug};
 use std::ops::{Add,Sub,Neg,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign};
 
+/// Elementary 2x2 matrix.
 #[derive(Copy,Clone)]
 pub struct Mat2x2<T> {
     pub x: Vec2<T>,
@@ -188,16 +189,10 @@ macro_rules! impl_mat2x2 (
     );
 );
 
-#[allow(non_camel_case_types)]
-pub type f32_2x2 = Mat2x2<f32>;
-
 impl_mat2x2!(f32);
-
-#[allow(non_camel_case_types)]
-pub type f64_2x2 = Mat2x2<f64>;
-
 impl_mat2x2!(f64);
 
+/// Elementary 3x3 matrix.
 #[derive(Copy,Clone)]
 pub struct Mat3x3<T> {
     pub x: Vec3<T>,
@@ -540,16 +535,10 @@ macro_rules! impl_mat3x3 (
     );
 );
 
-#[allow(non_camel_case_types)]
-pub type f32_3x3 = Mat3x3<f32>;
-
 impl_mat3x3!(f32);
-
-#[allow(non_camel_case_types)]
-pub type f64_3x3 = Mat3x3<f64>;
-
 impl_mat3x3!(f64);
 
+/// Elementary 4x4 matrix.
 #[derive(Copy,Clone)]
 pub struct Mat4x4<T> {
     pub x: Vec4<T>,
@@ -1000,12 +989,5 @@ macro_rules! impl_mat4x4 (
     );
 );
 
-#[allow(non_camel_case_types)]
-pub type f32_4x4 = Mat4x4<f32>;
-
 impl_mat4x4!(f32);
-
-#[allow(non_camel_case_types)]
-pub type f64_4x4 = Mat4x4<f64>;
-
 impl_mat4x4!(f64);

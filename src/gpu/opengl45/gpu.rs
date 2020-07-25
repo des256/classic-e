@@ -1,35 +1,40 @@
-// E - OpenGL - Graphics
+// E - GPU (OpenGL 4.5) - GPU
 // Desmond Germans, 2020
 
 use crate::*;
+use std::rc::Rc;
 use gl::types::GLuint;
 use std::cell::Cell;
 
-pub struct OpenGL {
+/// GPU context.
+pub struct GPU {
+    system: Rc<System>,
     pub(crate) sp: Cell<GLuint>,
     pub(crate) vaas: Cell<Vec<GLuint>>,
 }
 
+/// (temporary) Blending mode.
 pub enum BlendMode {
     Replace,
     Over,
 }
 
-impl OpenGL {
-    pub(crate) fn new() -> Result<OpenGL,SystemError> {
-
+impl GPU {
+    /// Create new GPU context for a system.
+    pub fn new(system: &Rc<System>) -> Result<GPU,SystemError> {
         let mut vao: GLuint = 0;
         unsafe {
             gl::GenVertexArrays(1,&mut vao);
             gl::BindVertexArray(vao);
         }
-        
-        Ok(OpenGL {
+        Ok(GPU {
+            system: Rc::clone(system),
             sp: Cell::new(0),
             vaas: Cell::new(Vec::new()),
         })
     }
 
+    /// (temporary) Clear GPU context.
     pub fn clear<T>(&self,color: T) where Vec4<f32>: From<T> {
         let color = Vec4::<f32>::from(color);
         unsafe {
@@ -38,14 +43,17 @@ impl OpenGL {
         }
     }
 
+    /// (temporary) Draw triangle fan.
     pub fn draw_triangle_fan(&self,n: i32) {
         unsafe { gl::DrawArrays(gl::TRIANGLE_FAN,0,n) };
     }
 
+    /// (temporary) Draw traingles.
     pub fn draw_triangles(&self,n: i32) {
         unsafe { gl::DrawArrays(gl::TRIANGLES,0,n) };
     }
 
+    /// (temporary) Set blending mode.
     pub fn set_blend(&self,mode: BlendMode) {
         match mode {
             BlendMode::Replace => unsafe { gl::Disable(gl::BLEND); },

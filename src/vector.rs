@@ -6,6 +6,7 @@ use std::cmp::PartialEq;
 use std::fmt::{Display,Formatter,Debug,Result};
 use std::ops::{Add,Sub,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign,Neg};
 
+/// Elementary 2-vector.
 #[derive(Copy,Clone)]
 pub struct Vec2<T> {
     pub x: T,
@@ -161,6 +162,7 @@ macro_rules! impl_vec2_flt (
 );
 
 
+#[doc(hidden)]
 pub fn init_vec2<T>(x: T,y: T) -> crate::Vec2<T> {
     crate::Vec2 {
         x: x,
@@ -197,6 +199,7 @@ impl_vec2!(f64);
 impl_vec2_neg!(f64);
 impl_vec2_flt!(f64);
 
+/// Elementary 3-vector.
 #[derive(Copy,Clone)]
 pub struct Vec3<T> {
     pub x: T,
@@ -380,6 +383,7 @@ macro_rules! impl_vec3_flt (
     );
 );
 
+#[doc(hidden)]
 pub fn init_vec3<T>(x: T,y: T,z: T) -> crate::Vec3<T> {
     crate::Vec3 {
         x: x,
@@ -417,6 +421,7 @@ impl_vec3!(f64);
 impl_vec3_neg!(f64);
 impl_vec3_flt!(f64);
 
+/// Elementary 4-vector.
 #[derive(Copy,Clone)]
 pub struct Vec4<T> {
     pub x: T,
@@ -604,6 +609,7 @@ macro_rules! impl_vec4_flt (
     );
 );
 
+#[doc(hidden)]
 pub fn init_vec4<T>(x: T,y: T,z: T,w: T) -> crate::Vec4<T> {
     crate::Vec4 {
         x: x,

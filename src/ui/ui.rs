@@ -7,15 +7,17 @@ use std::cell::RefCell;
 use std::fs::File;
 use std::io::prelude::*;
 
+/// UI subsystem.
 pub struct UI {
     pub system: Rc<System>,
-    pub msdf_shader: Shader,
-    pub font_protos: RefCell<Vec<Rc<FontProto>>>,
-    pub fonts: RefCell<Vec<Rc<Font>>>,
+    pub gpu: Rc<gpu::GPU>,
+    pub msdf_shader: gpu::Shader,
+    pub font_protos: RefCell<Vec<Rc<ui::FontProto>>>,
+    pub fonts: RefCell<Vec<Rc<ui::Font>>>,
 }
 
 impl UI {
-    pub fn new(system: &Rc<System>) -> Result<UI,SystemError> {
+    pub fn new(system: &Rc<System>,gpu: &Rc<gpu::GPU>) -> Result<UI,SystemError> {
 
         let vs = r#"
             #version 420 core
@@ -57,17 +59,18 @@ impl UI {
             }
         "#;
 
-        let msdf_shader = system.create_shader(vs,None,fs).expect("what?");
+        let msdf_shader = gpu::Shader::new(&gpu,vs,None,fs).expect("what?");
 
         Ok(UI {
             system: Rc::clone(system),
+            gpu: Rc::clone(gpu),
             msdf_shader: msdf_shader,
             font_protos: RefCell::new(Vec::new()),
             fonts: RefCell::new(Vec::new()),
         })
     }
 
-    pub fn get_font(&self,name: &str,size: Vec2<f32>,spacing: f32) -> Result<Rc<Font>,SystemError> {
+    pub fn get_font(&self,name: &str,size: Vec2<f32>,spacing: f32) -> Result<Rc<ui::Font>,SystemError> {
 
         // see if font already exists, and refer to that
         {
@@ -84,7 +87,7 @@ impl UI {
             let protos = self.font_protos.borrow();
             for proto in protos.iter() {
                 if name == proto.name {
-                    let font = Rc::new(Font::new(&proto,size,spacing));
+                    let font = Rc::new(ui::Font::new(&proto,size,spacing));
                     self.fonts.borrow_mut().push(Rc::clone(&font));
                     return Ok(font);
                 }
@@ -102,7 +105,7 @@ impl UI {
         }
         let scale = (buffer[8] as u32) | ((buffer[9] as u32) << 8) | ((buffer[10] as u32) << 16) | ((buffer[11] as u32) << 24);
         let count = ((buffer[12] as u32) | ((buffer[13] as u32) << 8) | ((buffer[14] as u32) << 16) | ((buffer[15] as u32) << 24)) as usize;
-        let mut characters: Vec<Character> = Vec::new();
+        let mut characters: Vec<ui::Character> = Vec::new();
         for i in 0..count {
             let n = (buffer[16 + i * 32] as u32) | ((buffer[17 + i * 32] as u32) << 8) | ((buffer[18 + i * 32] as u32) << 16) | ((buffer[19 + i * 32] as u32) << 24);
             let rox = (buffer[20 + i * 32] as u32) | ((buffer[21 + i * 32] as u32) << 8) | ((buffer[22 + i * 32] as u32) << 16) | ((buffer[23 + i * 32] as u32) << 24);
@@ -112,24 +115,24 @@ impl UI {
             let ox = (buffer[36 + i * 32] as u32) | ((buffer[37 + i * 32] as u32) << 8) | ((buffer[38 + i * 32] as u32) << 16) | ((buffer[39 + i * 32] as u32) << 24);
             let oy = (buffer[40 + i * 32] as u32) | ((buffer[41 + i * 32] as u32) << 8) | ((buffer[42 + i * 32] as u32) << 16) | ((buffer[43 + i * 32] as u32) << 24);
             let adv = (buffer[44 + i * 32] as u32) | ((buffer[45 + i * 32] as u32) << 8) | ((buffer[46 + i * 32] as u32) << 16) | ((buffer[47 + i * 32] as u32) << 24);
-            characters.push(Character {
+            characters.push(ui::Character {
                 n: n,
                 r: rect!(rox as i32,roy as i32,rsx as i32,rsy as i32),
                 offset: vec2!(ox as i32,oy as i32),
                 advance: adv as i32,
             });
         }
-        let image = decode::<ARGB8>(&buffer[16 + count * 32..]).expect("unable to decode");
-        let texture = self.system.create_texture2d::<ARGB8>(&image).expect("unable to create font texture");
+        let image = image::decode::<pixel::ARGB8>(&buffer[16 + count * 32..]).expect("unable to decode");
+        let texture = gpu::Texture2D::<pixel::ARGB8>::new(&self.gpu,&image).expect("unable to create font texture");
 
-        let proto = Rc::new(FontProto {
+        let proto = Rc::new(ui::FontProto {
             name: name.to_string(),
             scale: scale,
             characters: characters,
             texture: texture,
         });
         self.font_protos.borrow_mut().push(Rc::clone(&proto));
-        let font = Rc::new(Font::new(&proto,size,spacing));
+        let font = Rc::new(ui::Font::new(&proto,size,spacing));
         self.fonts.borrow_mut().push(Rc::clone(&font));
         Ok(font)
     }

@@ -1,4 +1,4 @@
-// E - OpenGL
+// E - GPU (OpenGL 4.5)
 // Desmond Germans, 2020
 
 use crate::*;
@@ -7,6 +7,7 @@ use gl::types::{
     GLenum,
 };
 
+#[doc(hidden)]
 pub trait OpenGLFormat: Clone + Copy + Zero {
     fn gl_internal_format() -> GLuint;
     fn gl_format() -> GLuint;
@@ -181,44 +182,44 @@ impl OpenGLFormat for Vec4<f32> {
     fn gl_type() -> GLenum { gl::FLOAT }
 }
 
-impl OpenGLFormat for R3G3B2 {
+impl OpenGLFormat for pixel::R3G3B2 {
     fn gl_internal_format() -> GLuint { gl::RGB8 as GLuint }
     fn gl_format() -> GLenum { gl::RGB }
     fn gl_type() -> GLenum { gl::UNSIGNED_BYTE_3_3_2 }
 }
 
-impl OpenGLFormat for R5G6B5 {
+impl OpenGLFormat for pixel::R5G6B5 {
     fn gl_internal_format() -> GLuint { gl::RGB8 as GLuint }
     fn gl_format() -> GLenum { gl::BGR }
     fn gl_type() -> GLenum { gl::UNSIGNED_SHORT_5_6_5_REV }
 }
 
-impl OpenGLFormat for ARGB4 {
+impl OpenGLFormat for pixel::ARGB4 {
     fn gl_internal_format() -> GLuint { gl::RGBA8 as GLuint }
     fn gl_format() -> GLenum { gl::BGRA }
     fn gl_type() -> GLenum { gl::UNSIGNED_SHORT_4_4_4_4_REV }
 }
 
-impl OpenGLFormat for A1RGB5 {
+impl OpenGLFormat for pixel::A1RGB5 {
     fn gl_internal_format() -> GLuint { gl::RGBA8 as GLuint }
     fn gl_format() -> GLenum { gl::BGRA }
     fn gl_type() -> GLenum { gl::UNSIGNED_SHORT_1_5_5_5_REV }
 }
 
-impl OpenGLFormat for RGB8 {
+impl OpenGLFormat for pixel::RGB8 {
     fn gl_internal_format() -> GLuint { gl::RGB8 as GLuint }
     fn gl_format() -> GLenum { gl::BGR }
     fn gl_type() -> GLenum { gl::UNSIGNED_BYTE }
 }
 
-impl OpenGLFormat for ARGB8 {
+impl OpenGLFormat for pixel::ARGB8 {
     fn gl_internal_format() -> GLuint { gl::RGBA8 as GLuint }
     fn gl_format() -> GLenum { gl::BGRA }
     fn gl_type() -> GLenum { gl::UNSIGNED_INT_8_8_8_8_REV }
 }
 
-mod opengl;
-pub use opengl::*;
+mod gpu;
+pub use gpu::*;
 
 mod shader;
 pub use shader::*;

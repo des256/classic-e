@@ -1,6 +1,8 @@
 // E - image
 // Desmond Germans, 2020
 
+//! Image formats.
+
 use crate::*;
 
 pub mod bmp;

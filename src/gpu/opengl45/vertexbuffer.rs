@@ -6,14 +6,18 @@ use gl::types::{
     GLuint,
     GLvoid,
 };
-use std::ffi::c_void;
+use std::{
+    ffi::c_void,
+    rc::Rc,
+};
 
-pub trait Vertex {
+#[doc(hidden)]
+pub trait GLVertex {
     fn bind() -> Vec<GLuint>;
     fn len() -> isize;
 }
 
-impl Vertex for Vec2<f32> {
+impl GLVertex for Vec2<f32> {
     fn bind() -> Vec<GLuint> {
         unsafe {
             gl::EnableVertexAttribArray(0);
@@ -27,7 +31,7 @@ impl Vertex for Vec2<f32> {
     }
 }
 
-impl Vertex for Vec4<f32> {
+impl GLVertex for Vec4<f32> {
     fn bind() -> Vec<GLuint> {
         unsafe {
             gl::EnableVertexAttribArray(0);
@@ -41,21 +45,15 @@ impl Vertex for Vec4<f32> {
     }
 }
 
-pub struct VertexBuffer<T: Vertex> {
+/// Vertex buffer GPU resource.
+pub struct VertexBuffer<T: GLVertex> {
     _vertices: Vec<T>,
     vbo: GLuint,
 }
 
-impl<T: Vertex> Drop for VertexBuffer<T> {
-    fn drop(&mut self) {
-        unsafe {
-            gl::DeleteBuffers(1,&self.vbo);
-        }
-    }
-}
-
-impl OpenGL {
-    pub(crate) fn _create_vertexbuffer<T: Vertex>(vertices: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
+impl<T: GLVertex> VertexBuffer<T> {
+    /// Create new vertex buffer for a GPU.
+    pub fn new(gpu: &Rc<gpu::GPU>,vertices: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
         let mut vbo: GLuint = 0;
         unsafe {
             gl::GenBuffers(1,&mut vbo);
@@ -67,16 +65,24 @@ impl OpenGL {
             vbo: vbo,
         })
     }
+}
 
-    pub fn create_vertexbuffer<T: Vertex>(&self,vertices: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
-        Self::_create_vertexbuffer::<T>(vertices)
+impl<T: GLVertex> Drop for VertexBuffer<T> {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteBuffers(1,&self.vbo);
+        }
     }
+}
 
-    pub fn bind_vertexbuffer<T: Vertex>(&self,vertexbuffer: &VertexBuffer<T>) {
+impl gpu::GPU {
+    /// (temporary) Bind current vertex buffer.
+    pub fn bind_vertexbuffer<T: GLVertex>(&self,vertexbuffer: &VertexBuffer<T>) {
         unsafe { gl::BindBuffer(gl::ARRAY_BUFFER,vertexbuffer.vbo) };
         self.vaas.set(T::bind());
     }
 
+    /// (temporary) Unbind current vertex buffer.
     pub fn unbind_vertexbuffer(&self) {
         let vaas = self.vaas.replace(Vec::new());
         unsafe {

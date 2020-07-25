@@ -6,6 +6,7 @@ use std::rc::Rc;
 
 pub(crate) const FONT: Vec2<f32> = Vec2 { x: 0.065,y: 0.065, };  // manually found by comparing chrome and html font-size: 24 --> draw_text font size should be similar
 
+#[doc(hidden)]
 pub struct Character {
     pub(crate) n: u32,
     pub(crate) r: Rect<i32>,
@@ -13,11 +14,12 @@ pub struct Character {
     pub(crate) advance: i32,
 }
 
+#[doc(hidden)]
 pub struct FontProto {
     pub name: String,
     pub scale: u32,
     pub characters: Vec<Character>,
-    pub texture: Texture2D<ARGB8>,
+    pub texture: gpu::Texture2D<pixel::ARGB8>,
 }
 
 impl FontProto {
@@ -32,6 +34,7 @@ impl FontProto {
     }
 }
 
+/// Text font representation.
 pub struct Font {
     pub proto: Rc<FontProto>,
     pub size: Vec2<f32>,

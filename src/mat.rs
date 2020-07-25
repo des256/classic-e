@@ -4,6 +4,7 @@
 use crate::*;
 use std::marker::PhantomData;
 
+/// Generic 2-dimensional array of elements.
 pub struct Mat<T: Clone + Copy + Zero> {
     pub size: Vec2<usize>,
     pub data: Box<[T]>,

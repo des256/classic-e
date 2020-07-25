@@ -3,17 +3,18 @@
 
 use crate::*;
 
+#[doc(hidden)]
 pub struct WidgetEngine {
-    pub ha: HAlignment,
-    pub va: VAlignment,
+    pub ha: ui::HAlignment,
+    pub va: ui::VAlignment,
     pub padding: Vec2<f32>,
 }
 
 impl WidgetEngine {
     pub fn new() -> WidgetEngine {
         WidgetEngine {
-            ha: HAlignment::Center,
-            va: VAlignment::Center,
+            ha: ui::HAlignment::Center,
+            va: ui::VAlignment::Center,
             padding: vec2!(0.0,0.0),
         }
     }

@@ -1,6 +1,8 @@
 // E - UI
 // Desmond Germans, 2020
 
+//! UI Widgets.
+
 use crate::*;
 use std::rc::Rc;
 

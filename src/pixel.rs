@@ -1,8 +1,11 @@
 // E - Pixel
 // Desmond Germans, 2020
 
+//! Pixel formats.
+
 use crate::*;
 
+#[doc(hidden)]
 trait Clamp1 {
     fn clamp1(self) -> Self;
 }
@@ -22,6 +25,7 @@ macro_rules! impl_clamp1 (
 impl_clamp1!(f32);
 impl_clamp1!(f64);
 
+/// 8-bit RGB pixel format.
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct R3G3B2 {
@@ -107,6 +111,7 @@ macro_rules! impl_r3g3b2 (
 impl_r3g3b2!(f32);
 impl_r3g3b2!(f64);
 
+/// 8-bit RGBA pixel format.
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct ARGB2 {
@@ -200,6 +205,7 @@ macro_rules! impl_argb2 (
 impl_argb2!(f32);
 impl_argb2!(f64);
 
+/// 16-bit RGB pixel format.
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct R5G6B5 {
@@ -285,6 +291,7 @@ macro_rules! impl_r5g6b5 (
 impl_r5g6b5!(f32);
 impl_r5g6b5!(f64);
 
+/// 16-bit RGBA pixel format.
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct ARGB4 {
@@ -378,6 +385,7 @@ macro_rules! impl_argb4 (
 impl_argb4!(f32);
 impl_argb4!(f64);
 
+/// 16-bit RGBA pixel format.
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct A1RGB5 {
@@ -481,6 +489,7 @@ macro_rules! impl_a1rgb5 (
 impl_a1rgb5!(f32);
 impl_a1rgb5!(f64);
 
+/// 24-bit RGB pixel format.
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct RGB8 {
@@ -558,6 +567,7 @@ macro_rules! impl_rgb8 (
 impl_rgb8!(f32);
 impl_rgb8!(f64);
 
+/// 32-bit RGBA pixel format.
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct ARGB8 {
@@ -641,6 +651,7 @@ macro_rules! impl_argb8 (
 impl_argb8!(f32);
 impl_argb8!(f64);
 
+/// 32-bit RGBA pixel format.
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct A2RGB10 {

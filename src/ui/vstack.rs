@@ -6,30 +6,31 @@ use std::rc::Rc;
 use std::cell::Cell;
 use std::cell::RefCell;
 
+/// Vertical stack widget.
 pub struct VStack {
-    ui: Rc<UI>,
-    engine: WidgetEngine,
-    widgets: RefCell<Vec<Box<dyn Widget>>>,
-    ca: Cell<HAlignment>,
+    ui: Rc<ui::UI>,
+    engine: ui::WidgetEngine,
+    widgets: RefCell<Vec<Box<dyn ui::Widget>>>,
+    ca: Cell<ui::HAlignment>,
 }
 
 impl VStack {
-    pub fn new(ui: &Rc<UI>) -> VStack {
+    pub fn new(ui: &Rc<ui::UI>) -> VStack {
         VStack {
             ui: Rc::clone(ui),
-            engine: WidgetEngine::new(),
+            engine: ui::WidgetEngine::new(),
             widgets: RefCell::new(Vec::new()),
-            ca: Cell::new(HAlignment::Left),
+            ca: Cell::new(ui::HAlignment::Left),
         }
     }
 
-    pub fn set_calign(&self,ca: HAlignment) {
+    pub fn set_calign(&self,ca: ui::HAlignment) {
         self.ca.set(ca);
     }
 }
 
-impl Widget for VStack {
-    fn draw(&self,gc: &Rc<GC>,space: Rect<f32>) {
+impl ui::Widget for VStack {
+    fn draw(&self,gc: &Rc<ui::GC>,space: Rect<f32>) {
         
     }
 

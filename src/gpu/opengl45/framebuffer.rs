@@ -2,25 +2,19 @@
 // Desmond Germans, 2020
 
 use crate::*;
+use std::rc::Rc;
 use gl::types::GLuint;
 
+/// Framebuffer GPU resource.
 pub struct Framebuffer {
     fbo: GLuint,
     pub tex: GLuint,
     pub size: Vec2<usize>,
 }
 
-impl Drop for Framebuffer {
-    fn drop(&mut self) {
-        unsafe {
-            gl::DeleteFramebuffers(1,&self.fbo);
-            gl::DeleteTextures(1,&self.tex);
-        }
-    }
-}
-
-impl OpenGL {
-    pub fn create_framebuffer(&self,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
+impl Framebuffer {
+    /// Create new framebuffer for a GPU.
+    pub fn new(gpu: &Rc<gpu::GPU>,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
         let mut fbo: GLuint = 0;
         let mut tex: GLuint = 0;
         unsafe {
@@ -44,7 +38,19 @@ impl OpenGL {
             size: size,
         })
     }
+}
 
+impl Drop for Framebuffer {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteFramebuffers(1,&self.fbo);
+            gl::DeleteTextures(1,&self.tex);
+        }
+    }
+}
+
+impl gpu::GPU {
+    /// (temporary) Bind framebuffer as current target.
     pub fn bind_framebuffer(&self,framebuffer: &Framebuffer) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER,framebuffer.fbo);
@@ -53,12 +59,14 @@ impl OpenGL {
         }
     }
 
+    /// (temporary) Unbind framebuffer as current target.
     pub fn unbind_framebuffer(&self) {
         unsafe {
             gl::BindFramebuffer(gl::FRAMEBUFFER,0);
         }
     }
 
+    /// (temporary) Bind framebuffer as 2D texture.
     pub fn bind_framebuffer_as_texture2d(&self,layer: usize,framebuffer: &Framebuffer) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + layer as u32);

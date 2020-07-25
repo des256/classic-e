@@ -2,6 +2,7 @@
 // Desmond Germans, 2020
 
 use e::*;
+use e::ui::Widget;
 use std::rc::Rc;
 
 fn main() {
@@ -9,8 +10,11 @@ fn main() {
     // initialize system
     let system = Rc::new(System::new().expect("Cannot open system."));
 
+    // initialize GPU
+    let gpu = Rc::new(gpu::GPU::new(&system).expect("Cannot open GPU."));
+
     // initialize UI
-    let ui = Rc::new(UI::new(&system).expect("Cannot open UI."));
+    let ui = Rc::new(ui::UI::new(&system,&gpu).expect("Cannot open UI."));
 
     // create window
     let window = Rc::new(Window::new(
@@ -20,7 +24,7 @@ fn main() {
     ).expect("unable to create window"));
 
     // create text widget
-    let text = Rc::new(Text::new(&ui,"Hello, World!").expect("Cannot create text."));
+    let text = Rc::new(ui::Text::new(&ui,"Hello, World!").expect("Cannot create text."));
     text.set_color(vec4!(1.0,0.5,0.0,1.0));
 
     // main loop
@@ -36,8 +40,8 @@ fn main() {
 
                 Event::Paint(_) => {
                     window.begin_paint();
-                    let gc = Rc::new(GC::new(&ui).expect("what?"));
-                    system.clear(vec4!(0.0,0.3,0.4,1.0));
+                    let gc = Rc::new(ui::GC::new(&ui).expect("what?"));
+                    gpu.clear(vec4!(0.0,0.3,0.4,1.0));
                     let size = window.size.get();
                     gc.set_size(vec2!(size.x as f32,size.y as f32));
                     text.draw(&gc,rect!(0.0,0.0,size.x as f32,size.y as f32));

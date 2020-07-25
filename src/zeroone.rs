@@ -1,7 +1,18 @@
 // E - ZeroOne
 // Desmond Germans, 2020
 
+/// Adds standardized zero element to a type.
+/// 
+/// This allows for numerical generic
+/// operations to span integer and floating point types, as well as clear
+/// vectors, arrays, matrices, volumes, etc.
 pub trait Zero {
+    /// Returns the zero element for this type.
+    /// # Examples
+    /// ```
+    /// let origin = u32::zero();
+    /// assert_eq!(0,origin);
+    /// ```
     fn zero() -> Self;
 }
 
@@ -19,7 +30,18 @@ impl Zero for isize { fn zero() -> Self { 0 } }
 impl Zero for f32 { fn zero() -> Self { 0.0 } }
 impl Zero for f64 { fn zero() -> Self { 0.0 } }
 
+/// Adds standardized one or unit element to a type.
+/// 
+/// This allows for numerical
+/// generic operations to span integer and floating point types, as well as
+/// specify unit matrices.
 pub trait One {
+    /// Returns the one element for this type.
+    /// # Examples
+    /// ```
+    /// let unit = u32::one();
+    /// assert_eq!(1,unit);
+    /// ```
     fn one() -> Self;
 }
 

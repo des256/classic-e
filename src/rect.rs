@@ -5,6 +5,7 @@ use crate::*;
 use std::ops::Add;
 use std::fmt::{Display,Formatter,Result};
 
+/// Rectangle.
 #[derive(Copy,Clone)]
 pub struct Rect<T> {
     pub o: Vec2<T>,
@@ -32,6 +33,7 @@ impl<T: Display> Display for Rect<T> {
     }
 }
 
+#[doc(hidden)]
 pub fn init_rect<T>(o: crate::Vec2<T>,s: crate::Vec2<T>) -> crate::Rect<T> {
     crate::Rect {
         o: o,

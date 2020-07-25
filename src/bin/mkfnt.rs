@@ -30,7 +30,7 @@ static CHARACTERS: &[(u32,u32)] = &[
 
 struct ImageCharacter {
     n: u32,
-    image: Mat<ARGB8>,
+    image: Mat<pixel::ARGB8>,
     offset: Vec2<i32>,
     advance: i32,
 }
@@ -70,13 +70,13 @@ fn exit_version() {
     std::process::exit(-1);
 }
 
-fn find_empty(size: &Vec2<usize>,haystack: &Mat<ARGB8>,p: &mut Vec2<isize>) -> bool {
+fn find_empty(size: &Vec2<usize>,haystack: &Mat<pixel::ARGB8>,p: &mut Vec2<isize>) -> bool {
     for hy in 0..haystack.size.y - size.y as usize {
         for hx in 0..haystack.size.x - size.x as usize {
             let mut found = true;
             for y in 0..size.y {
                 for x in 0..size.x {
-                    if haystack.get(vec2!(hx + x,hy + y)) != ARGB8::zero() {
+                    if haystack.get(vec2!(hx + x,hy + y)) != pixel::ARGB8::zero() {
                         found = false;
                         break;
                     }
@@ -95,7 +95,7 @@ fn find_empty(size: &Vec2<usize>,haystack: &Mat<ARGB8>,p: &mut Vec2<isize>) -> b
     false
 }
 
-fn find_rect(needle: &Mat<ARGB8>,haystack: &Mat<ARGB8>,p: &mut Vec2<isize>) -> bool {
+fn find_rect(needle: &Mat<pixel::ARGB8>,haystack: &Mat<pixel::ARGB8>,p: &mut Vec2<isize>) -> bool {
     for hy in 0..haystack.size.y - needle.size.y {
         for hx in 0..haystack.size.x - needle.size.x {
             let mut found = true;
@@ -220,8 +220,8 @@ fn main() {
                 let mut file = File::open("output.png").expect("cannot open output.png");
                 let mut buffer: Vec<u8> = Vec::new();
                 file.read_to_end(&mut buffer).expect("unable to read file");
-                let image = decode::<ARGB8>(&buffer).expect("unable to decode");
-                let mut cutout = Mat::<ARGB8>::new(vec2!(xs as usize,ys as usize));
+                let image = image::decode::<pixel::ARGB8>(&buffer).expect("unable to decode");
+                let mut cutout = Mat::<pixel::ARGB8>::new(vec2!(xs as usize,ys as usize));
                 for y in 0..ys {
                     for x in 0..xs {
                         cutout.set(vec2!(x as usize,y as usize),image.get(vec2!((xr + x) as usize,(gensize.y - yr - ys + y) as usize)));
@@ -255,7 +255,7 @@ fn main() {
         let tsize = m * 64;
         if !options_pot || is_pot(tsize) {
             println!("Trying to fit on {}x{} texture...",tsize,tsize);
-            let mut image = Mat::<ARGB8>::new(vec2!(tsize,tsize));
+            let mut image = Mat::<pixel::ARGB8>::new(vec2!(tsize,tsize));
             let mut characters: Vec<Character> = Vec::new();
             let mut everything_placed = true;
             for ch in image_characters.iter() {
@@ -333,7 +333,7 @@ fn main() {
                     push_i32(&mut buffer,ch.advance);    // advance to next character
                     //println!("{:04X}: {},{} ({}x{}); {},{}; {}",ch.n,ch.r.o.x,ch.r.o.y,ch.r.s.x,ch.r.s.y,ch.offset.x,ch.offset.y,ch.advance);
                 }
-                let image_buffer = bmp::encode::<ARGB8>(&image).expect("cannot encode");
+                let image_buffer = image::bmp::encode::<pixel::ARGB8>(&image).expect("cannot encode");
                 buffer.append(&mut image_buffer.clone());
                 file.write_all(&buffer).expect("cannot write");
 
