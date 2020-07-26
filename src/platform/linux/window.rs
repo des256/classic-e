@@ -13,10 +13,7 @@ use {
             XSync,
             False,
         },
-        glx::{
-            glXMakeCurrent,
-            glXSwapBuffers,
-        },
+        glx::glXMakeCurrent,
     },
     xcb::xproto::*,
 };
@@ -92,24 +89,6 @@ impl Window {
             id: id,
             size: Cell::new(vec2!(r.s.x as usize,r.s.y as usize)),
         })
-    }
-
-    /// (temporary) Prepares the window for drawing.
-    pub fn begin_paint(&self) {
-        let size = self.size.get();
-        unsafe {
-            glXMakeCurrent(self.system.connection.get_raw_dpy(),self.id,self.system.context);
-            gl::Viewport(0,0,size.x as i32,size.y as i32);
-            gl::Scissor(0,0,size.x as i32,size.y as i32);
-        }
-    }
-
-    /// (temporary) Finalizes drawing to the window.
-    pub fn end_paint(&self) {
-        unsafe {
-            gl::Flush();
-            glXSwapBuffers(self.system.connection.get_raw_dpy(),self.id);
-        }
     }
 }
 

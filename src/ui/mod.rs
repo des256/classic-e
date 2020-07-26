@@ -21,7 +21,7 @@ pub enum VAlignment {
 }
 
 pub trait Widget {
-    fn draw(&self,gc: &Rc<GC>,r: Rect<f32>);
+    fn draw(&self,dc: &Rc<DC>,r: Rect<f32>);
     fn measure(&self) -> Vec2<f32>;
 }
 
@@ -31,8 +31,8 @@ pub use font::*;
 mod ui;
 pub use ui::*;
 
-mod gc;
-pub use gc::*;
+mod dc;
+pub use dc::*;
 
 mod widgetengine;
 pub use widgetengine::*;

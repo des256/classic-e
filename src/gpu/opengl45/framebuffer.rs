@@ -7,20 +7,20 @@ use gl::types::GLuint;
 
 /// Framebuffer GPU resource.
 pub struct Framebuffer {
-    fbo: GLuint,
-    pub tex: GLuint,
-    pub size: Vec2<usize>,
+    pub(crate) fbo: GLuint,
+    pub(crate) tex: GLuint,
+    pub(crate) size: Vec2<usize>,
 }
 
 impl Framebuffer {
-    /// Create new framebuffer for a GPU.
+    /// Create new framebuffer for a graphics context.
     /// # Arguments
-    /// * `gpu` - GPU to create the framebuffer for.
+    /// * `graphics` - Graphics context to create the framebuffer for.
     /// * `size` - Dimensions of the framebuffer.
     /// # Returns
     /// * `Ok(Framebuffer)` - The new framebuffer.
     /// * `Err(SystemError)` - The framebuffer could not be created.
-    pub fn new(_gpu: &Rc<gpu::GPU>,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
+    pub fn new(_graphics: &Rc<gpu::Graphics>,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
         let mut fbo: GLuint = 0;
         let mut tex: GLuint = 0;
         unsafe {
@@ -51,37 +51,6 @@ impl Drop for Framebuffer {
         unsafe {
             gl::DeleteFramebuffers(1,&self.fbo);
             gl::DeleteTextures(1,&self.tex);
-        }
-    }
-}
-
-impl gpu::GPU {
-    /// (temporary) Bind current framebuffer.
-    /// # Arguments
-    /// * `framebuffer` - The framebuffer to bind.
-    pub fn bind_framebuffer(&self,framebuffer: &Framebuffer) {
-        unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER,framebuffer.fbo);
-            gl::Viewport(0,0,framebuffer.size.x as i32,framebuffer.size.y as i32);
-            gl::Scissor(0,0,framebuffer.size.x as i32,framebuffer.size.y as i32);
-        }
-    }
-
-    /// (temporary) Unbind current framebuffer.
-    pub fn unbind_framebuffer(&self) {
-        unsafe {
-            gl::BindFramebuffer(gl::FRAMEBUFFER,0);
-        }
-    }
-
-    /// (temporary) Bind framebuffer as current 2D texture.
-    /// # Arguments
-    /// * `layer` - Texture layer to bind to.
-    /// * `framebuffer` - The framebuffer to bind.
-    pub fn bind_framebuffer_as_texture2d(&self,layer: usize,framebuffer: &Framebuffer) {
-        unsafe {
-            gl::ActiveTexture(gl::TEXTURE0 + layer as u32);
-            gl::BindTexture(gl::TEXTURE_2D,framebuffer.tex);
         }
     }
 }

@@ -218,8 +218,11 @@ impl OpenGLFormat for pixel::ARGB8 {
     fn gl_type() -> GLenum { gl::UNSIGNED_INT_8_8_8_8_REV }
 }
 
-mod gpu;
-pub use gpu::*;
+mod graphics;
+pub use graphics::*;
+
+mod compute;
+pub use compute::*;
 
 mod shader;
 pub use shader::*;

@@ -36,7 +36,7 @@ impl Text {
 }
 
 impl ui::Widget for Text {
-    fn draw(&self,gc: &Rc<ui::GC>,space: Rect<f32>) {
+    fn draw(&self,dc: &Rc<ui::DC>,space: Rect<f32>) {
         let (size,offset) = self.font.borrow().measure(&self.text.borrow());
         let size = size + 2.0 * self.engine.padding;
         let p: Vec2<f32> = self.engine.padding + vec2!(
@@ -53,9 +53,9 @@ impl ui::Widget for Text {
                 ui::VAlignment::Bottom => space.o.y,
             }
         );
-        gc.set_color(self.color.get());
-        gc.ui.gpu.set_blend(gpu::BlendMode::Over);
-        gc.draw_text(p + offset,&self.text.borrow());
+        dc.set_color(self.color.get());
+        dc.ui.graphics.set_blend(gpu::BlendMode::Over);
+        dc.draw_text(p + offset,&self.text.borrow());
     }
 
     fn measure(&self) -> Vec2<f32> {

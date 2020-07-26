@@ -6,8 +6,8 @@ use std::rc::Rc;
 use std::cell::Cell;
 use std::cell::RefCell;
 
-/// UI graphics context.
-pub struct GC {
+/// UI drawing context.
+pub struct DC {
     pub(crate) ui: Rc<ui::UI>,
     font: RefCell<Rc<ui::Font>>,
     color: Cell<Vec4<f32>>,
@@ -17,9 +17,9 @@ pub struct GC {
 
 const SCREEN: Vec2<f32> = Vec2 { x: 1.0,y: 1.0, };
 
-impl GC {
-    pub fn new(ui: &Rc<ui::UI>) -> Result<ui::GC,SystemError> {
-        Ok(GC {
+impl DC {
+    pub fn new(ui: &Rc<ui::UI>) -> Result<ui::DC,SystemError> {
+        Ok(DC {
             ui: Rc::clone(ui),
             font: RefCell::new(ui.get_font("arialn.fnt",vec2!(14.0,14.0),0.0).expect("cannot load font")),
             color: Cell::new(vec4!(1.0,1.0,1.0,1.0)),
@@ -90,17 +90,14 @@ impl GC {
             }
         }
 
-        let vertexbuffer = gpu::VertexBuffer::new(&self.ui.gpu,vertices).expect("what?");
-        self.ui.gpu.bind_vertexbuffer(&vertexbuffer);
-        self.ui.gpu.bind_shader(&self.ui.msdf_shader);
-        self.ui.gpu.bind_texture2d(0,&font.proto.texture);
-        self.ui.gpu.set_uniform("ppu",self.ppu.get());
-        self.ui.gpu.set_uniform("size",self.size.get());
-        self.ui.gpu.set_uniform("font_texture",0);
-        self.ui.gpu.set_uniform("color",self.color.get());
-        self.ui.gpu.draw_triangles(6 * count);
-        self.ui.gpu.unbind_vertexbuffer();
-        self.ui.gpu.unbind_shader();
-        self.ui.gpu.unbind_texture2d(0);
+        let vertexbuffer = gpu::VertexBuffer::new(&self.ui.graphics,vertices).expect("what?");
+        self.ui.graphics.bind_vertexbuffer(&vertexbuffer);
+        self.ui.graphics.bind_shader(&self.ui.msdf_shader);
+        self.ui.graphics.bind_texture(0,&font.proto.texture);
+        self.ui.graphics.set_uniform("ppu",self.ppu.get());
+        self.ui.graphics.set_uniform("size",self.size.get());
+        self.ui.graphics.set_uniform("font_texture",0);
+        self.ui.graphics.set_uniform("color",self.color.get());
+        self.ui.graphics.draw_triangles(6 * count);
     }
 }

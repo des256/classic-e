@@ -110,16 +110,6 @@ impl Window {
         Ok(window)
     }
 
-    /// (temporary) Prepares the window for drawing.
-    pub fn begin_paint(&self) {
-        let size = self.size.get();
-        unsafe {
-            wglMakeCurrent(self.hdc,self.system.hglrc);
-            gl::Viewport(0,0,size.x as i32,size.y as i32);
-            gl::Scissor(0,0,size.x as i32,size.y as i32);
-        }
-    }
-
     /// (temporary) Finalizes drawing to the window.
     pub fn end_paint(&self) {
         unsafe {

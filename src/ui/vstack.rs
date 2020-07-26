@@ -30,7 +30,7 @@ impl VStack {
 }
 
 impl ui::Widget for VStack {
-    fn draw(&self,_gc: &Rc<ui::GC>,_space: Rect<f32>) {
+    fn draw(&self,_dc: &Rc<ui::DC>,_space: Rect<f32>) {
         
     }
 

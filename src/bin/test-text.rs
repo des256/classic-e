@@ -10,11 +10,11 @@ fn main() {
     // initialize system
     let system = Rc::new(System::new().expect("Cannot open system."));
 
-    // initialize GPU
-    let gpu = Rc::new(gpu::GPU::new(&system).expect("Cannot open GPU."));
+    // initialize graphics context
+    let graphics = Rc::new(gpu::Graphics::new(&system).expect("Cannot open GPU."));
 
     // initialize UI
-    let ui = Rc::new(ui::UI::new(&system,&gpu).expect("Cannot open UI."));
+    let ui = Rc::new(ui::UI::new(&system,&graphics).expect("Cannot open UI."));
 
     // create window
     let window = Rc::new(Window::new(
@@ -39,13 +39,13 @@ fn main() {
             match event {
 
                 Event::Paint(_) => {
-                    window.begin_paint();
-                    let gc = Rc::new(ui::GC::new(&ui).expect("what?"));
-                    gpu.clear(vec4!(0.0,0.3,0.4,1.0));
+                    graphics.bind_target(&window);
+                    let dc = Rc::new(ui::DC::new(&ui).expect("what?"));
+                    graphics.clear(vec4!(0.0,0.3,0.4,1.0));
                     let size = window.size.get();
-                    gc.set_size(vec2!(size.x as f32,size.y as f32));
-                    text.draw(&gc,rect!(0.0,0.0,size.x as f32,size.y as f32));
-                    window.end_paint();
+                    dc.set_size(vec2!(size.x as f32,size.y as f32));
+                    text.draw(&dc,rect!(0.0,0.0,size.x as f32,size.y as f32));
+                    graphics.flush();
                 },
 
                 Event::Close => {

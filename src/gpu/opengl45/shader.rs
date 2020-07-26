@@ -17,7 +17,6 @@ use gl::types::{
     GLint,
     GLuint,
     GLchar,
-    GLfloat,
 };
 
 /// Shader program GPU resource.
@@ -28,14 +27,14 @@ pub struct Shader {
 impl Shader {
     /// Create new shader program.
     /// # Arguments
-    /// * `gpu` - GPU context to create shader for.
+    /// * `graphics` - Graphics context to create shader for.
     /// * `vertex_src` - Vertex shader source.
     /// * `geometry_src` - Geometry shader source (or `None`).
     /// * `fragment_src` - Fragment shader source.
     /// # Returns
     /// * `Ok(Shader)` - The created shader program.
     /// * `Err(SystemError)` - The shader progam could not be created.
-    pub fn new(_gpu: &Rc<gpu::GPU>,vertex_src: &str,geometry_src: Option<&str>,fragment_src: &str) -> Result<Shader,SystemError> {
+    pub fn new(_graphics: &Rc<gpu::Graphics>,vertex_src: &str,geometry_src: Option<&str>,fragment_src: &str) -> Result<Shader,SystemError> {
         unsafe {
             let vs = gl::CreateShader(gl::VERTEX_SHADER);
             let vcstr = CString::new(vertex_src.as_bytes()).unwrap();
@@ -129,66 +128,5 @@ impl Shader {
 impl Drop for Shader {
     fn drop(&mut self) {
         unsafe { gl::DeleteProgram(self.sp); }
-    }
-}
-
-#[doc(hidden)]
-pub trait OpenGLUniform {
-    fn set_uniform(location: i32,value: Self);
-}
-
-impl OpenGLUniform for Vec2<f32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform2fv(location,1,&value as *const Self as *const GLfloat) };
-    }
-}
-
-impl OpenGLUniform for Vec4<f32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform4fv(location,1,&value as *const Self as *const GLfloat) };
-    }
-}
-
-impl OpenGLUniform for Vec2<u32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform2uiv(location,1,&value as *const Self as *const GLuint) };
-    }
-}
-
-impl OpenGLUniform for i32 {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform1i(location,value) };
-    }
-}
-
-impl OpenGLUniform for u32 {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform1ui(location,value) };
-    }
-}
-
-impl gpu::GPU {
-    /// (temporary) Bind current shader program.
-    /// # Arguments
-    /// * `shader` - Shader program.
-    pub fn bind_shader(&self,shader: &Shader) {
-        unsafe { gl::UseProgram(shader.sp); }
-        self.sp.set(shader.sp);
-    }
-
-    /// (temporary) Unbind current shader program.
-    pub fn unbind_shader(&self) {
-        unsafe { gl::UseProgram(0); }
-        self.sp.set(0);
-    }
-
-    /// (temporary) Set uniform value for current shader program.
-    /// # Arguments
-    /// * `name` - Variable name referenced in the shader program.
-    /// * `value` - Value of the uniform.
-    pub fn set_uniform<T: OpenGLUniform>(&self,name: &str,value: T) {
-        let cname = CString::new(name).unwrap();
-        let res = unsafe { gl::GetUniformLocation(self.sp.get(),cname.as_ptr() as *const GLchar) };
-        T::set_uniform(res,value);
     }
 }

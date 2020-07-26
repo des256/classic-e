@@ -10,14 +10,14 @@ use std::io::prelude::*;
 /// UI subsystem.
 pub struct UI {
     pub system: Rc<System>,
-    pub gpu: Rc<gpu::GPU>,
+    pub graphics: Rc<gpu::Graphics>,
     pub msdf_shader: gpu::Shader,
     pub font_protos: RefCell<Vec<Rc<ui::FontProto>>>,
     pub fonts: RefCell<Vec<Rc<ui::Font>>>,
 }
 
 impl UI {
-    pub fn new(system: &Rc<System>,gpu: &Rc<gpu::GPU>) -> Result<UI,SystemError> {
+    pub fn new(system: &Rc<System>,graphics: &Rc<gpu::Graphics>) -> Result<UI,SystemError> {
 
         let vs = r#"
             #version 420 core
@@ -59,11 +59,11 @@ impl UI {
             }
         "#;
 
-        let msdf_shader = gpu::Shader::new(&gpu,vs,None,fs).expect("what?");
+        let msdf_shader = gpu::Shader::new(&graphics,vs,None,fs).expect("what?");
 
         Ok(UI {
             system: Rc::clone(system),
-            gpu: Rc::clone(gpu),
+            graphics: Rc::clone(graphics),
             msdf_shader: msdf_shader,
             font_protos: RefCell::new(Vec::new()),
             fonts: RefCell::new(Vec::new()),
@@ -123,7 +123,7 @@ impl UI {
             });
         }
         let image = image::decode::<pixel::ARGB8>(&buffer[16 + count * 32..]).expect("unable to decode");
-        let texture = gpu::Texture2D::<pixel::ARGB8>::new(&self.gpu,&image).expect("unable to create font texture");
+        let texture = gpu::Texture2D::<pixel::ARGB8>::new(&self.graphics,&image).expect("unable to create font texture");
 
         let proto = Rc::new(ui::FontProto {
             name: name.to_string(),
