@@ -7,6 +7,7 @@ use gl::types::GLuint;
 
 /// Framebuffer GPU resource.
 pub struct Framebuffer {
+    pub(crate) graphics: Rc<gpu::Graphics>,
     pub(crate) fbo: GLuint,
     pub(crate) tex: GLuint,
     pub size: Vec2<usize>,
@@ -20,7 +21,7 @@ impl Framebuffer {
     /// # Returns
     /// * `Ok(Framebuffer)` - The new framebuffer.
     /// * `Err(SystemError)` - The framebuffer could not be created.
-    pub fn new(_graphics: &Rc<gpu::Graphics>,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
+    pub fn new(graphics: &Rc<gpu::Graphics>,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
         let mut fbo: GLuint = 0;
         let mut tex: GLuint = 0;
         unsafe {
@@ -39,6 +40,7 @@ impl Framebuffer {
             }
         }
         Ok(Framebuffer {
+            graphics: Rc::clone(graphics),
             fbo: fbo,
             tex: tex,
             size: size,

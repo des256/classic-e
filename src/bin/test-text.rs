@@ -41,7 +41,7 @@ fn main() {
         for event in system.poll(&window) {
             match event {
 
-                Event::Paint(_) => {
+                Event::Render => {
                     graphics.bind_target(&window);
                     graphics.clear(vec4!(0.0,0.3,0.4,1.0));
                     let size = window.size.get();

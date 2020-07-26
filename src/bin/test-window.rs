@@ -9,6 +9,9 @@ fn main() {
     // initialize system
     let system = Rc::new(System::new().expect("Cannot open system."));
 
+    // initialize graphics
+    let graphics = Rc::new(gpu::Graphics::new(&system).expect("Cannot open graphics."));
+
     // create window
     let window = Rc::new(Window::new(
         &system,
@@ -48,8 +51,11 @@ fn main() {
                 Event::Resize(s) => {
                     println!("Resize {}",s);
                 },
-                Event::Paint(r) => {
-                    println!("Paint {}",r);
+                Event::Render => {
+                    println!("Render");
+                    graphics.bind_target(&window);
+                    graphics.clear(pixel::ARGB8::from(0xFF001122));
+                    graphics.flush();
                 },
                 Event::Close => {
                     println!("Close");

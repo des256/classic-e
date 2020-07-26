@@ -40,14 +40,13 @@ use {
         wingdi::{
             SetPixelFormat,
             wglMakeCurrent,
-            SwapBuffers,
         },
     },
 };
 
 /// OS window (for desktop environments).
 pub struct Window {
-    system: Rc<System>,
+    pub(crate) system: Rc<System>,
     pub size: Cell<Vec2<usize>>,
     pub(crate) hwnd: HWND,
     pub(crate) hdc: HDC,
@@ -108,14 +107,6 @@ impl Window {
         unsafe { SetForegroundWindow(hwnd) };
         unsafe { SetFocus(hwnd) };
         Ok(window)
-    }
-
-    /// (temporary) Finalizes drawing to the window.
-    pub fn end_paint(&self) {
-        unsafe {
-            gl::Flush();
-            SwapBuffers(self.hdc);
-        }
     }
 }
 

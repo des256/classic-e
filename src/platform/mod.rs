@@ -65,8 +65,8 @@ impl std::fmt::Debug for Wheel {
 /// User interaction event.
 #[derive(Copy,Clone)]
 pub enum Event {
-    /// Need to paint rectangle in the window.
-    Paint(Rect<isize>),
+    /// The window requires redrawing.
+    Render,
     /// Key was pressed.
     KeyPress(u8),
     /// Key was released.
