@@ -9,7 +9,7 @@ use gl::types::GLuint;
 pub struct Framebuffer {
     pub(crate) fbo: GLuint,
     pub(crate) tex: GLuint,
-    pub(crate) size: Vec2<usize>,
+    pub size: Vec2<usize>,
 }
 
 impl Framebuffer {
