@@ -12,6 +12,7 @@ use gl::types::{
     GLuint,
     GLfloat,
     GLchar,
+    GLenum,
 };
 #[cfg(target_os="linux")]
 use x11::{
@@ -22,18 +23,22 @@ use x11::{
     },
 };
 #[cfg(target_os="windows")]
-use winapi::{
-    um::wingdi::{
-        wglMakeCurrent,
-        SwapBuffers,
+use {
+    std::ptr::null_mut,
+    winapi::{
+        um::wingdi::{
+            wglMakeCurrent,
+            SwapBuffers,
+        },
+        shared::windef::HDC,
     },
-    shared::windef::HDC,
 };
 
 /// Graphics context.
 pub struct Graphics {
     system: Rc<System>,
     pub(crate) sp: Cell<GLuint>,
+    pub(crate) index_type: Cell<GLenum>,
     pub(crate) target_is_framebuffer: Cell<bool>,
 #[cfg(target_os="linux")]
     pub(crate) target_id: Cell<XID>,
@@ -136,11 +141,38 @@ impl BindTexture for gpu::Framebuffer {
     }
 }
 
-impl<T: gpu::OpenGLFormat> BindTexture for gpu::Texture2D<T> {
+impl<T: gpu::GLFormat> BindTexture for gpu::Texture1D<T> {
+    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
+            gl::BindTexture(gl::TEXTURE_1D,self.tex);
+        }
+    }
+}
+
+impl<T: gpu::GLFormat> BindTexture for gpu::Texture2D<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
             gl::BindTexture(gl::TEXTURE_2D,self.tex);
+        }
+    }
+}
+
+impl<T: gpu::GLFormat> BindTexture for gpu::Texture3D<T> {
+    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
+            gl::BindTexture(gl::TEXTURE_3D,self.tex);
+        }
+    }
+}
+
+impl<T: gpu::GLFormat> BindTexture for gpu::TextureCube<T> {
+    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
+            gl::BindTexture(gl::TEXTURE_CUBE_MAP,self.tex);
         }
     }
 }
@@ -156,6 +188,7 @@ impl Graphics {
         Ok(Graphics {
             system: Rc::clone(system),
             sp: Cell::new(0),
+            index_type: Cell::new(gl::UNSIGNED_INT),
             target_is_framebuffer: Cell::new(false),
 #[cfg(target_os="linux")]
             target_id: Cell::new(0),
@@ -202,11 +235,25 @@ impl Graphics {
         unsafe { gl::DrawArrays(gl::TRIANGLE_FAN,0,n) };
     }
 
-    /// (temporary) Draw traingles.
+    /// (temporary) Draw triangles.
     /// # Arguments
     /// * `n` - Number of vertices.
     pub fn draw_triangles(&self,n: i32) {
         unsafe { gl::DrawArrays(gl::TRIANGLES,0,n) };
+    }
+
+    /// (temporary) Draw indexed triangle fan.
+    /// # Arguments
+    /// * `n` - Number of vertices.
+    pub fn draw_indexed_triangle_fan(&self,n: i32) {
+        unsafe { gl::DrawElements(gl::TRIANGLE_FAN,n,self.index_type.get(),null_mut()) };
+    }
+
+    /// (temporary) Draw triangles.
+    /// # Arguments
+    /// * `n` - Number of vertices.
+    pub fn draw_indexed_triangles(&self,n: i32) {
+        unsafe { gl::DrawElements(gl::TRIANGLES,n,self.index_type.get(),null_mut()) };
     }
 
     /// (temporary) Set blending mode.
@@ -254,5 +301,13 @@ impl Graphics {
     /// * `vertexbuffer` - Vertexbuffer to bind.
     pub fn bind_vertexbuffer<T: gpu::GLVertex>(&self,vertexbuffer: &gpu::VertexBuffer<T>) {
         unsafe { gl::BindVertexArray(vertexbuffer.vao) };
+    }
+
+    /// (temporary) Bind current index buffer.
+    /// # Arguments
+    /// * `indexbuffer` - Indexbuffer to bind.
+    pub fn bind_indexbuffer<T: gpu::GLIndex>(&self,indexbuffer: &gpu::IndexBuffer<T>) {
+        self.index_type.set(T::gl_type());
+        unsafe { gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER,indexbuffer.ibo) };
     }
 }

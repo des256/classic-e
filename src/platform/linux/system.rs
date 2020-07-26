@@ -375,9 +375,9 @@ impl System {
         match r {
             EXPOSE => {
                 let expose: &ExposeEvent = unsafe { cast_event(&xcb_event) };
-                let r = rect!(expose.x() as isize,expose.y() as isize,expose.width() as isize,expose.height() as isize);
+                //let r = rect!(expose.x() as isize,expose.y() as isize,expose.width() as isize,expose.height() as isize);
                 let id = expose.window() as XID;
-                return Some((id,Event::Paint(r)));
+                return Some((id,Event::Render));
             },
             KEY_PRESS => {
                 let key_press: &KeyPressEvent = unsafe { cast_event(&xcb_event) };

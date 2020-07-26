@@ -7,7 +7,7 @@ use gl::types::GLuint;
 
 /// Framebuffer GPU resource.
 pub struct Framebuffer {
-    pub(crate) graphics: Rc<gpu::Graphics>,
+    pub(crate) _graphics: Rc<gpu::Graphics>,
     pub(crate) fbo: GLuint,
     pub(crate) tex: GLuint,
     pub size: Vec2<usize>,
@@ -40,7 +40,7 @@ impl Framebuffer {
             }
         }
         Ok(Framebuffer {
-            graphics: Rc::clone(graphics),
+            _graphics: Rc::clone(graphics),
             fbo: fbo,
             tex: tex,
             size: size,

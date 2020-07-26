@@ -10,13 +10,13 @@ use std::{
 use gl::types::GLuint;
 
 /// 2D texture GPU resource.
-pub struct Texture2D<T: gpu::OpenGLFormat> {
+pub struct Texture2D<T: gpu::GLFormat> {
     pub tex: GLuint,
     pub size: Vec2<usize>,
     phantom: PhantomData<T>,
 }
 
-impl<T: gpu::OpenGLFormat> Texture2D<T> {    
+impl<T: gpu::GLFormat> Texture2D<T> {    
     /// (temporary) Create new 2D texture.
     /// # Arguments
     /// * `graphics` - Graphics context to create texture for.
@@ -41,7 +41,7 @@ impl<T: gpu::OpenGLFormat> Texture2D<T> {
     }
 }
 
-impl<T: gpu::OpenGLFormat> Drop for Texture2D<T> {
+impl<T: gpu::GLFormat> Drop for Texture2D<T> {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteTextures(1,&self.tex);

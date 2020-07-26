@@ -11,6 +11,9 @@ pub use zeroone::*;
 mod mat;
 pub use mat::*;
 
+mod ten;
+pub use ten::*;
+
 #[macro_use]
 mod vector;
 pub use vector::*;
