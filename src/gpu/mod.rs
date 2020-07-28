@@ -3,6 +3,12 @@
 
 //! GPU access.
 
+/// (temporary) Blending mode.
+pub enum BlendMode {
+    Replace,
+    Over,
+}
+
 #[cfg(target_os="linux")]
 mod opengl45;
 #[cfg(target_os="linux")]

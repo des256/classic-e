@@ -18,6 +18,10 @@ pub struct DC {
 const SCREEN: Vec2<f32> = Vec2 { x: 1.0,y: 1.0, };
 
 impl DC {
+
+    /// Create new drawing context.
+    /// # Arguments
+    /// * `ui` - UI context to create this DC for.
     pub fn new(ui: &Rc<ui::UI>) -> Result<ui::DC,SystemError> {
         Ok(DC {
             ui: Rc::clone(ui),
@@ -28,22 +32,43 @@ impl DC {
         })
     }
 
+    /// (temporary) Set DC window size.
+    /// # Arguments
+    /// * `size` - New window size to use.
     pub fn set_size(&self,size: Vec2<f32>) {
         self.size.set(size);
     }
 
+    /// (temporary) Set pixels per unit.
+    /// 
+    /// The UI uses "UI units" to define/align all widgets. The DC's PPU value
+    /// indicates how many pixels fit inside one unit square.
+    /// # Arguments
+    /// * `ppu` - New PPU specification.
     pub fn set_ppu(&self,ppu: Vec2<f32>) {
         self.ppu.set(ppu);
     }
 
+    /// (temporary) Set current drawing color.
+    /// # Arguments
+    /// * `color` - New color.
     pub fn set_color<T>(&self,color: T) where Vec4<f32>: From<T> {
         self.color.set(Vec4::<f32>::from(color));
     }
 
+    /// (temporary) Set current drawing font.
+    /// # Arguments
+    /// * `font` - New font.
     pub fn set_font(&self,font: Rc<ui::Font>) {
         *(self.font.borrow_mut()) = font;
     }
 
+    /// (temporary) Draw text.
+    /// 
+    /// Draws the indicated text from the current font in the current color.
+    /// # Arguments
+    /// * `p` - Coordinates of the start of the text baseline.
+    /// * `text` - Text to draw.
     pub fn draw_text(&self,p: Vec2<f32>,text: &str) {
         let mut vertices: Vec<Vec4<f32>> = Vec::new();
         let mut lp = vec2!(p.x as f32,p.y as f32);
@@ -52,13 +77,13 @@ impl DC {
         for c in text.chars() {
             if let Some(ch) = font.proto.find(c) {
                 if (ch.r.s.x > 0) && (ch.r.s.y > 0) {
-                    // bottom-left of the character, in GU
-                    let ox = lp.x - ui::FONT.x * font.size.x * (ch.offset.x as f32) / (font.proto.scale as f32);
-                    let oy = lp.y - ui::FONT.y * font.size.y * (ch.offset.y as f32) / (font.proto.scale as f32);
-
                     // size of the character, in GU
                     let sx = ui::FONT.x * font.size.x * (ch.r.s.x as f32) / (font.proto.scale as f32);
                     let sy = ui::FONT.y * font.size.y * (ch.r.s.y as f32) / (font.proto.scale as f32);
+
+                    // bottom-left of the character, in GU
+                    let ox = lp.x - ui::FONT.x * font.size.x * (ch.offset.x as f32) / (font.proto.scale as f32);
+                    let oy = lp.y - sy + ui::FONT.y * font.size.y * (ch.offset.y as f32) / (font.proto.scale as f32);
 
                     // texture divisor
                     let tdx = 1.0 / (font.proto.texture.size.x as f32);
@@ -71,22 +96,16 @@ impl DC {
                     let tsy = tdy * (ch.r.s.y as f32);
 
                     // add quad
-                    vertices.push(vec4!(ox,oy,tox,toy));
-                    vertices.push(vec4!(ox + sx,oy,tox + tsx,toy));
-                    vertices.push(vec4!(ox + sx,oy + sy,tox + tsx,toy + tsy));
-                    vertices.push(vec4!(ox,oy,tox,toy));
-                    vertices.push(vec4!(ox + sx,oy + sy,tox + tsx,toy + tsy));
-                    vertices.push(vec4!(ox,oy + sy,tox,toy + tsy));
-
-                    // advance
-                    lp.x += ui::FONT.x * font.size.x * (ch.advance as f32) / (font.proto.scale as f32) + ui::FONT.x * font.size.x * font.spacing;
+                    vertices.push(vec4!(ox,oy + sy,tox,toy));
+                    vertices.push(vec4!(ox + sx,oy + sy,tox + tsx,toy));
+                    vertices.push(vec4!(ox + sx,oy,tox + tsx,toy + tsy));
+                    vertices.push(vec4!(ox,oy + sy,tox,toy));
+                    vertices.push(vec4!(ox + sx,oy,tox + tsx,toy + tsy));
+                    vertices.push(vec4!(ox,oy,tox,toy + tsy));
 
                     count += 1;
                 }
-                else {
-                    // only advance
-                    lp.x += 2.0 * ui::FONT.x * font.size.x * (ch.advance as f32) / (font.proto.scale as f32) + ui::FONT.x * font.size.x * font.spacing;  // the choice for double spacing is arbitrary
-                }
+                lp.x += ui::FONT.x * font.size.x * (ch.advance as f32) / (font.proto.scale as f32) + ui::FONT.x * font.size.x * font.spacing;
             }
         }
 

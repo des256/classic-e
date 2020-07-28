@@ -1,4 +1,4 @@
-// E - Text test
+// E - VStack test
 // Desmond Germans, 2020
 
 use e::*;
@@ -26,9 +26,25 @@ fn main() {
     // create UI drawing context
     let dc = Rc::new(ui::DC::new(&ui).expect("what?"));
 
-    // create text widget
-    let text = Rc::new(ui::Text::new(&ui,"({Hello, World!})").expect("Cannot create text."));
-    text.set_color(vec4!(1.0,0.5,0.0,1.0));
+    // create text widgets
+    let text1 = Rc::new(ui::Text::new(&ui,"This").expect("Cannot create text."));
+    let text2 = Rc::new(ui::Text::new(&ui,"is a vertical").expect("Cannot create text."));
+    let text3 = Rc::new(ui::Text::new(&ui,"stack with").expect("Cannot create text."));
+    let text4 = Rc::new(ui::Text::new(&ui,"a bunch of").expect("Cannot create text."));
+    let text5 = Rc::new(ui::Text::new(&ui,"texts that just align").expect("Cannot create text."));
+    let text6 = Rc::new(ui::Text::new(&ui,"nicely.").expect("Cannot create text."));
+    let text7 = Rc::new(ui::Text::new(&ui,"Almost before we knew it, we had left the ground.").expect("Cannot create text."));
+    text1.set_color(vec4!(1.0,0.5,0.0,1.0));
+    text2.set_color(vec4!(0.5,1.0,0.0,1.0));
+    text3.set_color(vec4!(0.0,1.0,0.5,1.0));
+    text4.set_color(vec4!(0.0,0.5,1.0,1.0));
+    text5.set_color(vec4!(0.5,0.0,1.0,1.0));
+    text6.set_color(vec4!(1.0,0.0,0.5,1.0));
+    text7.set_color(vec4!(1.0,0.5,0.0,1.0));
+
+    // create VStack
+    let vstack = Rc::new(ui::VStack::new(&ui,vec![text1,text2,text3,text4,text5,text6,text7]));
+    vstack.set_calign(ui::HAlignment::Right);
 
     // main loop
     let mut running = true;
@@ -47,12 +63,12 @@ fn main() {
                 Event::Render => {
                     graphics.bind_target(&window);
                     graphics.clear(vec4!(0.0,0.3,0.4,1.0));
-                    let size = window.size.get();
-                    let fsize = vec2!(size.x as f32,size.y as f32);
-                    dc.set_size(fsize);
-                    let text_size = text.measure();
-                    let pos = 0.5 * (fsize - text_size);
-                    text.draw(&dc,rect!(pos.x,pos.y,text_size.x as f32,text_size.y as f32));
+                    let ws = window.size.get();
+                    let window_size = vec2!(ws.x as f32,ws.y as f32);
+                    dc.set_size(window_size);
+                    let size = vstack.measure();
+                    let pos = 0.5 * (window_size - size);
+                    vstack.draw(&dc,rect!(pos.x,pos.y,size.x as f32,size.y as f32));
                     rendered = true;
                 },
 

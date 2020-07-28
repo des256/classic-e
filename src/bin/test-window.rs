@@ -26,6 +26,9 @@ fn main() {
         // wait for event to happen
         system.wait();
 
+        // keep track of graphics changes
+        let mut rendered = false;
+
         // process all current events
         for event in system.poll(&window) {
 
@@ -55,13 +58,18 @@ fn main() {
                     println!("Render");
                     graphics.bind_target(&window);
                     graphics.clear(pixel::ARGB8::from(0xFF001122));
-                    graphics.flush();
+                    rendered = true;
                 },
                 Event::Close => {
                     println!("Close");
                     running = false;
                 },
             }
+        }
+
+        // if anything was updated, swap buffers
+        if rendered {
+            graphics.present();
         }
     }
 }

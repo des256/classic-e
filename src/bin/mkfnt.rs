@@ -10,15 +10,18 @@ use std::io::prelude::*;
 
 static CHARACTERS: &[(u32,u32)] = &[
     (0x0020,0x0080),  // ASCII
-    (0x00A0,0x0100),  // Latin-1 Supplement
-    (0x0100,0x0180),  // Latin Extended-A
-    (0x0180,0x0250),  // Latin Extended-B
+    //(0x00A0,0x0100),  // Latin-1 Supplement
+    //(0x0100,0x0180),  // Latin Extended-A
+    //(0x0180,0x0250),  // Latin Extended-B
+    
     //(0x0250,0x02B0),  // IPA Extensions
     //(0x02B0,0x0300),  // Spacing Modifier Letters
     //(0x0300,0x0370),  // Combining Diacritical Marks
-    (0x0370,0x0400),  // Greek and Coptic
-    (0x0400,0x0500),  // Cyrillic
-    (0x0500,0x0530),  // Cyrillic Supplement
+    
+    //(0x0370,0x0400),  // Greek and Coptic
+    //(0x0400,0x0500),  // Cyrillic
+    //(0x0500,0x0530),  // Cyrillic Supplement
+    
     //(0x0530,0x0590),  // Armenian
     //(0x0590,0x0600),  // Hebrew
     //(0x0600,0x0700),  // Arabic
@@ -224,7 +227,12 @@ fn main() {
                 let mut cutout = Mat::<pixel::ARGB8>::new(vec2!(xs as usize,ys as usize));
                 for y in 0..ys {
                     for x in 0..xs {
-                        cutout.set(vec2!(x as usize,y as usize),image.get(vec2!((xr + x) as usize,(gensize.y - yr - ys + y) as usize)));
+                        cutout.set(
+                            vec2!(x as usize,y as usize),
+                            image.get(
+                                vec2!((xr + x) as usize,(gensize.y - yr - ys + y) as usize)
+                            )
+                        );
                     }
                 }
                 image_characters.push(ImageCharacter {
@@ -246,7 +254,7 @@ fn main() {
         }
     }
 
-    Command::new("sh").arg("-c").arg(format!("rm output.png")).output().expect("unable to remove output.png");
+    //Command::new("sh").arg("-c").arg(format!("rm output.png")).output().expect("unable to remove output.png");
 
     // sort image characters by surface
     image_characters.sort_by(|a,b| b.image.size.y.cmp(&a.image.size.y));
@@ -262,8 +270,18 @@ fn main() {
                 //println!("checking to see if {:04X} is already represented...",ch.n);
                 let mut p = vec2!(0,0);
                 if find_rect(&ch.image,&image,&mut p) {
-                    let r = rect!(p.x as i32 + border.x,p.y as i32 + border.y,ch.image.size.x as i32 - 2 * border.x,ch.image.size.y as i32 - 2 * border.y);
-                    let fr = rect!(r.o.x,tsize as i32 - r.o.y - r.s.y,r.s.x,r.s.y);
+                    let r = rect!(
+                        p.x as i32 + border.x,
+                        p.y as i32 + border.y,
+                        ch.image.size.x as i32 - 2 * border.x,
+                        ch.image.size.y as i32 - 2 * border.y
+                    );
+                    let fr = rect!(
+                        r.o.x,
+                        tsize as i32 - r.o.y - r.s.y,
+                        r.s.x,
+                        r.s.y
+                    );
                     //println!("re-using pixels for {:04X}",ch.n);
                     //println!("    found at {},{}!",p.x,p.y);
                     characters.push(Character {
@@ -284,8 +302,18 @@ fn main() {
                                 image.set(vec2!(p.x as usize + x,p.y as usize + y),ch.image.get(vec2!(x,y)));
                             }
                         }
-                        let r = rect!(p.x as i32 + border.x,p.y as i32 + border.y,ch.image.size.x as i32 - 2 * border.x,ch.image.size.y as i32 - 2 * border.y);
-                        let fr = rect!(r.o.x,tsize as i32 - r.o.y - r.s.y,r.s.x,r.s.y);
+                        let r = rect!(
+                            p.x as i32 + border.x,
+                            p.y as i32 + border.y,
+                            ch.image.size.x as i32 - 2 * border.x,
+                            ch.image.size.y as i32 - 2 * border.y
+                        );
+                        let fr = rect!(
+                            r.o.x,
+                            tsize as i32 - r.o.y - r.s.y,
+                            r.s.x,
+                            r.s.y
+                        );
                         characters.push(Character {
                             n: ch.n,
                             r: fr,

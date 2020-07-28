@@ -46,12 +46,6 @@ pub struct Graphics {
     pub(crate) target_hdc: Cell<HDC>,
 }
 
-/// (temporary) Blending mode.
-pub enum BlendMode {
-    Replace,
-    Over,
-}
-
 #[doc(hidden)]
 pub trait OpenGLUniform {
     fn set_uniform(location: i32,value: Self);
@@ -60,6 +54,12 @@ pub trait OpenGLUniform {
 impl OpenGLUniform for Vec2<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2fv(location,1,&value as *const Self as *const GLfloat) };
+    }
+}
+
+impl OpenGLUniform for Vec3<f32> {
+    fn set_uniform(location: i32,value: Self) {
+        unsafe { gl::Uniform3fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
@@ -204,8 +204,8 @@ impl Graphics {
         target.do_bind(&self);
     }
 
-    /// (temporary) Flush target.
-    pub fn flush(&self) {
+    /// (temporary) Present target.
+    pub fn present(&self) {
         unsafe {
             gl::Flush();
             if !self.target_is_framebuffer.get() {
@@ -259,13 +259,13 @@ impl Graphics {
     /// (temporary) Set blending mode.
     /// # Arguments
     /// * `mode` - Blending mode.
-    pub fn set_blend(&self,mode: BlendMode) {
+    pub fn set_blend(&self,mode: gpu::BlendMode) {
         match mode {
-            BlendMode::Replace => unsafe { gl::Disable(gl::BLEND); },
+            gpu::BlendMode::Replace => unsafe { gl::Disable(gl::BLEND); },
             _ => unsafe { gl::Enable(gl::BLEND); },
         }
         match mode {
-            BlendMode::Over => unsafe { gl::BlendFunc(gl::SRC_ALPHA,gl::ONE_MINUS_SRC_ALPHA); },
+            gpu::BlendMode::Over => unsafe { gl::BlendFunc(gl::SRC_ALPHA,gl::ONE_MINUS_SRC_ALPHA); },
             _ => { },
         }
     }

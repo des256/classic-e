@@ -16,12 +16,12 @@ pub struct Texture2D<T: gpu::GLFormat> {
     phantom: PhantomData<T>,
 }
 
-impl<T: gpu::GLFormat> Texture2D<T> {    
-    /// (temporary) Create new 2D texture.
+impl<T: gpu::GLFormat> Texture2D<T> {
+    /// (temporary) Create new empty 2D texture.
     /// # Arguments
     /// * `graphics` - Graphics context to create texture for.
-    /// * `image` - Mat to upload to the GPU.
-    pub fn new(_gpu: &Rc<gpu::Graphics>,image: &Mat<T>) -> Result<Texture2D<T>,SystemError> {
+    /// * `size` - Size of the texture.
+    pub fn new(_graphics: &Rc<gpu::Graphics>,size: Vec2<usize>) -> Result<Texture2D<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -30,14 +30,23 @@ impl<T: gpu::GLFormat> Texture2D<T> {
             gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_WRAP_T,gl::REPEAT as i32);
             gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_MIN_FILTER,gl::LINEAR as i32);
             gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_MAG_FILTER,gl::LINEAR as i32);
-            gl::TexStorage2D(gl::TEXTURE_2D,1,T::gl_internal_format(),image.size.x as i32,image.size.y as i32);
-            gl::TexSubImage2D(gl::TEXTURE_2D,0,0,0,image.size.x as i32,image.size.y as i32,T::gl_format(),T::gl_type(),image.data.as_ptr() as *const c_void);
+            gl::TexStorage2D(gl::TEXTURE_2D,1,T::gl_internal_format(),size.x as i32,size.y as i32);
         };
         Ok(Texture2D {
             tex: tex,
-            size: image.size,
+            size: size,
             phantom: PhantomData,
         })
+    }
+
+    /// (temporary) Create new 2D texture from Mat.
+    /// # Arguments
+    /// * `graphics` - Graphics context to create texture for.
+    /// * `image` - Mat to upload to the GPU.
+    pub fn new_from_mat(graphics: &Rc<gpu::Graphics>,image: &Mat<T>) -> Result<Texture2D<T>,SystemError> {
+        let texture = Texture2D::new(graphics,image.size);
+        unsafe { gl::TexSubImage2D(gl::TEXTURE_2D,0,0,0,image.size.x as i32,image.size.y as i32,T::gl_format(),T::gl_type(),image.data.as_ptr() as *const c_void) };
+        texture
     }
 }
 

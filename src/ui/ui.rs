@@ -31,7 +31,7 @@ impl UI {
 
             void main() {
                 tc = vec2(p.z,1.0 - p.w);
-                gl_Position = vec4(-1.0 + 2.0 * ppu.x * p.x / size.x,-1.0 + 2.0 * ppu.y * p.y / size.y,0.0,1.0);
+                gl_Position = vec4(-1.0 + 2.0 * ppu.x * p.x / size.x,1.0 - 2.0 * ppu.y * p.y / size.y,0.0,1.0);
             }
         "#;
 
@@ -123,7 +123,7 @@ impl UI {
             });
         }
         let image = image::decode::<pixel::ARGB8>(&buffer[16 + count * 32..]).expect("unable to decode");
-        let texture = gpu::Texture2D::<pixel::ARGB8>::new(&self.graphics,&image).expect("unable to create font texture");
+        let texture = gpu::Texture2D::<pixel::ARGB8>::new_from_mat(&self.graphics,&image).expect("unable to create font texture");
 
         let proto = Rc::new(ui::FontProto {
             name: name.to_string(),
