@@ -6,7 +6,7 @@ use std::{
     rc::Rc,
     cell::Cell,
     ffi::CString,
-    ptr::null_mut,
+    //ptr::null_mut,
 };
 use gl::types::{
     GLuint,
@@ -98,7 +98,7 @@ impl BindTarget for Rc<gpu::Framebuffer> {
 #[cfg(target_os="linux")]
             glXMakeCurrent(graphics.system.connection.get_raw_dpy(),graphics.system.hidden_window,graphics.system.context);
 #[cfg(target_os="windows")]
-            wglMakeCurrent(self.graphics.system.hidden_hdc,self.graphics.system.hglrc);
+            wglMakeCurrent(graphics.system.hidden_hdc,graphics.system.hglrc);
             gl::BindFramebuffer(gl::FRAMEBUFFER,self.fbo);
             gl::Viewport(0,0,self.size.x as i32,self.size.y as i32);
             gl::Scissor(0,0,self.size.x as i32,self.size.y as i32);
