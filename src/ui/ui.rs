@@ -12,34 +12,52 @@ pub struct UI {
     pub system: Rc<System>,
     pub graphics: Rc<gpu::Graphics>,
     pub msdf_shader: gpu::Shader,
+    pub texture_shader: gpu::Shader,
     pub font_protos: RefCell<Vec<Rc<ui::FontProto>>>,
     pub fonts: RefCell<Vec<Rc<ui::Font>>>,
+    pub quad_vertexbuffer: gpu::VertexBuffer<Vec2<f32>>,
 }
+
+static QUAD: [Vec2<f32>; 4] = [
+    vec2!(0.0,0.0),
+    vec2!(1.0,0.0),
+    vec2!(1.0,1.0),
+    vec2!(0.0,1.0),
+];
 
 impl UI {
     pub fn new(system: &Rc<System>,graphics: &Rc<gpu::Graphics>) -> Result<UI,SystemError> {
 
-        let vs = r#"
+        let msdf_vs = r#"
             #version 420 core
 
             uniform vec2 ppu;
-            uniform vec2 size;
+            uniform vec2 canvas_size;
 
-            layout(location = 0) in vec4 p;
+            layout(location = 0) in vec4 p;  // X,Y = pixel coordinates, Z,W = texture coordinates
 
             out vec2 tc;
 
+            vec4 p2h(vec2 p) {
+                return vec4(
+                    -1.0 + 2.0 * ppu.x * p.x / canvas_size.x,
+                    1.0 - 2.0 * ppu.y * p.y / canvas_size.y,
+                    0.0,
+                    1.0
+                );
+            }
+
             void main() {
                 tc = vec2(p.z,1.0 - p.w);
-                gl_Position = vec4(-1.0 + 2.0 * ppu.x * p.x / size.x,1.0 - 2.0 * ppu.y * p.y / size.y,0.0,1.0);
+                gl_Position = p2h(vec2(p.x,p.y));
             }
         "#;
-
-        let fs = r#"
+        let msdf_fs = r#"
             #version 420 core
 
             uniform sampler2D font_texture;
             uniform vec4 color;
+            uniform float sample_rad;
 
             in vec2 tc;
 
@@ -49,24 +67,101 @@ impl UI {
                 return max(min(r,g),min(max(r,g),b));
             }
 
-            void main() {
+            float msdf(vec2 tc) {
                 vec3 t = texture(font_texture,tc).rgb;
                 vec2 unit = (4.0 / textureSize(font_texture,0)).xy;
                 float dist = median(t.r,t.g,t.b) - 0.5;
                 dist *= dot(unit,0.5 / fwidth(tc));
-                float cov = clamp(dist + 0.5,0.0,1.0);
+                return clamp(dist + 0.5,0.0,1.0);
+            }
+
+            void main() {
+                //float cov = msdf(tc);
+                /*float cov = 0.2 * (
+                    msdf(vec2(tc.x,tc.y)) +
+                    msdf(vec2(tc.x - sample_rad,tc.y)) +
+                    msdf(vec2(tc.x + sample_rad,tc.y)) +
+                    msdf(vec2(tc.x,tc.y - sample_rad)) +
+                    msdf(vec2(tc.x,tc.y + sample_rad))
+                );*/
+                float cov = (
+                    msdf(vec2(tc.x - sample_rad,tc.y - sample_rad)) +
+                    msdf(vec2(tc.x,tc.y - sample_rad)) +
+                    msdf(vec2(tc.x + sample_rad,tc.y - sample_rad)) +
+                    msdf(vec2(tc.x - sample_rad,tc.y)) +
+                    msdf(vec2(tc.x,tc.y)) +
+                    msdf(vec2(tc.x + sample_rad,tc.y)) +
+                    msdf(vec2(tc.x - sample_rad,tc.y + sample_rad)) +
+                    msdf(vec2(tc.x,tc.y - sample_rad)) +
+                    msdf(vec2(tc.x + sample_rad,tc.y + sample_rad))
+                ) / 9.0;
                 frag_color = vec4(color.xyz,color.w * cov);
             }
         "#;
+        let msdf_shader = gpu::Shader::new(&graphics,msdf_vs,None,msdf_fs).expect("what?");
 
-        let msdf_shader = gpu::Shader::new(&graphics,vs,None,fs).expect("what?");
+        let texture_vs = r#"
+            #version 420 core
+
+            uniform vec2 ppu;
+            uniform vec2 canvas_size;
+            uniform vec2 src_size;
+            uniform vec4 src;
+            uniform vec4 dst;
+
+            layout(location = 0) in vec2 p;  // 0..1,0..1 quad coordinates
+
+            out vec2 tc;
+
+            vec4 p2h(vec2 p) {
+                return vec4(
+                    -1.0 + 2.0 * ppu.x * p.x / canvas_size.x,
+                    1.0 - 2.0 * ppu.y * p.y / canvas_size.y,
+                    0.0,
+                    1.0
+                );
+            }
+
+            void main() {
+                tc = vec2(
+                    (src.x + p.x * src.z) / src_size.x,
+                    (src.y + p.y * src.w) / src_size.y
+                );
+                gl_Position = p2h(vec2(
+                    dst.x + p.x * dst.z,
+                    dst.y + p.y * dst.w
+                ));
+            }
+        "#;
+        let texture_fs = r#"
+            #version 420 core
+
+            uniform sampler2D image_texture;
+
+            in vec2 tc;
+
+            out vec4 frag_color;
+
+            void main() {
+                frag_color = texture(image_texture,tc);
+                //frag_color = vec4(0.0,0.0,0.0,1.0);
+            }
+        "#;
+        let texture_shader = gpu::Shader::new(&graphics,texture_vs,None,texture_fs).expect("what?");
+
+        let quad_vertexbuffer = match gpu::VertexBuffer::new(&graphics,QUAD.to_vec()) {
+            Ok(vertexbuffer) => vertexbuffer,
+            Err(_) => { return Err(SystemError::Generic); },
+        };
 
         Ok(UI {
             system: Rc::clone(system),
             graphics: Rc::clone(graphics),
             msdf_shader: msdf_shader,
+            texture_shader: texture_shader,
             font_protos: RefCell::new(Vec::new()),
             fonts: RefCell::new(Vec::new()),
+            quad_vertexbuffer: quad_vertexbuffer,
         })
     }
 

@@ -36,7 +36,7 @@ impl FontProto {
 
 /// Text font representation.
 /// 
-/// # File Format
+/// ## File Format
 /// The file starts with a header of the following 8 bytes:
 /// `45 46 4E 84 30 30 31 00`, followed by the scale (u32) and the number of
 /// characters (u32).
@@ -66,6 +66,7 @@ pub struct Font {
 }
 
 impl Font {
+    #[doc(hidden)]
     pub fn new(proto: &Rc<FontProto>,size: Vec2<f32>,spacing: f32) -> Font {
         Font {
             proto: Rc::clone(proto),
@@ -74,6 +75,12 @@ impl Font {
         }
     }
 
+    /// Measure string in this font.
+    /// ## Arguments
+    /// * `text` - String to measure.
+    /// ## Returns
+    /// `(Vec2<f32>,vec2<f32>)` - The size of the string when rendered and the
+    /// offset of the baseline in the string.
     pub fn measure(&self,text: &str) -> (Vec2<f32>,Vec2<f32>) {
         let mut lp = 0f32;
         let mut min: Vec2<f32> = vec2!(0.0,0.0);

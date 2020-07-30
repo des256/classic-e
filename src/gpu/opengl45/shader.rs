@@ -26,12 +26,12 @@ pub struct Shader {
 
 impl Shader {
     /// Create new shader program.
-    /// # Arguments
+    /// ## Arguments
     /// * `graphics` - Graphics context to create shader for.
     /// * `vertex_src` - Vertex shader source.
     /// * `geometry_src` - Geometry shader source (or `None`).
     /// * `fragment_src` - Fragment shader source.
-    /// # Returns
+    /// ## Returns
     /// * `Ok(Shader)` - The created shader program.
     /// * `Err(SystemError)` - The shader progam could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>,vertex_src: &str,geometry_src: Option<&str>,fragment_src: &str) -> Result<Shader,SystemError> {

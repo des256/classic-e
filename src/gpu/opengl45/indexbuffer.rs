@@ -35,9 +35,12 @@ pub struct IndexBuffer<T: GLIndex> {
 
 impl<T: GLIndex> IndexBuffer<T> {
     /// (temporary) Create new index buffer.
-    /// # Arguments
+    /// ## Arguments
     /// * `graphics` - Graphics context to create indexbuffer for.
     /// * `indices` - Vector of indices to upload.
+    /// ## Returns
+    /// * `Ok(IndexBuffer)` - The new index buffer.
+    /// * `Err(SystemError)` - The index buffer could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>,indices: Vec<T>) -> Result<IndexBuffer<T>,SystemError> {
         let mut ibo: GLuint = 0;
         unsafe {

@@ -17,8 +17,11 @@ pub struct TextureCube<T: gpu::GLFormat> {
 
 impl<T: gpu::GLFormat> TextureCube<T> {    
     /// (temporary) Create new cube texture.
-    /// # Arguments
+    /// ## Arguments
     /// * `graphics` - Graphics context to create texture for.
+    /// ## Returns
+    /// * `Ok(TextureCube)` - The new cube texture.
+    /// * `Err(SystemError)` - The cube texture could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>) -> Result<TextureCube<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {

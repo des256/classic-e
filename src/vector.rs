@@ -183,7 +183,8 @@ pub fn init_vec2<T>(x: T,y: T) -> crate::Vec2<T> {
 #[macro_export]
 macro_rules! vec2 (
     ($x:expr,$y:expr) => (
-        init_vec2($x,$y)
+        crate::Vec2 { x: $x,y: $y, }
+        //init_vec2($x,$y)
     );
 );
 
@@ -421,7 +422,8 @@ pub fn init_vec3<T>(x: T,y: T,z: T) -> crate::Vec3<T> {
 #[macro_export]
 macro_rules! vec3 (
     ($x:expr,$y:expr,$z:expr) => (
-        init_vec3($x,$y,$z)
+        crate::Vec3 { x: $x,y: $y,z: $z, }
+        //init_vec3($x,$y,$z)
     );
 );
 
@@ -658,7 +660,8 @@ pub fn init_vec4<T>(x: T,y: T,z: T,w: T) -> crate::Vec4<T> {
 #[macro_export]
 macro_rules! vec4 (
     ($x:expr,$y:expr,$z:expr,$w:expr) => (
-        init_vec4($x,$y,$z,$w)
+        crate::Vec4 { x: $x,y: $y,z: $z,w: $w, }
+        //init_vec4($x,$y,$z,$w)
     );
 );
 

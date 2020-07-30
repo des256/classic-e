@@ -159,8 +159,9 @@ pub struct System {
 
 impl System {
     /// Create new system context.
-    /// # Returns
-    /// New system context.
+    /// ## Returns
+    /// * `Ok(System)` - The new system context.
+    /// * `Err(SystemError)` - The system context could not be created.
     pub fn new() -> Result<System,SystemError> {
         let connection = match Connection::connect_with_xlib_display() {
             Ok((connection,_)) => connection,
@@ -448,11 +449,12 @@ impl System {
     /// All events that are available for the window(s) are placed in a vector.
     /// If no events are available, the method returns immediately with an
     /// empty vector.
-    /// # Arguments
-    /// * `targets` - Either `&Rc<Window>` or `&Vec<Rc<Window>>`.
-    /// # Returns
-    /// `Vec<Event>` for all events on the specified window or
-    /// `Vec<(Rc<Window>,Event)>` for all combinations of window and event.
+    /// ## Arguments
+    /// * `targets` - Either a single window (`&Rc<Window>`) or a vector of
+    /// windows (`&Vec<Rc<Window>>`).
+    /// ## Returns
+    /// Vector of events occurred on a single window (`Vec<Event>`) or on
+    /// multiple windows (`Vec<(Rc<Window>,Event)>`).
     pub fn poll<T: Pollable>(&self,targets: &T) -> T::Result {
         targets.do_poll(&self)
     }

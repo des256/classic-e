@@ -61,7 +61,6 @@ impl ui::Widget for Text {
     fn draw(&self,dc: &Rc<ui::DC>,space: Rect<f32>) {
         let offset = self.font.borrow().measure(&self.text.borrow()).1;
         dc.set_color(self.color.get());
-        dc.ui.graphics.set_blend(gpu::BlendMode::Over);
         dc.draw_text(space.o + offset + self.padding.get(),&self.text.borrow());
     }
 

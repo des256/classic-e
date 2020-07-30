@@ -18,9 +18,12 @@ pub struct Texture1D<T: gpu::GLFormat> {
 
 impl<T: gpu::GLFormat> Texture1D<T> {    
     /// (temporary) Create new 1D texture.
-    /// # Arguments
+    /// ## Arguments
     /// * `graphics` - Graphics context to create texture for.
     /// * `image` - Vec to upload to the GPU.
+    /// ## Returns
+    /// * `Ok(Texture1D)` - The new 1D texture.
+    /// * `Err(SystemError)` - The 1D texture could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>,image: &Vec<T>) -> Result<Texture1D<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {

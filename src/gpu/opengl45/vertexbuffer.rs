@@ -54,9 +54,12 @@ pub struct VertexBuffer<T: GLVertex> {
 
 impl<T: GLVertex> VertexBuffer<T> {
     /// (temporary) Create new vertex buffer.
-    /// # Arguments
+    /// ## Arguments
     /// * `graphics` - Graphics context to create vertexbuffer for.
     /// * `vertices` - Vector of vertices to upload.
+    /// ## Returns
+    /// * `Ok(VertexBuffer)` - The new vertex buffer.
+    /// * `Err(SystemError)` - The vertex buffer could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>,vertices: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
         let mut vao: GLuint = 0;
         let mut vbo: GLuint = 0;

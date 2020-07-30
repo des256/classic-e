@@ -20,8 +20,11 @@ const SCREEN: Vec2<f32> = Vec2 { x: 1.0,y: 1.0, };
 impl DC {
 
     /// Create new drawing context.
-    /// # Arguments
+    /// ## Arguments
     /// * `ui` - UI context to create this DC for.
+    /// ## Returns
+    /// * `Ok(DC)` - The new drawing context.
+    /// * `Err(SystemError)` - The drawing context could not be created.
     pub fn new(ui: &Rc<ui::UI>) -> Result<ui::DC,SystemError> {
         Ok(DC {
             ui: Rc::clone(ui),
@@ -33,7 +36,7 @@ impl DC {
     }
 
     /// (temporary) Set DC window size.
-    /// # Arguments
+    /// ## Arguments
     /// * `size` - New window size to use.
     pub fn set_size(&self,size: Vec2<f32>) {
         self.size.set(size);
@@ -43,21 +46,21 @@ impl DC {
     /// 
     /// The UI uses "UI units" to define/align all widgets. The DC's PPU value
     /// indicates how many pixels fit inside one unit square.
-    /// # Arguments
+    /// ## Arguments
     /// * `ppu` - New PPU specification.
     pub fn set_ppu(&self,ppu: Vec2<f32>) {
         self.ppu.set(ppu);
     }
 
     /// (temporary) Set current drawing color.
-    /// # Arguments
+    /// ## Arguments
     /// * `color` - New color.
     pub fn set_color<T>(&self,color: T) where Vec4<f32>: From<T> {
         self.color.set(Vec4::<f32>::from(color));
     }
 
     /// (temporary) Set current drawing font.
-    /// # Arguments
+    /// ## Arguments
     /// * `font` - New font.
     pub fn set_font(&self,font: Rc<ui::Font>) {
         *(self.font.borrow_mut()) = font;
@@ -66,7 +69,7 @@ impl DC {
     /// (temporary) Draw text.
     /// 
     /// Draws the indicated text from the current font in the current color.
-    /// # Arguments
+    /// ## Arguments
     /// * `p` - Coordinates of the start of the text baseline.
     /// * `text` - Text to draw.
     pub fn draw_text(&self,p: Vec2<f32>,text: &str) {
@@ -110,13 +113,41 @@ impl DC {
         }
 
         let vertexbuffer = gpu::VertexBuffer::new(&self.ui.graphics,vertices).expect("what?");
+        self.ui.graphics.set_blend(gpu::BlendMode::Over);
         self.ui.graphics.bind_vertexbuffer(&vertexbuffer);
         self.ui.graphics.bind_shader(&self.ui.msdf_shader);
         self.ui.graphics.bind_texture(0,&font.proto.texture);
         self.ui.graphics.set_uniform("ppu",self.ppu.get());
-        self.ui.graphics.set_uniform("size",self.size.get());
+        let canvas_size = self.size.get();
+        self.ui.graphics.set_uniform("canvas_size",vec2!(canvas_size.x as f32,canvas_size.y as f32));
         self.ui.graphics.set_uniform("font_texture",0);
         self.ui.graphics.set_uniform("color",self.color.get());
+        self.ui.graphics.set_uniform("sample_rad",0.5 / (font.proto.texture.size.x as f32));
         self.ui.graphics.draw_triangles(6 * count);
+    }
+
+    /// (temporary) Draw from texture.
+    /// 
+    /// Draws from the indicated texture.
+    /// ## Arguments
+    /// * `p` - Coordinates of the start of the text baseline.
+    /// * `texture` - Texture to draw.
+    pub fn draw(&self,p: Vec2<f32>,texture: &gpu::Texture2D::<pixel::ARGB8>) {
+        self.ui.graphics.set_blend(gpu::BlendMode::Replace);
+        self.ui.graphics.bind_vertexbuffer(&self.ui.quad_vertexbuffer);
+        self.ui.graphics.bind_shader(&self.ui.texture_shader);
+        self.ui.graphics.bind_texture(0,texture);
+        self.ui.graphics.set_uniform("image_texture",0);
+        let ppu = self.ppu.get();
+        self.ui.graphics.set_uniform("ppu",ppu);
+        let canvas_size = self.size.get();
+        self.ui.graphics.set_uniform("canvas_size",vec2!(canvas_size.x as f32,canvas_size.y as f32));
+        let src_size = vec2!(texture.size.x as f32,texture.size.y as f32);
+        self.ui.graphics.set_uniform("src_size",src_size);
+        let src = vec4!(0.0,0.0,texture.size.x as f32,texture.size.y as f32);
+        self.ui.graphics.set_uniform("src",src);
+        let dst = vec4!(p.x as f32,p.y as f32,texture.size.x as f32,texture.size.y as f32);
+        self.ui.graphics.set_uniform("dst",dst);
+        self.ui.graphics.draw_triangle_fan(4);
     }
 }

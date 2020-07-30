@@ -27,13 +27,13 @@ pub struct Window {
 
 impl Window {
     /// Create new OS window.
-    /// # Arguments
+    /// ## Arguments
     /// * `system` - System to create the window on.
     /// * `r` - Origin and size of the window.
     /// * `title` - Initial title of the window.
-    /// # Returns
-    /// * `Some(Window)` - The new window.
-    /// * `None` - The window could not be created.
+    /// ## Returns
+    /// * `Ok(Window)` - The new window.
+    /// * `Err(SystemError)` - The window could not be created.
     pub fn new(system: &Rc<System>,r: Rect<isize>,title: &str) -> Result<Window,SystemError> {
         let id = system.connection.generate_id() as XID;
         let values = [

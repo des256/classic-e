@@ -18,9 +18,12 @@ pub struct Texture3D<T: gpu::GLFormat> {
 
 impl<T: gpu::GLFormat> Texture3D<T> {    
     /// (temporary) Create new 3D texture.
-    /// # Arguments
+    /// ## Arguments
     /// * `graphics` - Graphics context to create texture for.
     /// * `image` - Mat to upload to the GPU.
+    /// ## Returns
+    /// * `Ok(Texture3D)` - The new 3D texture.
+    /// * `Err(SystemError)` - The 3D texture could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>,image: &Ten<T>) -> Result<Texture3D<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {

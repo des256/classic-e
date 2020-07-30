@@ -18,9 +18,12 @@ pub struct Texture2D<T: gpu::GLFormat> {
 
 impl<T: gpu::GLFormat> Texture2D<T> {
     /// (temporary) Create new empty 2D texture.
-    /// # Arguments
+    /// ## Arguments
     /// * `graphics` - Graphics context to create texture for.
     /// * `size` - Size of the texture.
+    /// ## Returns
+    /// * `Ok(Texture2D)` - The new 2D texture.
+    /// * `Err(SystemError)` - The 2D texture could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>,size: Vec2<usize>) -> Result<Texture2D<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {

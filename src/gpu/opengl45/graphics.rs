@@ -6,9 +6,10 @@ use std::{
     rc::Rc,
     cell::Cell,
     ffi::CString,
-    //ptr::null_mut,
+    ptr::null_mut,
 };
 use gl::types::{
+    GLint,
     GLuint,
     GLfloat,
     GLchar,
@@ -24,7 +25,6 @@ use x11::{
 };
 #[cfg(target_os="windows")]
 use {
-    std::ptr::null_mut,
     winapi::{
         um::wingdi::{
             wglMakeCurrent,
@@ -51,6 +51,12 @@ pub trait OpenGLUniform {
     fn set_uniform(location: i32,value: Self);
 }
 
+impl OpenGLUniform for f32 {
+    fn set_uniform(location: i32,value: Self) {
+        unsafe { gl::Uniform1f(location,value) };
+    }
+}
+
 impl OpenGLUniform for Vec2<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2fv(location,1,&value as *const Self as *const GLfloat) };
@@ -69,9 +75,27 @@ impl OpenGLUniform for Vec4<f32> {
     }
 }
 
+impl OpenGLUniform for u32 {
+    fn set_uniform(location: i32,value: Self) {
+        unsafe { gl::Uniform1ui(location,value) };
+    }
+}
+
 impl OpenGLUniform for Vec2<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2uiv(location,1,&value as *const Self as *const GLuint) };
+    }
+}
+
+impl OpenGLUniform for Vec3<u32> {
+    fn set_uniform(location: i32,value: Self) {
+        unsafe { gl::Uniform3uiv(location,1,&value as *const Self as *const GLuint) };
+    }
+}
+
+impl OpenGLUniform for Vec4<u32> {
+    fn set_uniform(location: i32,value: Self) {
+        unsafe { gl::Uniform4uiv(location,1,&value as *const Self as *const GLuint) };
     }
 }
 
@@ -81,9 +105,21 @@ impl OpenGLUniform for i32 {
     }
 }
 
-impl OpenGLUniform for u32 {
+impl OpenGLUniform for Vec2<i32> {
     fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform1ui(location,value) };
+        unsafe { gl::Uniform2iv(location,1,&value as *const Self as *const GLint) };
+    }
+}
+
+impl OpenGLUniform for Vec3<i32> {
+    fn set_uniform(location: i32,value: Self) {
+        unsafe { gl::Uniform3iv(location,1,&value as *const Self as *const GLint) };
+    }
+}
+
+impl OpenGLUniform for Vec4<i32> {
+    fn set_uniform(location: i32,value: Self) {
+        unsafe { gl::Uniform4iv(location,1,&value as *const Self as *const GLint) };
     }
 }
 
@@ -179,9 +215,9 @@ impl<T: gpu::GLFormat> BindTexture for gpu::TextureCube<T> {
 
 impl Graphics {
     /// Create new graphics context.
-    /// # Arguments
+    /// ## Arguments
     /// * `system` - System to create the graphics context for.
-    /// # Returns
+    /// ## Returns
     /// * `Ok(GPU)` - The created graphics context.
     /// * `Err(SystemError)` - The graphics context could not be created.
     pub fn new(system: &Rc<System>) -> Result<Graphics,SystemError> {
@@ -198,8 +234,8 @@ impl Graphics {
     }
 
     /// (temporary) Bind current target.
-    /// # Arguments
-    /// * `target` - Either `Framebuffer` or `Window`.
+    /// ## Arguments
+    /// * `target` - Framebuffer or window to draw to.
     pub fn bind_target<T: BindTarget>(&self,target: &T) {
         target.do_bind(&self);
     }
@@ -218,7 +254,7 @@ impl Graphics {
     }
 
     /// (temporary) Clear current target.
-    /// # Arguments
+    /// ## Arguments
     /// * `color` - Color to clear with.
     pub fn clear<T>(&self,color: T) where Vec4<f32>: From<T> {
         let color = Vec4::<f32>::from(color);
@@ -229,35 +265,35 @@ impl Graphics {
     }
 
     /// (temporary) Draw triangle fan.
-    /// # Arguments
+    /// ## Arguments
     /// * `n` - Number of vertices.
     pub fn draw_triangle_fan(&self,n: i32) {
         unsafe { gl::DrawArrays(gl::TRIANGLE_FAN,0,n) };
     }
 
     /// (temporary) Draw triangles.
-    /// # Arguments
+    /// ## Arguments
     /// * `n` - Number of vertices.
     pub fn draw_triangles(&self,n: i32) {
         unsafe { gl::DrawArrays(gl::TRIANGLES,0,n) };
     }
 
     /// (temporary) Draw indexed triangle fan.
-    /// # Arguments
+    /// ## Arguments
     /// * `n` - Number of vertices.
     pub fn draw_indexed_triangle_fan(&self,n: i32) {
         unsafe { gl::DrawElements(gl::TRIANGLE_FAN,n,self.index_type.get(),null_mut()) };
     }
 
     /// (temporary) Draw triangles.
-    /// # Arguments
+    /// ## Arguments
     /// * `n` - Number of vertices.
     pub fn draw_indexed_triangles(&self,n: i32) {
         unsafe { gl::DrawElements(gl::TRIANGLES,n,self.index_type.get(),null_mut()) };
     }
 
     /// (temporary) Set blending mode.
-    /// # Arguments
+    /// ## Arguments
     /// * `mode` - Blending mode.
     pub fn set_blend(&self,mode: gpu::BlendMode) {
         match mode {
@@ -271,7 +307,7 @@ impl Graphics {
     }
 
     /// (temporary) Bind texture or framebuffer to a texture stage.
-    /// # Arguments
+    /// ## Arguments
     /// * `stage` - Texture stage to bind to.
     /// * `texture` - Texture or framebuffer to bind.
     pub fn bind_texture<T: BindTexture>(&self,stage: usize,texture: &T) {
@@ -279,7 +315,7 @@ impl Graphics {
     }
 
     /// (temporary) Bind current shader program.
-    /// # Arguments
+    /// ## Arguments
     /// * `shader` - Shader program.
     pub fn bind_shader(&self,shader: &gpu::Shader) {
         unsafe { gl::UseProgram(shader.sp); }
@@ -287,7 +323,7 @@ impl Graphics {
     }
 
     /// (temporary) Set uniform value for current shader program.
-    /// # Arguments
+    /// ## Arguments
     /// * `name` - Variable name referenced in the shader program.
     /// * `value` - Value of the uniform.
     pub fn set_uniform<T: OpenGLUniform>(&self,name: &str,value: T) {
@@ -297,14 +333,14 @@ impl Graphics {
     }
 
     /// (temporary) Bind current vertex buffer.
-    /// # Arguments
+    /// ## Arguments
     /// * `vertexbuffer` - Vertexbuffer to bind.
     pub fn bind_vertexbuffer<T: gpu::GLVertex>(&self,vertexbuffer: &gpu::VertexBuffer<T>) {
         unsafe { gl::BindVertexArray(vertexbuffer.vao) };
     }
 
     /// (temporary) Bind current index buffer.
-    /// # Arguments
+    /// ## Arguments
     /// * `indexbuffer` - Indexbuffer to bind.
     pub fn bind_indexbuffer<T: gpu::GLIndex>(&self,indexbuffer: &gpu::IndexBuffer<T>) {
         self.index_type.set(T::gl_type());

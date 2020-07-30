@@ -15,6 +15,12 @@ pub struct HStack {
 }
 
 impl HStack {
+    /// Create new horizontal stack widget.
+    /// ## Arguments
+    /// * `ui` - UI context to create this horizontal stack widget for.
+    /// * `widgets` - Widgets in the stack.
+    /// ## Returns
+    /// The horizontal stack widget.
     pub fn new(ui: &Rc<ui::UI>,widgets: Vec<Rc<dyn ui::Widget>>) -> HStack {
         HStack {
             _ui: Rc::clone(ui),
@@ -24,10 +30,16 @@ impl HStack {
         }
     }
 
+    /// Set widget padding.
+    /// ## Arguments
+    /// * `padding` - New padding specification.
     pub fn set_padding(&self,padding: Vec2<f32>) {
         self.padding.set(padding);
     }
 
+    /// Set widget alignment.
+    /// ## Arguments
+    /// * `ca` - Vertical alignment of the widgets in the stack.
     pub fn set_calign(&self,ca: ui::VAlignment) {
         self.ca.set(ca);
     }

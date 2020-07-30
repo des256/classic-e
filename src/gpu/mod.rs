@@ -5,7 +5,9 @@
 
 /// (temporary) Blending mode.
 pub enum BlendMode {
+    /// Replace target with source.
     Replace,
+    /// Blend target with source, using source alpha.
     Over,
 }
 
