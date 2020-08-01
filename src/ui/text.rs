@@ -9,7 +9,7 @@ use std::cell::RefCell;
 /// Text widget.
 pub struct Text {
     _ui: Rc<ui::UI>,
-    padding: Cell<Vec2<f32>>,
+    padding: Cell<Vec2<i32>>,
     font: RefCell<Rc<ui::Font>>,
     text: RefCell<String>,
     color: Cell<Vec4<f32>>,
@@ -27,8 +27,8 @@ impl Text {
     pub fn new(ui: &Rc<ui::UI>,text: &str) -> Result<Text,SystemError> {
         Ok(Text {
             _ui: Rc::clone(ui),
-            padding: Cell::new(vec2!(0.0,0.0)),
-            font: RefCell::new(ui.get_font("arialn.fnt",vec2!(14.0,14.0),0.0).expect("cannot load font")),
+            padding: Cell::new(vec2!(0,0)),
+            font: RefCell::new(ui.get_font("arialn14.fnt").expect("cannot load font")),
             text: RefCell::new(String::from(text)),
             color: Cell::new(vec4!(1.0,1.0,1.0,1.0)),
         })
@@ -37,7 +37,7 @@ impl Text {
     /// Set padding of the text widget.
     /// # Arguments
     /// * `padding` - New padding.
-    pub fn set_padding(&self,padding: Vec2<f32>) {
+    pub fn set_padding(&self,padding: Vec2<i32>) {
         self.padding.set(padding);
     }
 
@@ -58,13 +58,12 @@ impl Text {
 
 impl ui::Widget for Text {
     
-    fn draw(&self,dc: &Rc<ui::DC>,space: Rect<f32>) {
-        let offset = self.font.borrow().measure(&self.text.borrow()).1;
+    fn draw(&self,dc: &Rc<ui::DC>,space: Rect<i32>) {
         dc.set_color(self.color.get());
-        dc.draw_text(space.o + offset + self.padding.get(),&self.text.borrow());
+        dc.draw_text(space.o + self.padding.get(),&self.text.borrow());
     }
 
-    fn measure(&self) -> Vec2<f32> {
-        self.font.borrow().measure(&self.text.borrow()).0 + 2.0 * self.padding.get()
+    fn measure(&self) -> Vec2<i32> {
+        self.font.borrow().measure(&self.text.borrow()) + 2 * self.padding.get()
     }
 }

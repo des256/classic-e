@@ -30,7 +30,7 @@ fn main() {
     let text1 = Rc::new(ui::Text::new(&ui,"This").expect("Cannot create text."));
     let text2 = Rc::new(ui::Text::new(&ui,"is a vertical").expect("Cannot create text."));
     let text3 = Rc::new(ui::Text::new(&ui,"stack with").expect("Cannot create text."));
-    let text4 = Rc::new(ui::Text::new(&ui,"a bunch of").expect("Cannot create text."));
+    let text4 = Rc::new(ui::Button::new(&ui,"a bunch of").expect("Cannot create text."));
     let text5 = Rc::new(ui::Text::new(&ui,"texts that just align").expect("Cannot create text."));
     let text6 = Rc::new(ui::Text::new(&ui,"nicely.").expect("Cannot create text."));
     let text7 = Rc::new(ui::Text::new(&ui,"Almost before we knew it, we had left the ground.").expect("Cannot create text."));
@@ -51,10 +51,10 @@ fn main() {
     let text9 = Rc::new(ui::Text::new(&ui,"Edit").expect("Cannot create text."));
     let text10 = Rc::new(ui::Text::new(&ui,"Selection").expect("Cannot create text."));
     let text11 = Rc::new(ui::Text::new(&ui,"View").expect("Cannot create text."));
-    text8.set_padding(vec2!(4.0,2.0));
-    text9.set_padding(vec2!(4.0,2.0));
-    text10.set_padding(vec2!(4.0,2.0));
-    text11.set_padding(vec2!(4.0,2.0));
+    text8.set_padding(vec2!(4,2));
+    text9.set_padding(vec2!(4,2));
+    text10.set_padding(vec2!(4,2));
+    text11.set_padding(vec2!(4,2));
 
     // create HStack
     let hstack = Rc::new(ui::HStack::new(&ui,vec![text8,text9,text10,text11,vstack]));
@@ -77,12 +77,13 @@ fn main() {
                 Event::Render => {
                     graphics.bind_target(&window);
                     graphics.clear(vec4!(0.0,0.3,0.4,1.0));
-                    let ws = window.size.get();
-                    let window_size = vec2!(ws.x as f32,ws.y as f32);
-                    dc.set_size(window_size);
-                    let size = hstack.measure();
-                    let pos = 0.5 * (window_size - size);
-                    hstack.draw(&dc,rect!(pos.x,pos.y,size.x as f32,size.y as f32));
+                    let size = window.size.get();
+                    let fsize = vec2!(size.x as f32,size.y as f32);
+                    let nsize = vec2!(size.x as i32,size.y as i32);
+                    dc.set_size(fsize);
+                    let hstack_size = hstack.measure();
+                    let pos = (nsize - hstack_size) / 2;
+                    hstack.draw(&dc,rect!(pos.x,pos.y,hstack_size.x,hstack_size.y));
                     rendered = true;
                 },
 

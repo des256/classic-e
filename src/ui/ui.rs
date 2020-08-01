@@ -2,18 +2,21 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use std::rc::Rc;
-use std::cell::RefCell;
-use std::fs::File;
-use std::io::prelude::*;
+use std::{
+    rc::Rc,
+    cell::RefCell,
+};
+
+use gl::types::{
+    GLuint,
+    GLvoid,
+};
 
 /// UI subsystem.
 pub struct UI {
     pub system: Rc<System>,
     pub graphics: Rc<gpu::Graphics>,
-    pub msdf_shader: gpu::Shader,
-    pub texture_shader: gpu::Shader,
-    pub font_protos: RefCell<Vec<Rc<ui::FontProto>>>,
+    pub uber_shader: gpu::Shader,
     pub fonts: RefCell<Vec<Rc<ui::Font>>>,
     pub quad_vertexbuffer: gpu::VertexBuffer<Vec2<f32>>,
 }
@@ -25,129 +28,119 @@ static QUAD: [Vec2<f32>; 4] = [
     vec2!(0.0,1.0),
 ];
 
+#[derive(Copy,Clone)]
+#[repr(C)]
+pub struct Vertex {
+    pub(crate) pt: Vec4<f32>,    // should become p: Vec2<u16>, t: Vec2<f32>,
+    pub(crate) a: Vec4<f32>,     // should become a: u32,
+    pub(crate) b: Vec4<f32>,     // should become b: u32,
+    pub(crate) mlfq: Vec4<u32>,  // should become m: u8, l: u8, f: u16,
+}
+
+// TODO: this currently means that only OpenGL is accepted; solve this later
+impl gpu::GLVertex for Vertex {
+    fn bind() -> Vec<GLuint> {
+        unsafe {
+            gl::EnableVertexAttribArray(0);
+            gl::VertexAttribPointer(0,4,gl::FLOAT,gl::FALSE,64,0 as *const GLvoid);
+            gl::EnableVertexAttribArray(1);
+            gl::VertexAttribPointer(1,4,gl::FLOAT,gl::FALSE,64,16 as *const GLvoid);
+            gl::EnableVertexAttribArray(2);
+            gl::VertexAttribPointer(2,4,gl::FLOAT,gl::FALSE,64,32 as *const GLvoid);
+            gl::EnableVertexAttribArray(3);
+            gl::VertexAttribIPointer(3,4,gl::UNSIGNED_INT,64,48 as *const GLvoid);
+        }
+        vec![0]
+    }
+
+    fn len() -> isize {
+        64
+    }
+}
+
 impl UI {
     pub fn new(system: &Rc<System>,graphics: &Rc<gpu::Graphics>) -> Result<UI,SystemError> {
-
-        let msdf_vs = r#"
+        let uber_vs = r#"
             #version 420 core
 
-            uniform vec2 ppu;
             uniform vec2 canvas_size;
+            
+            layout(location = 0) in vec4 ipt;
+            layout(location = 1) in vec4 ia;
+            layout(location = 2) in vec4 ib;
+            layout(location = 3) in uvec4 imlfq;
 
-            layout(location = 0) in vec4 p;  // X,Y = pixel coordinates, Z,W = texture coordinates
+            out Vertex {
+                vec2 t;
+                vec4 a;
+                vec4 b;
+                flat uvec2 ml;
+            } v;
 
-            out vec2 tc;
-
-            vec4 p2h(vec2 p) {
-                return vec4(
-                    -1.0 + 2.0 * ppu.x * p.x / canvas_size.x,
-                    1.0 - 2.0 * ppu.y * p.y / canvas_size.y,
+            void main() {
+                gl_Position = vec4(
+                    -1.0 + 2.0 * ipt.x / canvas_size.x,
+                    1.0 - 2.0 * ipt.y / canvas_size.y,
                     0.0,
                     1.0
                 );
-            }
-
-            void main() {
-                tc = vec2(p.z,1.0 - p.w);
-                gl_Position = p2h(vec2(p.x,p.y));
+                v.t = vec2(ipt.z,ipt.w);
+                v.a = ia;
+                v.b = ib;
+                v.ml = uvec2(imlfq.x,imlfq.y);
             }
         "#;
-        let msdf_fs = r#"
+        let uber_fs = r#"
             #version 420 core
 
-            uniform sampler2D font_texture;
-            uniform vec4 color;
-            uniform float sample_rad;
+            //uniform sampler2DArray textures;
+            uniform sampler2D textures;
 
-            in vec2 tc;
+            in Vertex {
+                vec2 t;
+                vec4 a;
+                vec4 b;
+                flat uvec2 ml;
+            } v;
 
-            out vec4 frag_color;
-
-            float median(float r,float g,float b) {
-                return max(min(r,g),min(max(r,g),b));
-            }
-
-            float msdf(vec2 tc) {
-                vec3 t = texture(font_texture,tc).rgb;
-                vec2 unit = (4.0 / textureSize(font_texture,0)).xy;
-                float dist = median(t.r,t.g,t.b) - 0.5;
-                dist *= dot(unit,0.5 / fwidth(tc));
-                return clamp(dist + 0.5,0.0,1.0);
-            }
+            out vec4 o;
 
             void main() {
-                //float cov = msdf(tc);
-                /*float cov = 0.2 * (
-                    msdf(vec2(tc.x,tc.y)) +
-                    msdf(vec2(tc.x - sample_rad,tc.y)) +
-                    msdf(vec2(tc.x + sample_rad,tc.y)) +
-                    msdf(vec2(tc.x,tc.y - sample_rad)) +
-                    msdf(vec2(tc.x,tc.y + sample_rad))
-                );*/
-                float cov = (
-                    msdf(vec2(tc.x - sample_rad,tc.y - sample_rad)) +
-                    msdf(vec2(tc.x,tc.y - sample_rad)) +
-                    msdf(vec2(tc.x + sample_rad,tc.y - sample_rad)) +
-                    msdf(vec2(tc.x - sample_rad,tc.y)) +
-                    msdf(vec2(tc.x,tc.y)) +
-                    msdf(vec2(tc.x + sample_rad,tc.y)) +
-                    msdf(vec2(tc.x - sample_rad,tc.y + sample_rad)) +
-                    msdf(vec2(tc.x,tc.y - sample_rad)) +
-                    msdf(vec2(tc.x + sample_rad,tc.y + sample_rad))
-                ) / 9.0;
-                frag_color = vec4(color.xyz,color.w * cov);
+                if(v.ml.x == 0) {
+                    o = v.a;
+                }
+                else {
+                    //vec4 t = texture2DArray(textures,vec3(v.t.x,v.t.y,v.ml.y));
+                    vec4 t = texture2D(textures,vec2(v.t.x,v.t.y));
+                    switch(v.ml.x) {
+                        case 0:
+                            o = v.a;
+                            break;
+    
+                        case 1:
+                            o = v.a + v.b * t;
+                            break;
+    
+                        case 2:
+                            o = v.a + v.b * t.xxxx;
+                            break;
+    
+                        case 3:
+                            o = v.a + v.b * t.yyyy;
+                            break;
+    
+                        case 4:
+                            o = v.a + v.b * t.zzzz;
+                            break;
+    
+                        case 5:
+                            o = v.a + v.b * t.wwww;
+                            break;
+                    }    
+                }
             }
         "#;
-        let msdf_shader = gpu::Shader::new(&graphics,msdf_vs,None,msdf_fs).expect("what?");
-
-        let texture_vs = r#"
-            #version 420 core
-
-            uniform vec2 ppu;
-            uniform vec2 canvas_size;
-            uniform vec2 src_size;
-            uniform vec4 src;
-            uniform vec4 dst;
-
-            layout(location = 0) in vec2 p;  // 0..1,0..1 quad coordinates
-
-            out vec2 tc;
-
-            vec4 p2h(vec2 p) {
-                return vec4(
-                    -1.0 + 2.0 * ppu.x * p.x / canvas_size.x,
-                    1.0 - 2.0 * ppu.y * p.y / canvas_size.y,
-                    0.0,
-                    1.0
-                );
-            }
-
-            void main() {
-                tc = vec2(
-                    (src.x + p.x * src.z) / src_size.x,
-                    (src.y + p.y * src.w) / src_size.y
-                );
-                gl_Position = p2h(vec2(
-                    dst.x + p.x * dst.z,
-                    dst.y + p.y * dst.w
-                ));
-            }
-        "#;
-        let texture_fs = r#"
-            #version 420 core
-
-            uniform sampler2D image_texture;
-
-            in vec2 tc;
-
-            out vec4 frag_color;
-
-            void main() {
-                frag_color = texture(image_texture,tc);
-                //frag_color = vec4(0.0,0.0,0.0,1.0);
-            }
-        "#;
-        let texture_shader = gpu::Shader::new(&graphics,texture_vs,None,texture_fs).expect("what?");
+        let uber_shader = gpu::Shader::new(&graphics,uber_vs,None,uber_fs).expect("what?");
 
         let quad_vertexbuffer = match gpu::VertexBuffer::new(&graphics,QUAD.to_vec()) {
             Ok(vertexbuffer) => vertexbuffer,
@@ -157,77 +150,26 @@ impl UI {
         Ok(UI {
             system: Rc::clone(system),
             graphics: Rc::clone(graphics),
-            msdf_shader: msdf_shader,
-            texture_shader: texture_shader,
-            font_protos: RefCell::new(Vec::new()),
+            uber_shader: uber_shader,
             fonts: RefCell::new(Vec::new()),
             quad_vertexbuffer: quad_vertexbuffer,
         })
     }
 
-    pub fn get_font(&self,name: &str,size: Vec2<f32>,spacing: f32) -> Result<Rc<ui::Font>,SystemError> {
+    pub fn get_font(&self,filename: &str) -> Result<Rc<ui::Font>,SystemError> {
 
         // see if font already exists, and refer to that
         {
             let fonts = self.fonts.borrow();
             for font in fonts.iter() {
-                if (name == font.proto.name) && (size == font.size) && (spacing == font.spacing) {
+                if filename == font.filename {
                     return Ok(Rc::clone(font));
                 }
             }
         }
 
-        // see if proto already exists, and create new font for it
-        {
-            let protos = self.font_protos.borrow();
-            for proto in protos.iter() {
-                if name == proto.name {
-                    let font = Rc::new(ui::Font::new(&proto,size,spacing));
-                    self.fonts.borrow_mut().push(Rc::clone(&font));
-                    return Ok(font);
-                }
-            }
-        }
-
         // otherwise load the font
-        let mut file = match File::open(name) {
-            Ok(file) => file,
-            Err(_) => { return Err(SystemError::Generic); },
-        };
-        let mut buffer: Vec<u8> = Vec::new();
-        if let Err(_) = file.read_to_end(&mut buffer) {
-            return Err(SystemError::Generic);
-        }
-        let scale = (buffer[8] as u32) | ((buffer[9] as u32) << 8) | ((buffer[10] as u32) << 16) | ((buffer[11] as u32) << 24);
-        let count = ((buffer[12] as u32) | ((buffer[13] as u32) << 8) | ((buffer[14] as u32) << 16) | ((buffer[15] as u32) << 24)) as usize;
-        let mut characters: Vec<ui::Character> = Vec::new();
-        for i in 0..count {
-            let n = (buffer[16 + i * 32] as u32) | ((buffer[17 + i * 32] as u32) << 8) | ((buffer[18 + i * 32] as u32) << 16) | ((buffer[19 + i * 32] as u32) << 24);
-            let rox = (buffer[20 + i * 32] as u32) | ((buffer[21 + i * 32] as u32) << 8) | ((buffer[22 + i * 32] as u32) << 16) | ((buffer[23 + i * 32] as u32) << 24);
-            let roy = (buffer[24 + i * 32] as u32) | ((buffer[25 + i * 32] as u32) << 8) | ((buffer[26 + i * 32] as u32) << 16) | ((buffer[27 + i * 32] as u32) << 24);
-            let rsx = (buffer[28 + i * 32] as u32) | ((buffer[29 + i * 32] as u32) << 8) | ((buffer[30 + i * 32] as u32) << 16) | ((buffer[31 + i * 32] as u32) << 24);
-            let rsy = (buffer[32 + i * 32] as u32) | ((buffer[33 + i * 32] as u32) << 8) | ((buffer[34 + i * 32] as u32) << 16) | ((buffer[35 + i * 32] as u32) << 24);
-            let ox = (buffer[36 + i * 32] as u32) | ((buffer[37 + i * 32] as u32) << 8) | ((buffer[38 + i * 32] as u32) << 16) | ((buffer[39 + i * 32] as u32) << 24);
-            let oy = (buffer[40 + i * 32] as u32) | ((buffer[41 + i * 32] as u32) << 8) | ((buffer[42 + i * 32] as u32) << 16) | ((buffer[43 + i * 32] as u32) << 24);
-            let adv = (buffer[44 + i * 32] as u32) | ((buffer[45 + i * 32] as u32) << 8) | ((buffer[46 + i * 32] as u32) << 16) | ((buffer[47 + i * 32] as u32) << 24);
-            characters.push(ui::Character {
-                n: n,
-                r: rect!(rox as i32,roy as i32,rsx as i32,rsy as i32),
-                offset: vec2!(ox as i32,oy as i32),
-                advance: adv as i32,
-            });
-        }
-        let image = image::decode::<pixel::ARGB8>(&buffer[16 + count * 32..]).expect("unable to decode");
-        let texture = gpu::Texture2D::<pixel::ARGB8>::new_from_mat(&self.graphics,&image).expect("unable to create font texture");
-
-        let proto = Rc::new(ui::FontProto {
-            name: name.to_string(),
-            scale: scale,
-            characters: characters,
-            texture: texture,
-        });
-        self.font_protos.borrow_mut().push(Rc::clone(&proto));
-        let font = Rc::new(ui::Font::new(&proto,size,spacing));
+        let font = Rc::new(ui::Font::new(self,filename).expect("unable to load font"));
         self.fonts.borrow_mut().push(Rc::clone(&font));
         Ok(font)
     }

@@ -27,7 +27,7 @@ fn main() {
     let dc = Rc::new(ui::DC::new(&ui).expect("what?"));
 
     // create text widget
-    let text = Rc::new(ui::Text::new(&ui,"({Hello, World!})").expect("Cannot create text."));
+    let text = Rc::new(ui::Text::new(&ui,"Hello, World!").expect("Cannot create text."));
     text.set_color(vec4!(1.0,0.5,0.0,1.0));
 
     // main loop
@@ -49,10 +49,11 @@ fn main() {
                     graphics.clear(vec4!(0.0,0.3,0.4,1.0));
                     let size = window.size.get();
                     let fsize = vec2!(size.x as f32,size.y as f32);
+                    let nsize = vec2!(size.x as i32,size.y as i32);
                     dc.set_size(fsize);
                     let text_size = text.measure();
-                    let pos = 0.5 * (fsize - text_size);
-                    text.draw(&dc,rect!(pos.x,pos.y,text_size.x as f32,text_size.y as f32));
+                    let pos = (nsize - text_size) / 2;
+                    text.draw(&dc,rect!(pos.x,pos.y,text_size.x,text_size.y));
                     rendered = true;
                 },
 

@@ -57,10 +57,11 @@ fn main() {
                     graphics.clear(vec4!(0.0,0.3,0.4,1.0));
                     let size = window.size.get();
                     let fsize = vec2!(size.x as f32,size.y as f32);
+                    let nsize = vec2!(size.x as i32,size.y as i32);
                     dc.set_size(fsize);
-                    let text_size = image.measure();
-                    let pos = 0.5 * (fsize - text_size);
-                    image.draw(&dc,rect!(pos.x,pos.y,text_size.x as f32,text_size.y as f32));
+                    let image_size = image.measure();
+                    let pos = (nsize - image_size) / 2;
+                    image.draw(&dc,rect!(pos.x,pos.y,image_size.x,image_size.y));
                     rendered = true;
                 },
 

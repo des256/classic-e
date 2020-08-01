@@ -11,11 +11,8 @@ pub struct DC {
     pub(crate) ui: Rc<ui::UI>,
     font: RefCell<Rc<ui::Font>>,
     color: Cell<Vec4<f32>>,
-    ppu: Cell<Vec2<f32>>,  // pixels per unit
     size: Cell<Vec2<f32>>,  // viewport size (in units, not pixels)
 }
-
-const SCREEN: Vec2<f32> = Vec2 { x: 1.0,y: 1.0, };
 
 impl DC {
 
@@ -28,9 +25,8 @@ impl DC {
     pub fn new(ui: &Rc<ui::UI>) -> Result<ui::DC,SystemError> {
         Ok(DC {
             ui: Rc::clone(ui),
-            font: RefCell::new(ui.get_font("arialn.fnt",vec2!(14.0,14.0),0.0).expect("cannot load font")),
+            font: RefCell::new(ui.get_font("arialn14.fnt").expect("cannot load font")),
             color: Cell::new(vec4!(1.0,1.0,1.0,1.0)),
-            ppu: Cell::new(SCREEN),
             size: Cell::new(vec2!(1.0,1.0)),
         })
     }
@@ -40,16 +36,6 @@ impl DC {
     /// * `size` - New window size to use.
     pub fn set_size(&self,size: Vec2<f32>) {
         self.size.set(size);
-    }
-
-    /// (temporary) Set pixels per unit.
-    /// 
-    /// The UI uses "UI units" to define/align all widgets. The DC's PPU value
-    /// indicates how many pixels fit inside one unit square.
-    /// ## Arguments
-    /// * `ppu` - New PPU specification.
-    pub fn set_ppu(&self,ppu: Vec2<f32>) {
-        self.ppu.set(ppu);
     }
 
     /// (temporary) Set current drawing color.
@@ -72,57 +58,69 @@ impl DC {
     /// ## Arguments
     /// * `p` - Coordinates of the start of the text baseline.
     /// * `text` - Text to draw.
-    pub fn draw_text(&self,p: Vec2<f32>,text: &str) {
-        let mut vertices: Vec<Vec4<f32>> = Vec::new();
-        let mut lp = vec2!(p.x as f32,p.y as f32);
+    pub fn draw_text(&self,p: Vec2<i32>,text: &str) {
+        //let mut vertices: Vec<Vec4<f32>> = Vec::new();
+        let mut vertices: Vec<ui::Vertex> = Vec::new();
         let mut count = 0;
         let font = self.font.borrow();
+        let color = self.color.get();
+        let mut v = vec2!(p.x,p.y + font.y_bearing as i32);
         for c in text.chars() {
-            if let Some(ch) = font.proto.find(c) {
-                if (ch.r.s.x > 0) && (ch.r.s.y > 0) {
-                    // size of the character, in GU
-                    let sx = ui::FONT.x * font.size.x * (ch.r.s.x as f32) / (font.proto.scale as f32);
-                    let sy = ui::FONT.y * font.size.y * (ch.r.s.y as f32) / (font.proto.scale as f32);
-
-                    // bottom-left of the character, in GU
-                    let ox = lp.x - ui::FONT.x * font.size.x * (ch.offset.x as f32) / (font.proto.scale as f32);
-                    let oy = lp.y - sy + ui::FONT.y * font.size.y * (ch.offset.y as f32) / (font.proto.scale as f32);
-
-                    // texture divisor
-                    let tdx = 1.0 / (font.proto.texture.size.x as f32);
-                    let tdy = 1.0 / (font.proto.texture.size.y as f32);
-
-                    // texture coordinates
-                    let tox = tdx * (ch.r.o.x as f32);
-                    let toy = tdy * (ch.r.o.y as f32);
-                    let tsx = tdx * (ch.r.s.x as f32);
-                    let tsy = tdy * (ch.r.s.y as f32);
-
-                    // add quad
-                    vertices.push(vec4!(ox,oy + sy,tox,toy));
-                    vertices.push(vec4!(ox + sx,oy + sy,tox + tsx,toy));
-                    vertices.push(vec4!(ox + sx,oy,tox + tsx,toy + tsy));
-                    vertices.push(vec4!(ox,oy + sy,tox,toy));
-                    vertices.push(vec4!(ox + sx,oy,tox + tsx,toy + tsy));
-                    vertices.push(vec4!(ox,oy,tox,toy + tsy));
-
-                    count += 1;
-                }
-                lp.x += ui::FONT.x * font.size.x * (ch.advance as f32) / (font.proto.scale as f32) + ui::FONT.x * font.size.x * font.spacing;
+            if let Some(ch) = font.find(c) {
+                let r = rect!(
+                    v.x + ch.bearing.x as i32,
+                    v.y - ch.bearing.y as i32,
+                    ch.r.s.x as i32,
+                    ch.r.s.y as i32
+                );
+                let tr = rect!(
+                    (ch.r.o.x as f32) / (font.texture.size.x as f32),
+                    (ch.r.o.y as f32) / (font.texture.size.y as f32),
+                    (ch.r.s.x as f32) / (font.texture.size.x as f32),
+                    (ch.r.s.y as f32) / (font.texture.size.y as f32)
+                );
+                let a = ui::Vertex {
+                    pt: vec4!(r.o.x as f32,r.o.y as f32,tr.o.x,tr.o.y),
+                    a: vec4!(0.0,0.0,0.0,0.0),
+                    b: color,
+                    mlfq: vec4!(1,0,0,0),
+                };
+                let b = ui::Vertex {
+                    pt: vec4!(r.o.x as f32 + r.s.x as f32,r.o.y as f32,tr.o.x + tr.s.x,tr.o.y),
+                    a: vec4!(0.0,0.0,0.0,0.0),
+                    b: color,
+                    mlfq: vec4!(1,0,0,0),
+                };
+                let c = ui::Vertex {
+                    pt: vec4!(r.o.x as f32 + r.s.x as f32,r.o.y as f32 + r.s.y as f32,tr.o.x + tr.s.x,tr.o.y + tr.s.y),
+                    a: vec4!(0.0,0.0,0.0,0.0),
+                    b: color,
+                    mlfq: vec4!(1,0,0,0),
+                };
+                let d = ui::Vertex {
+                    pt: vec4!(r.o.x as f32,r.o.y as f32 + r.s.y as f32,tr.o.x,tr.o.y + tr.s.y),
+                    a: vec4!(0.0,0.0,0.0,0.0),
+                    b: color,
+                    mlfq: vec4!(1,0,0,0),
+                };
+                vertices.push(a);
+                vertices.push(b);
+                vertices.push(c);
+                vertices.push(a);
+                vertices.push(c);
+                vertices.push(d);
+                count += 1;
+                v.x += ch.advance as i32;
             }
         }
 
         let vertexbuffer = gpu::VertexBuffer::new(&self.ui.graphics,vertices).expect("what?");
-        self.ui.graphics.set_blend(gpu::BlendMode::Over);
         self.ui.graphics.bind_vertexbuffer(&vertexbuffer);
-        self.ui.graphics.bind_shader(&self.ui.msdf_shader);
-        self.ui.graphics.bind_texture(0,&font.proto.texture);
-        self.ui.graphics.set_uniform("ppu",self.ppu.get());
+        self.ui.graphics.bind_shader(&self.ui.uber_shader);
+        self.ui.graphics.bind_texture(0,&font.texture);
+        self.ui.graphics.set_uniform("textures",0);
         let canvas_size = self.size.get();
         self.ui.graphics.set_uniform("canvas_size",vec2!(canvas_size.x as f32,canvas_size.y as f32));
-        self.ui.graphics.set_uniform("font_texture",0);
-        self.ui.graphics.set_uniform("color",self.color.get());
-        self.ui.graphics.set_uniform("sample_rad",0.5 / (font.proto.texture.size.x as f32));
         self.ui.graphics.draw_triangles(6 * count);
     }
 
@@ -132,22 +130,94 @@ impl DC {
     /// ## Arguments
     /// * `p` - Coordinates of the start of the text baseline.
     /// * `texture` - Texture to draw.
-    pub fn draw(&self,p: Vec2<f32>,texture: &gpu::Texture2D::<pixel::ARGB8>) {
-        self.ui.graphics.set_blend(gpu::BlendMode::Replace);
-        self.ui.graphics.bind_vertexbuffer(&self.ui.quad_vertexbuffer);
-        self.ui.graphics.bind_shader(&self.ui.texture_shader);
+    pub fn draw_texture(&self,p: Vec2<i32>,texture: &gpu::Texture2D::<pixel::ARGB8>) {
+        let mut vertices: Vec<ui::Vertex> = Vec::new();
+        let a = ui::Vertex {
+            pt: vec4!(p.x as f32,p.y as f32,0.0,0.0),
+            a: vec4!(0.0,0.0,0.0,0.0),
+            b: vec4!(1.0,1.0,1.0,1.0),
+            mlfq: vec4!(1,0,0,0),
+        };
+        let b = ui::Vertex {
+            pt: vec4!((p.x + texture.size.x as i32) as f32,p.y as f32,1.0,0.0),
+            a: vec4!(0.0,0.0,0.0,0.0),
+            b: vec4!(1.0,1.0,1.0,1.0),
+            mlfq: vec4!(1,0,0,0),
+        };
+        let c = ui::Vertex {
+            pt: vec4!((p.x + texture.size.x as i32) as f32,(p.y + texture.size.y as i32) as f32,1.0,1.0),
+            a: vec4!(0.0,0.0,0.0,0.0),
+            b: vec4!(1.0,1.0,1.0,1.0),
+            mlfq: vec4!(1,0,0,0),
+        };
+        let d = ui::Vertex {
+            pt: vec4!(p.x as f32,(p.y + texture.size.y as i32) as f32,0.0,1.0),
+            a: vec4!(0.0,0.0,0.0,0.0),
+            b: vec4!(1.0,1.0,1.0,1.0),
+            mlfq: vec4!(1,0,0,0),
+        };
+        vertices.push(a);
+        vertices.push(b);
+        vertices.push(c);
+        vertices.push(a);
+        vertices.push(c);
+        vertices.push(d);
+
+        let vertexbuffer = gpu::VertexBuffer::new(&self.ui.graphics,vertices).expect("what?");
+        self.ui.graphics.bind_vertexbuffer(&vertexbuffer);
+        self.ui.graphics.bind_shader(&self.ui.uber_shader);
         self.ui.graphics.bind_texture(0,texture);
-        self.ui.graphics.set_uniform("image_texture",0);
-        let ppu = self.ppu.get();
-        self.ui.graphics.set_uniform("ppu",ppu);
+        self.ui.graphics.set_uniform("textures",0);
         let canvas_size = self.size.get();
         self.ui.graphics.set_uniform("canvas_size",vec2!(canvas_size.x as f32,canvas_size.y as f32));
-        let src_size = vec2!(texture.size.x as f32,texture.size.y as f32);
-        self.ui.graphics.set_uniform("src_size",src_size);
-        let src = vec4!(0.0,0.0,texture.size.x as f32,texture.size.y as f32);
-        self.ui.graphics.set_uniform("src",src);
-        let dst = vec4!(p.x as f32,p.y as f32,texture.size.x as f32,texture.size.y as f32);
-        self.ui.graphics.set_uniform("dst",dst);
-        self.ui.graphics.draw_triangle_fan(4);
+        self.ui.graphics.draw_triangles(6);
+    }
+
+    /// (temporary) Draw rectangle.
+    /// 
+    /// Draws rectangle.
+    /// ## Arguments
+    /// * `r` - Rectangle to draw.
+    pub fn draw_rect(&self,r: Rect<i32>) {
+        let mut vertices: Vec<ui::Vertex> = Vec::new();
+        let a = ui::Vertex {
+            pt: vec4!(r.o.x as f32,r.o.y as f32,0.0,0.0),
+            a: vec4!(0.0,0.0,0.0,0.0),
+            b: vec4!(1.0,1.0,1.0,1.0),
+            mlfq: vec4!(1,0,0,0),
+        };
+        let b = ui::Vertex {
+            pt: vec4!((r.o.x + r.s.x) as f32,r.o.y as f32,0.0,0.0),
+            a: vec4!(0.0,0.0,0.0,0.0),
+            b: vec4!(1.0,1.0,1.0,1.0),
+            mlfq: vec4!(1,0,0,0),
+        };
+        let c = ui::Vertex {
+            pt: vec4!((r.o.x + r.s.x) as f32,(r.o.y + r.s.y) as f32,0.0,0.0),
+            a: vec4!(0.0,0.0,0.0,0.0),
+            b: vec4!(1.0,1.0,1.0,1.0),
+            mlfq: vec4!(1,0,0,0),
+        };
+        let d = ui::Vertex {
+            pt: vec4!(r.o.x as f32,(r.o.y + r.s.y) as f32,0.0,0.0),
+            a: vec4!(0.0,0.0,0.0,0.0),
+            b: vec4!(1.0,1.0,1.0,1.0),
+            mlfq: vec4!(1,0,0,0),
+        };
+        vertices.push(a);
+        vertices.push(b);
+        vertices.push(c);
+        vertices.push(a);
+        vertices.push(c);
+        vertices.push(d);
+
+        let vertexbuffer = gpu::VertexBuffer::new(&self.ui.graphics,vertices).expect("what?");
+        self.ui.graphics.bind_vertexbuffer(&vertexbuffer);
+        self.ui.graphics.bind_shader(&self.ui.uber_shader);
+        //self.ui.graphics.bind_texture(0,texture);
+        self.ui.graphics.set_uniform("textures",0);
+        let canvas_size = self.size.get();
+        self.ui.graphics.set_uniform("canvas_size",vec2!(canvas_size.x as f32,canvas_size.y as f32));
+        self.ui.graphics.draw_triangles(6);
     }
 }

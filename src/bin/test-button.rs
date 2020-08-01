@@ -1,4 +1,4 @@
-// E - VStack test
+// E - Button test
 // Desmond Germans, 2020
 
 use e::*;
@@ -26,25 +26,10 @@ fn main() {
     // create UI drawing context
     let dc = Rc::new(ui::DC::new(&ui).expect("what?"));
 
-    // create text widgets
-    let text1 = Rc::new(ui::Text::new(&ui,"This").expect("Cannot create text."));
-    let text2 = Rc::new(ui::Text::new(&ui,"is a vertical").expect("Cannot create text."));
-    let text3 = Rc::new(ui::Text::new(&ui,"stack with").expect("Cannot create text."));
-    let text4 = Rc::new(ui::Text::new(&ui,"a bunch of").expect("Cannot create text."));
-    let text5 = Rc::new(ui::Text::new(&ui,"texts that just align").expect("Cannot create text."));
-    let text6 = Rc::new(ui::Text::new(&ui,"nicely.").expect("Cannot create text."));
-    let text7 = Rc::new(ui::Text::new(&ui,"Almost before we knew it, we had left the ground.").expect("Cannot create text."));
-    text1.set_color(vec4!(1.0,0.5,0.0,1.0));
-    text2.set_color(vec4!(0.5,1.0,0.0,1.0));
-    text3.set_color(vec4!(0.0,1.0,0.5,1.0));
-    text4.set_color(vec4!(0.0,0.5,1.0,1.0));
-    text5.set_color(vec4!(0.5,0.0,1.0,1.0));
-    text6.set_color(vec4!(1.0,0.0,0.5,1.0));
-    text7.set_color(vec4!(1.0,0.5,0.0,1.0));
-
-    // create VStack
-    let vstack = Rc::new(ui::VStack::new(&ui,vec![text1,text2,text3,text4,text5,text6,text7]));
-    vstack.set_calign(ui::HAlignment::Right);
+    // create button widget
+    let button = Rc::new(ui::Button::new(&ui,"Click").expect("Cannot create button."));
+    button.set_padding(vec2!(4,2));
+    button.set_inner_padding(vec2!(4,2));
 
     // main loop
     let mut running = true;
@@ -67,9 +52,9 @@ fn main() {
                     let fsize = vec2!(size.x as f32,size.y as f32);
                     let nsize = vec2!(size.x as i32,size.y as i32);
                     dc.set_size(fsize);
-                    let vstack_size = vstack.measure();
-                    let pos = (nsize - vstack_size) / 2;
-                    vstack.draw(&dc,rect!(pos.x,pos.y,vstack_size.x,vstack_size.y));
+                    let button_size = button.measure();
+                    let pos = (nsize - button_size) / 2;
+                    button.draw(&dc,rect!(pos.x,pos.y,button_size.x,button_size.y));
                     rendered = true;
                 },
 

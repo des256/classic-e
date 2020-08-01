@@ -123,6 +123,24 @@ impl OpenGLUniform for Vec4<i32> {
     }
 }
 
+impl OpenGLUniform for Rect<f32> {
+    fn set_uniform(location: i32,value: Self) {
+        unsafe { gl::Uniform4fv(location,1,&value as *const Self as *const GLfloat) };
+    }
+}
+
+impl OpenGLUniform for Rect<u32> {
+    fn set_uniform(location: i32,value: Self) {
+        unsafe { gl::Uniform4uiv(location,1,&value as *const Self as *const GLuint) };
+    }
+}
+
+impl OpenGLUniform for Rect<i32> {
+    fn set_uniform(location: i32,value: Self) {
+        unsafe { gl::Uniform4iv(location,1,&value as *const Self as *const GLint) };
+    }
+}
+
 #[doc(hidden)]
 pub trait BindTarget {
     fn do_bind(&self,graphics: &Graphics);

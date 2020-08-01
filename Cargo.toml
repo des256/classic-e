@@ -26,8 +26,10 @@ x11 = { version = "2.18.1", features = ["xlib","glx"] }
 xcb = { version = "0.8", features = ["xlib_xcb","dri2"] }
 gl = { version = "0.14.0" }
 alsa = { version = "0.3.0" }
+freetype-rs = "*"
 
 [target.'cfg(windows)'.dependencies]
 libc = "*"
 winapi = { version = "*", features = ["winuser","libloaderapi"] }
 gl = "*"
+freetype-rs = "*"
