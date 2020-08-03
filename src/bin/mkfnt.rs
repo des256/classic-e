@@ -191,7 +191,7 @@ fn main() {
     let ft = freetype::Library::init().unwrap();
 
     let face = ft.new_face(infile.file_name().unwrap().to_str().unwrap(),0).unwrap();
-    face.set_char_size((fontsize * 64) as isize, 0, 50, 0).unwrap();  // TODO
+    face.set_char_size((fontsize * 64) as isize,0,72,0).unwrap();
 
     let padding: Vec2<i32> = vec2!(1,1);
 

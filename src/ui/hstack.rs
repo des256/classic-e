@@ -50,7 +50,7 @@ impl ui::Widget for HStack {
         let mut ox = space.o.x;
         let padding = self.padding.get();
         for widget in self.widgets.borrow().iter() {
-            let size = widget.measure();
+            let size = widget.measure(dc);
             let (oy,sy) = match self.ca.get() {
                 ui::VAlignment::Top => { (space.o.y,size.y) },
                 ui::VAlignment::Bottom => { (space.o.y + space.s.y - size.y,size.y) },
@@ -62,10 +62,10 @@ impl ui::Widget for HStack {
         }
     }
 
-    fn measure(&self) -> Vec2<i32> {
+    fn measure(&self,dc: &Rc<ui::DC>) -> Vec2<i32> {
         let mut total_size = vec2!(0i32,0i32);
         for widget in self.widgets.borrow().iter() {
-            let size = widget.measure();
+            let size = widget.measure(dc);
             total_size.x += size.x;
             if size.y > total_size.y {
                 total_size.y = size.y;

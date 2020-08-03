@@ -52,7 +52,7 @@ fn main() {
                     let fsize = vec2!(size.x as f32,size.y as f32);
                     let nsize = vec2!(size.x as i32,size.y as i32);
                     dc.set_size(fsize);
-                    let button_size = button.measure();
+                    let button_size = button.measure(&dc);
                     let pos = (nsize - button_size) / 2;
                     button.draw(&dc,rect!(pos.x,pos.y,button_size.x,button_size.y));
                     rendered = true;

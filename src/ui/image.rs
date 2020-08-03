@@ -44,7 +44,7 @@ impl ui::Widget for Image {
         dc.draw_texture(space.o + self.padding.get(),&self.tex.borrow());
     }
 
-    fn measure(&self) -> Vec2<i32> {
+    fn measure(&self,_dc: &Rc<ui::DC>) -> Vec2<i32> {
         let size = self.tex.borrow().size;
         vec2!(size.x as i32,size.y as i32)
     }

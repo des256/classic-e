@@ -34,9 +34,11 @@ pub trait Widget {
     fn draw(&self,dc: &Rc<DC>,r: Rect<i32>);
 
     /// Measure the widget.
+    /// # Arguments
+    /// * `dc` - DC to use.
     /// # Returns
     /// Minimum dimensions for this widget.
-    fn measure(&self) -> Vec2<i32>;
+    fn measure(&self,dc: &Rc<DC>) -> Vec2<i32>;
 }
 
 mod font;

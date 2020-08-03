@@ -81,7 +81,7 @@ fn main() {
                     let fsize = vec2!(size.x as f32,size.y as f32);
                     let nsize = vec2!(size.x as i32,size.y as i32);
                     dc.set_size(fsize);
-                    let hstack_size = hstack.measure();
+                    let hstack_size = hstack.measure(&dc);
                     let pos = (nsize - hstack_size) / 2;
                     hstack.draw(&dc,rect!(pos.x,pos.y,hstack_size.x,hstack_size.y));
                     rendered = true;

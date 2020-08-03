@@ -25,6 +25,41 @@ macro_rules! impl_clamp1 (
 impl_clamp1!(f32);
 impl_clamp1!(f64);*/
 
+/// 8-bit R pixel format.
+#[allow(dead_code)]
+#[derive(Copy,Clone)]
+pub struct R8 {
+    pub d: u8,
+}
+
+impl Zero for R8 {
+    /// Return black R8 pixel.
+    fn zero() -> R8 {
+        R8 { d: 0x00, }
+    }
+}
+
+impl PartialEq<R8> for R8 {
+    /// Check if two R8 pixels are equal.
+    fn eq(&self,other: &R8) -> bool {
+        self.d == other.d
+    }
+}
+
+impl From<R8> for f32 {
+    /// Convert R8 pixel to float.
+    fn from(c: R8) -> f32 {
+        (c.d as f32) / 255.0
+    }
+}
+
+impl From<f32> for R8 {
+    /// Convert float to R8 pixel.
+    fn from(c: f32) -> R8 {
+        R8 { d: (c * 255.0) as u8, }
+    }
+}
+
 /// 8-bit RGB pixel format.
 #[allow(dead_code)]
 #[derive(Copy,Clone)]

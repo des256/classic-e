@@ -59,7 +59,7 @@ fn main() {
                     let fsize = vec2!(size.x as f32,size.y as f32);
                     let nsize = vec2!(size.x as i32,size.y as i32);
                     dc.set_size(fsize);
-                    let image_size = image.measure();
+                    let image_size = image.measure(&dc);
                     let pos = (nsize - image_size) / 2;
                     image.draw(&dc,rect!(pos.x,pos.y,image_size.x,image_size.y));
                     rendered = true;

@@ -182,6 +182,12 @@ impl GLFormat for Vec4<f32> {
     fn gl_type() -> GLenum { gl::FLOAT }
 }
 
+impl GLFormat for pixel::R8 {
+    fn gl_internal_format() -> GLuint { gl::R8 as GLuint }
+    fn gl_format() -> GLenum { gl::RED }
+    fn gl_type() -> GLenum { gl::UNSIGNED_BYTE }
+}
+
 impl GLFormat for pixel::R3G3B2 {
     fn gl_internal_format() -> GLuint { gl::RGB8 as GLuint }
     fn gl_format() -> GLenum { gl::RGB }

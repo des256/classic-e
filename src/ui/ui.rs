@@ -35,6 +35,9 @@ pub struct Vertex {
     pub(crate) a: Vec4<f32>,     // should become a: u32,
     pub(crate) b: Vec4<f32>,     // should become b: u32,
     pub(crate) mlfq: Vec4<u32>,  // should become m: u8, l: u8, f: u16,
+    // m = mode:
+    // 0x01: true if texture source is ARGB, false if texture is alpha, depending on bits 0x06
+    // 0x06: which channel dictates the full texture alpha
 }
 
 // TODO: this currently means that only OpenGL is accepted; solve this later
@@ -106,38 +109,18 @@ impl UI {
             out vec4 o;
 
             void main() {
-                if(v.ml.x == 0) {
-                    o = v.a;
+                //vec4 t = texture2DArray(textures,vec3(v.t.x,v.t.y,v.ml.y));
+                vec4 t = texture2D(textures,vec2(v.t.x,v.t.y));
+                if((v.ml.x & 0x01) == 0) {
+                    switch(v.ml.x & 0x06) {
+                        case 0x00: t = t.xxxx; break;
+                        case 0x02: t = t.yyyy; break;
+                        case 0x04: t = t.zzzz; break;
+                        case 0x06: t = t.wwww; break;
+                    }
                 }
-                else {
-                    //vec4 t = texture2DArray(textures,vec3(v.t.x,v.t.y,v.ml.y));
-                    vec4 t = texture2D(textures,vec2(v.t.x,v.t.y));
-                    switch(v.ml.x) {
-                        case 0:
-                            o = v.a;
-                            break;
-    
-                        case 1:
-                            o = v.a + v.b * t;
-                            break;
-    
-                        case 2:
-                            o = v.a + v.b * t.xxxx;
-                            break;
-    
-                        case 3:
-                            o = v.a + v.b * t.yyyy;
-                            break;
-    
-                        case 4:
-                            o = v.a + v.b * t.zzzz;
-                            break;
-    
-                        case 5:
-                            o = v.a + v.b * t.wwww;
-                            break;
-                    }    
-                }
+                float ta = t.w;
+                o = (1.0 - ta) * v.a + v.b * t;
             }
         "#;
         let uber_shader = gpu::Shader::new(&graphics,uber_vs,None,uber_fs).expect("what?");

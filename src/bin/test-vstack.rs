@@ -67,7 +67,7 @@ fn main() {
                     let fsize = vec2!(size.x as f32,size.y as f32);
                     let nsize = vec2!(size.x as i32,size.y as i32);
                     dc.set_size(fsize);
-                    let vstack_size = vstack.measure();
+                    let vstack_size = vstack.measure(&dc);
                     let pos = (nsize - vstack_size) / 2;
                     vstack.draw(&dc,rect!(pos.x,pos.y,vstack_size.x,vstack_size.y));
                     rendered = true;

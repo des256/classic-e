@@ -9,7 +9,7 @@ use std::cell::RefCell;
 /// UI drawing context.
 pub struct DC {
     pub(crate) ui: Rc<ui::UI>,
-    font: RefCell<Rc<ui::Font>>,
+    pub(crate) font: RefCell<Rc<ui::Font>>,
     color: Cell<Vec4<f32>>,
     size: Cell<Vec2<f32>>,  // viewport size (in units, not pixels)
 }
@@ -25,7 +25,7 @@ impl DC {
     pub fn new(ui: &Rc<ui::UI>) -> Result<ui::DC,SystemError> {
         Ok(DC {
             ui: Rc::clone(ui),
-            font: RefCell::new(ui.get_font("arialn14.fnt").expect("cannot load font")),
+            font: RefCell::new(ui.get_font("robotocl30.fnt").expect("cannot load font")),
             color: Cell::new(vec4!(1.0,1.0,1.0,1.0)),
             size: Cell::new(vec2!(1.0,1.0)),
         })
@@ -81,27 +81,27 @@ impl DC {
                 );
                 let a = ui::Vertex {
                     pt: vec4!(r.o.x as f32,r.o.y as f32,tr.o.x,tr.o.y),
-                    a: vec4!(0.0,0.0,0.0,0.0),
+                    a: vec4!(0.0,0.3,0.4,1.0),
                     b: color,
-                    mlfq: vec4!(1,0,0,0),
+                    mlfq: vec4!(0x01,0,0,0),
                 };
                 let b = ui::Vertex {
                     pt: vec4!(r.o.x as f32 + r.s.x as f32,r.o.y as f32,tr.o.x + tr.s.x,tr.o.y),
-                    a: vec4!(0.0,0.0,0.0,0.0),
+                    a: vec4!(0.0,0.3,0.4,1.0),
                     b: color,
-                    mlfq: vec4!(1,0,0,0),
+                    mlfq: vec4!(0x01,0,0,0),
                 };
                 let c = ui::Vertex {
                     pt: vec4!(r.o.x as f32 + r.s.x as f32,r.o.y as f32 + r.s.y as f32,tr.o.x + tr.s.x,tr.o.y + tr.s.y),
-                    a: vec4!(0.0,0.0,0.0,0.0),
+                    a: vec4!(0.0,0.3,0.4,1.0),
                     b: color,
-                    mlfq: vec4!(1,0,0,0),
+                    mlfq: vec4!(0x01,0,0,0),
                 };
                 let d = ui::Vertex {
                     pt: vec4!(r.o.x as f32,r.o.y as f32 + r.s.y as f32,tr.o.x,tr.o.y + tr.s.y),
-                    a: vec4!(0.0,0.0,0.0,0.0),
+                    a: vec4!(0.0,0.3,0.4,1.0),
                     b: color,
-                    mlfq: vec4!(1,0,0,0),
+                    mlfq: vec4!(0x01,0,0,0),
                 };
                 vertices.push(a);
                 vertices.push(b);
@@ -136,25 +136,25 @@ impl DC {
             pt: vec4!(p.x as f32,p.y as f32,0.0,0.0),
             a: vec4!(0.0,0.0,0.0,0.0),
             b: vec4!(1.0,1.0,1.0,1.0),
-            mlfq: vec4!(1,0,0,0),
+            mlfq: vec4!(0x01,0,0,0),
         };
         let b = ui::Vertex {
             pt: vec4!((p.x + texture.size.x as i32) as f32,p.y as f32,1.0,0.0),
             a: vec4!(0.0,0.0,0.0,0.0),
             b: vec4!(1.0,1.0,1.0,1.0),
-            mlfq: vec4!(1,0,0,0),
+            mlfq: vec4!(0x01,0,0,0),
         };
         let c = ui::Vertex {
             pt: vec4!((p.x + texture.size.x as i32) as f32,(p.y + texture.size.y as i32) as f32,1.0,1.0),
             a: vec4!(0.0,0.0,0.0,0.0),
             b: vec4!(1.0,1.0,1.0,1.0),
-            mlfq: vec4!(1,0,0,0),
+            mlfq: vec4!(0x01,0,0,0),
         };
         let d = ui::Vertex {
             pt: vec4!(p.x as f32,(p.y + texture.size.y as i32) as f32,0.0,1.0),
             a: vec4!(0.0,0.0,0.0,0.0),
             b: vec4!(1.0,1.0,1.0,1.0),
-            mlfq: vec4!(1,0,0,0),
+            mlfq: vec4!(0x01,0,0,0),
         };
         vertices.push(a);
         vertices.push(b);
@@ -184,25 +184,25 @@ impl DC {
             pt: vec4!(r.o.x as f32,r.o.y as f32,0.0,0.0),
             a: vec4!(0.0,0.0,0.0,0.0),
             b: vec4!(1.0,1.0,1.0,1.0),
-            mlfq: vec4!(1,0,0,0),
+            mlfq: vec4!(0x00,0,0,0),
         };
         let b = ui::Vertex {
             pt: vec4!((r.o.x + r.s.x) as f32,r.o.y as f32,0.0,0.0),
             a: vec4!(0.0,0.0,0.0,0.0),
             b: vec4!(1.0,1.0,1.0,1.0),
-            mlfq: vec4!(1,0,0,0),
+            mlfq: vec4!(0x00,0,0,0),
         };
         let c = ui::Vertex {
             pt: vec4!((r.o.x + r.s.x) as f32,(r.o.y + r.s.y) as f32,0.0,0.0),
             a: vec4!(0.0,0.0,0.0,0.0),
             b: vec4!(1.0,1.0,1.0,1.0),
-            mlfq: vec4!(1,0,0,0),
+            mlfq: vec4!(0x00,0,0,0),
         };
         let d = ui::Vertex {
             pt: vec4!(r.o.x as f32,(r.o.y + r.s.y) as f32,0.0,0.0),
             a: vec4!(0.0,0.0,0.0,0.0),
             b: vec4!(1.0,1.0,1.0,1.0),
-            mlfq: vec4!(1,0,0,0),
+            mlfq: vec4!(0x00,0,0,0),
         };
         vertices.push(a);
         vertices.push(b);

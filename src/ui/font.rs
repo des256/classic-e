@@ -37,7 +37,7 @@ pub struct Font {
     pub(crate) height: i32,
     pub(crate) y_bearing: i32,
     pub(crate) characters: Vec<Character>,
-    pub(crate) texture: gpu::Texture2D<pixel::ARGB8>,
+    pub(crate) texture: gpu::Texture2D<pixel::R8>,
 }
 
 impl Font {
@@ -75,12 +75,10 @@ impl Font {
             });
         }
         let bref = &buffer[(28 + (count as usize) * 32)..];
-        let mut mat = Mat::<pixel::ARGB8>::new(vec2!(texture_size_x as usize,texture_size_y as usize));
+        let mut mat = Mat::<pixel::R8>::new(vec2!(texture_size_x as usize,texture_size_y as usize));
         for y in 0..texture_size_y as usize {
             for x in 0..texture_size_x as usize {
-                let b = bref[y * (texture_size_x as usize) + x] as u32;
-                let d = (b << 24) | (b << 16);
-                mat.set(vec2!(x,y),pixel::ARGB8::from(d));
+                mat.set(vec2!(x,y),pixel::R8 { d: bref[y * (texture_size_x as usize) + x] });
             }
         }
         Ok(Font {
@@ -88,7 +86,7 @@ impl Font {
             height: font_height,
             y_bearing: font_y_bearing,
             characters: characters,
-            texture: gpu::Texture2D::<pixel::ARGB8>::new_from_mat(&ui.graphics,&mat).expect("Unable to create font texture."),
+            texture: gpu::Texture2D::<pixel::R8>::new_from_mat(&ui.graphics,&mat).expect("Unable to create font texture."),
         })
     }
 
