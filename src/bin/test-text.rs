@@ -16,7 +16,7 @@ fn main() {
     let ui = Rc::new(ui::UI::new(&system,&graphics).expect("Cannot open UI."));
 
     // create text widget
-    let widget = Rc::new(ui::Text::new(&ui,"Hello, World!",40).expect("Cannot create text."));
+    let widget = Rc::new(ui::Text::new(&ui,"Hello, World!",&ui.font).expect("Cannot create text."));
 
     // open window to host the text widget
     ui.open(&(widget as Rc<dyn ui::Widget>),rect!(50,50,640,360),"Test Window");

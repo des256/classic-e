@@ -30,6 +30,9 @@ pub struct UI {
     pub icons_textures: Rc<ui::Texture2DArrayAtlas<pixel::ARGB8>>,
     pub packed_textures: Rc<ui::Texture2DArrayAtlas<pixel::ARGB8>>,
     pub large_textures: Rc<ui::Texture2DArrayAtlas<pixel::ARGB8>>,
+    pub proto_sans: Rc<ui::FontProto>,
+    pub proto_serif: Rc<ui::FontProto>,
+    pub proto_mono: Rc<ui::FontProto>,
     pub font: Rc<ui::Font>,
     pub windows: RefCell<Vec<UIWindow>>,
 }
@@ -150,9 +153,13 @@ impl UI {
         let uber_shader = gpu::Shader::new(&graphics,uber_vs,Some(uber_gs),uber_fs).expect("what?");
 
         // create font atlas texture array
-        let font_textures = Rc::new(gpu::Texture2DArray::<pixel::R8>::new(&graphics,vec3!(1024,1024,1)).expect("unable to allocate font texture atlas"));
-        let font = Rc::new(ui::Font::new("ibm.fnt").expect("unable to load font"));
-        font_textures.load_mat(0,vec2!(0,0),&font.mat);
+        let font_textures = Rc::new(gpu::Texture2DArray::<pixel::R8>::new(&graphics,vec3!(ui::FONT_TEXTURE_SIZE as usize,ui::FONT_TEXTURE_SIZE as usize,3)).expect("unable to allocate font texture atlas"));
+        let proto_sans = Rc::new(ui::FontProto::new(&font_textures,"static/fonts/sans.fnt",0).expect("Unable to load font"));
+        let proto_serif = Rc::new(ui::FontProto::new(&font_textures,"static/fonts/serif.fnt",1).expect("Unable to load font"));
+        let proto_mono = Rc::new(ui::FontProto::new(&font_textures,"static/fonts/mono.fnt",2).expect("Unable to load font"));
+
+        // create default font
+        let font = Rc::new(ui::Font::new(&proto_sans,16).expect("unable to load font"));
 
         // create texture array for icons (generally same size)
         let icons_textures = Rc::new(ui::Texture2DArrayAtlas::<pixel::ARGB8>::new(&graphics,vec2!(1024,1024)).expect("unable to allocate icon texture atlas"));
@@ -171,6 +178,9 @@ impl UI {
             icons_textures: icons_textures,
             packed_textures: packed_textures,
             large_textures: large_textures,
+            proto_sans: proto_sans,
+            proto_serif: proto_serif,
+            proto_mono: proto_mono,
             font: font,
             windows: RefCell::new(Vec::new()),
         })

@@ -10,8 +10,9 @@ use std::cell::RefCell;
 pub struct HStack {
     _ui: Rc<ui::UI>,
     padding: Cell<Vec2<i32>>,
+    valign: Cell<ui::VAlignment>,
     widgets: RefCell<Vec<Rc<dyn ui::Widget>>>,
-    ca: Cell<ui::VAlignment>,
+    //ca: Cell<ui::VAlignment>,
 }
 
 impl HStack {
@@ -25,13 +26,15 @@ impl HStack {
         HStack {
             _ui: Rc::clone(ui),
             padding: Cell::new(vec2!(0,0)),
+            valign: Cell::new(ui::VAlignment::Top),
             widgets: RefCell::new(widgets),
-            ca: Cell::new(ui::VAlignment::Top),
+            //ca: Cell::new(ui::VAlignment::Top),
         }
     }
 }
 
 ui::impl_padding!(HStack);
+ui::impl_valign!(HStack);
 
 impl ui::Widget for HStack {
     fn measure(&self) -> Vec2<i32> {
@@ -57,7 +60,7 @@ impl ui::Widget for HStack {
         let padding = self.padding.get();
         for widget in self.widgets.borrow().iter() {
             let size = widget.measure();
-            let (oy,sy) = match self.ca.get() {
+            let (oy,sy) = match self.valign.get() {
                 ui::VAlignment::Top => { (space.o.y,size.y) },
                 ui::VAlignment::Bottom => { (space.o.y + space.s.y - size.y,size.y) },
                 ui::VAlignment::Center => { (space.o.y + (space.s.y - size.y) / 2,size.y / 2) },

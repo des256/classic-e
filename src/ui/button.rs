@@ -9,13 +9,13 @@ use std::cell::RefCell;
 /// Button widget.
 pub struct Button {
     ui: Rc<ui::UI>,
+    text: RefCell<String>,
+    font: RefCell<Rc<ui::Font>>,
+    color: Cell<pixel::ARGB8>,
+    back_color: Cell<pixel::ARGB8>,
+    hover_back_color: Cell<pixel::ARGB8>,
     padding: Cell<Vec2<i32>>,
     inner_padding: Cell<Vec2<i32>>,
-    text: RefCell<String>,
-    text_color: Cell<pixel::ARGB8>,
-    button_color: Cell<pixel::ARGB8>,
-    hover_color: Cell<pixel::ARGB8>,
-    press_color: Cell<pixel::ARGB8>,
     hovering: Cell<bool>,
     pressed: Cell<bool>,
 }
@@ -29,28 +29,33 @@ impl Button {
     /// ## Returns
     /// * `Ok(Button)` - The button widget.
     /// * `Err(SystemError)` - The button widget could not be created.
-    pub fn new(ui: &Rc<ui::UI>,text: &str) -> Result<Button,SystemError> {
+    pub fn new(ui: &Rc<ui::UI>,text: &str,font: &Rc<ui::Font>) -> Result<Button,SystemError> {
         Ok(Button {
             ui: Rc::clone(ui),
+            text: RefCell::new(String::from(text)),
+            font: RefCell::new(Rc::clone(font)),
+            color: Cell::new(pixel::ARGB8::from(0xFFFFFFFF)),
+            back_color: Cell::new(pixel::ARGB8::from(0xFF000000)),
+            hover_back_color: Cell::new(pixel::ARGB8::from(0xFF333300)),
             padding: Cell::new(vec2!(0,0)),
             inner_padding: Cell::new(vec2!(4,2)),
-            text: RefCell::new(String::from(text)),
-            text_color: Cell::new(pixel::ARGB8::from(0xFFFFFFFF)),
-            button_color: Cell::new(pixel::ARGB8::from(0xFF000000)),
-            hover_color: Cell::new(pixel::ARGB8::from(0xFF333300)),
-            press_color: Cell::new(pixel::ARGB8::from(0xFF777700)),
             hovering: Cell::new(false),
             pressed: Cell::new(false),
         })
     }
 }
 
+ui::impl_textfont!(Button);
+ui::impl_color!(Button);
+ui::impl_back_color!(Button);
+ui::impl_hover_back_color!(Button);
 ui::impl_padding!(Button);
+ui::impl_inner_padding!(Button);
 
 impl ui::Widget for Button {
 
     fn measure(&self) -> Vec2<i32> {
-        self.ui.font.measure(&self.text.borrow(),40) + 2 * (self.padding.get() + self.inner_padding.get())
+        self.font.borrow().measure(&self.text.borrow()) + 2 * (self.padding.get() + self.inner_padding.get())
     }
 
     fn handle(&self,event: &Event,space: Rect<i32>) -> ui::HandleResult {
@@ -93,15 +98,15 @@ impl ui::Widget for Button {
     }
 
     fn build(&self,buffer: &mut Vec<ui::UIRect>,space: Rect<i32>) {
-        let padding = self.padding.get();
-        let inner_padding = self.inner_padding.get();
-        let mut bgc = self.button_color.get();
-        if self.pressed.get() {
+        let mut bgc = self.back_color.get();
+        /*if self.pressed.get() {
             bgc = self.press_color.get();
         }
-        else if self.hovering.get() {
-            bgc = self.hover_color.get();
+        else*/ if self.hovering.get() {
+            bgc = self.hover_back_color.get();
         }
+        let padding = self.padding.get();
+        let inner_padding = self.inner_padding.get();
         buffer.push(ui::UIRect {
             r: vec4!(
                 (space.o.x + padding.x) as f32,
@@ -112,6 +117,6 @@ impl ui::Widget for Button {
             t: vec4!(0.0,0.0,0.0,0.0),
             fbdq: vec4!(u32::from(bgc),u32::from(bgc),0,0x00000000),
         });
-        self.ui.font.build_text(buffer,space.o + padding + inner_padding,&self.text.borrow(),0.0,40,u32::from(self.text_color.get()),u32::from(bgc));
+        self.font.borrow().build_text(buffer,space.o + padding + inner_padding,&self.text.borrow(),0.0,u32::from(self.color.get()),u32::from(bgc));
     }
 }

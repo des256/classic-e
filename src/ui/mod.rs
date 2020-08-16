@@ -4,11 +4,13 @@
 //! UI Widgets.
 
 use crate::*;
-
+use std::rc::Rc;
 use gl::types::{
     GLuint,
     GLvoid,
 };
+
+pub const FONT_TEXTURE_SIZE: u32 = 1024;
 
 /// Horizontal alignment.
 #[derive(Copy,Clone)]
@@ -87,54 +89,6 @@ pub trait Widget {
     fn build(&self,buffer: &mut Vec<UIRect>,space: Rect<i32>);
 }
 
-/// Main color property trait.
-pub trait Color {
-    fn set_color<T: ColorParameter>(&self,c: T) where pixel::ARGB8: From<T>;
-}
-
-#[macro_export]
-macro_rules! impl_color (
-    ($t:ty) => (
-        impl ui::Color for $t {
-            fn set_color<T: ColorParameter>(&self,c: T) where pixel::ARGB8: From<T> {
-                self.color.set(pixel::ARGB8::from(c));
-            }
-        }
-    );
-);
-
-/// Background color property trait.
-pub trait BackColor {
-    fn set_back_color<T: ColorParameter>(&self,c: T) where pixel::ARGB8: From<T>;
-}
-
-#[macro_export]
-macro_rules! impl_back_color (
-    ($t:ty) => (
-        impl ui::BackColor for $t {
-            fn set_back_color<T: ColorParameter>(&self,c: T) where pixel::ARGB8: From<T> {
-                self.back_color.set(pixel::ARGB8::from(c));
-            }
-        }
-    );
-);
-
-/// Padding property trait.
-pub trait Padding {
-    fn set_padding(&self,p: &Vec2<i32>);
-}
-
-#[macro_export]
-macro_rules! impl_padding {
-    ($t:ty) => {
-        impl ui::Padding for $t {
-            fn set_padding(&self,p: &Vec2<i32>) {
-                self.padding.set(*p);
-            }
-        }
-    }
-}
-
 mod texture2darrayatlas;
 pub use texture2darrayatlas::*;
 
@@ -182,3 +136,136 @@ pub use book::*;
 
 mod page;
 pub use page::*;
+
+/// Main color property trait.
+pub trait Color {
+    fn set_color<T: ColorParameter>(&self,c: T) where pixel::ARGB8: From<T>;
+}
+
+#[macro_export]
+macro_rules! impl_color (
+    ($t:ty) => (
+        impl ui::Color for $t {
+            fn set_color<T: ColorParameter>(&self,c: T) where pixel::ARGB8: From<T> {
+                self.color.set(pixel::ARGB8::from(c));
+            }
+        }
+    );
+);
+
+/// Background color property trait.
+pub trait BackColor {
+    fn set_back_color<T: ColorParameter>(&self,c: T) where pixel::ARGB8: From<T>;
+}
+
+#[macro_export]
+macro_rules! impl_back_color (
+    ($t:ty) => (
+        impl ui::BackColor for $t {
+            fn set_back_color<T: ColorParameter>(&self,c: T) where pixel::ARGB8: From<T> {
+                self.back_color.set(pixel::ARGB8::from(c));
+            }
+        }
+    );
+);
+
+/// Hover background color property trait.
+pub trait HoverBackColor {
+    fn set_hover_back_color<T: ColorParameter>(&self,c: T) where pixel::ARGB8: From<T>;
+}
+
+#[macro_export]
+macro_rules! impl_hover_back_color (
+    ($t:ty) => (
+        impl ui::HoverBackColor for $t {
+            fn set_hover_back_color<T: ColorParameter>(&self,c: T) where pixel::ARGB8: From<T> {
+                self.hover_back_color.set(pixel::ARGB8::from(c));
+            }
+        }
+    );
+);
+
+/// Padding property trait.
+pub trait Padding {
+    fn set_padding(&self,p: Vec2<i32>);
+}
+
+#[macro_export]
+macro_rules! impl_padding {
+    ($t:ty) => {
+        impl ui::Padding for $t {
+            fn set_padding(&self,p: Vec2<i32>) {
+                self.padding.set(p);
+            }
+        }
+    }
+}
+
+/// Inner padding property trait.
+pub trait InnerPadding {
+    fn set_inner_padding(&self,p: Vec2<i32>);
+}
+
+#[macro_export]
+macro_rules! impl_inner_padding {
+    ($t:ty) => {
+        impl ui::InnerPadding for $t {
+            fn set_inner_padding(&self,p: Vec2<i32>) {
+                self.inner_padding.set(p);
+            }
+        }
+    }
+}
+
+/// Text and font property trait.
+pub trait TextFont {
+    fn set_text(&self,text: &str);
+    fn set_font(&self,font: &Rc<Font>);
+}
+
+#[macro_export]
+macro_rules! impl_textfont {
+    ($t:ty) => {
+        impl ui::TextFont for $t {
+            fn set_text(&self,text: &str) {
+                *self.text.borrow_mut() = String::from(text);
+            }
+
+            fn set_font(&self,font: &Rc<ui::Font>) {
+                *self.font.borrow_mut() = Rc::clone(font);
+            }
+        }
+    }
+}
+
+/// Horizontal alignment property trait.
+pub trait HAlign {
+    fn set_halign(&self,align: HAlignment);
+}
+
+#[macro_export]
+macro_rules! impl_halign {
+    ($t:ty) => {
+        impl ui::HAlign for $t {
+            fn set_halign(&self,align: ui::HAlignment) {
+                self.halign.set(align);
+            }
+        }
+    }
+}
+
+/// Vertical alignment property trait.
+pub trait VAlign {
+    fn set_valign(&self,align: VAlignment);
+}
+
+#[macro_export]
+macro_rules! impl_valign {
+    ($t:ty) => {
+        impl ui::VAlign for $t {
+            fn set_valign(&self,align: ui::VAlignment) {
+                self.valign.set(align);
+            }
+        }
+    }
+}

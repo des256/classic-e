@@ -3,7 +3,7 @@
 
 use crate::*;
 use std::{
-    //rc::Rc,
+    rc::Rc,
     //cell::RefCell,
     fs::File,
     io::prelude::*,
@@ -41,16 +41,17 @@ fn get_i32(buffer: &[u8]) -> i32 {
     get_u32(buffer) as i32
 }
 
-/// Text font representation.
-pub struct Font {
+/// Text font prototype.
+pub struct FontProto {
     pub(crate) _filename: String,
     pub(crate) sets: Vec<CharacterSet>,
-    pub(crate) mat: Mat<pixel::R8>,
+    //pub(crate) mat: Mat<pixel::R8>,
+    pub(crate) layer: u32,
 }
 
-impl Font {
+impl FontProto {
     #[doc(hidden)]
-    pub fn new(filename: &str) -> Result<Font,SystemError> {
+    pub fn new(textures: &Rc<gpu::Texture2DArray::<pixel::R8>>,filename: &str,layer: u32) -> Result<FontProto,SystemError> {
         let mut file = match File::open(filename) {
             Ok(file) => file,
             Err(_) => { return Err(SystemError::Generic); },
@@ -99,10 +100,37 @@ impl Font {
                 mat.set(vec2!(x,y),pixel::R8 { d: bref[y * (atlas_size_x as usize) + x] });
             }
         }
-        Ok(Font {
+        textures.load_mat(layer as usize,vec2!(0,0),&mat);
+        Ok(FontProto {
             _filename: filename.to_string(),
             sets: sets,
-            mat: mat,
+            //mat: mat,
+            layer: layer,
+        })
+    }
+}
+
+/// Text font.
+pub struct Font {
+    pub(crate) proto: Rc<FontProto>,
+    pub(crate) font_size: u32,
+    pub(crate) ratio: f32,
+}
+
+impl Font {
+    pub fn new(proto: &Rc<FontProto>,font_size: u32) -> Result<Font,SystemError> {
+        let mut actual_size = proto.sets[proto.sets.len() - 1].font_size;
+        for s in proto.sets.iter() {
+            if s.font_size >= font_size {
+                actual_size = s.font_size;
+                break;
+            }
+        }
+        let ratio = (font_size as f32) / (actual_size as f32);
+        Ok(Font {
+            proto: Rc::clone(proto),
+            font_size: actual_size,
+            ratio: ratio,
         })
     }
 
@@ -110,30 +138,22 @@ impl Font {
     /// ## Arguments
     /// * `text` - String to measure.
     /// ## Returns
-    /// `Vec2<u16>` - The size of the string when rendered.
-    pub fn measure(&self,text: &str,font_size: u32) -> Vec2<i32> {
+    /// The size of the string when rendered.
+    pub fn measure(&self,text: &str) -> Vec2<i32> {
         let mut x = 0i32;
         let mut height = 0i32;
-        let mut actual_size = self.sets[self.sets.len() - 1].font_size;
-        for s in self.sets.iter() {
-            if s.font_size >= font_size {
-                actual_size = s.font_size;
-                break;
-            }
-        }
-        let ratio = (font_size as f32) / (actual_size as f32);
-        for s in self.sets.iter() {
-            if s.font_size == actual_size {
+        for s in self.proto.sets.iter() {
+            if s.font_size == self.font_size {
                 for c in text.chars() {
                     let code = c as u32;
                     for ch in s.characters.iter() {
                         if ch.n == code {
-                            x += (ratio * (ch.advance as f32)) as i32;
+                            x += (self.ratio * (ch.advance as f32)) as i32;
                             break;
                         }
                     }
                 }
-                height = (ratio * (s.height as f32)) as i32;
+                height = (self.ratio * (s.height as f32)) as i32;
                 break;
             }
         }
@@ -148,40 +168,32 @@ impl Font {
     /// * `d` - Depth of the text.
     /// * `color` - Main color.
     /// * `back_color` - Background color.
-    pub fn build_text<T: ColorParameter>(&self,uirects: &mut Vec<ui::UIRect>,p: Vec2<i32>,text: &str,_d: f32,font_size: u32,color: T,back_color: T) where u32: From<T> {
+    pub fn build_text<T: ColorParameter>(&self,uirects: &mut Vec<ui::UIRect>,p: Vec2<i32>,text: &str,_d: f32,color: T,back_color: T) where u32: From<T> {
         let color = u32::from(color);
         let back_color = u32::from(back_color);
-        let mut actual_size = self.sets[self.sets.len() - 1].font_size;
-        for s in self.sets.iter() {
-            if s.font_size >= font_size {
-                actual_size = s.font_size;
-                break;
-            }
-        }
-        let ratio = (font_size as f32) / (actual_size as f32);
-        for s in self.sets.iter() {
-            if s.font_size == actual_size {
-                let mut v = vec2!(p.x,p.y + (ratio * (s.y_bearing as f32)) as i32);
+        for s in self.proto.sets.iter() {
+            if s.font_size == self.font_size {
+                let mut v = vec2!(p.x,p.y + (self.ratio * (s.y_bearing as f32)) as i32);
                 for c in text.chars() {
                     let code = c as u32;
                     for ch in s.characters.iter() {
                         if ch.n == code {
                             uirects.push(ui::UIRect {
                                 r: vec4!(
-                                    (v.x + (ratio * (ch.bearing.x as f32)) as i32) as f32,
-                                    (v.y - (ratio * (ch.bearing.y as f32)) as i32) as f32,
-                                    ((ratio * (ch.r.s.x as f32)) as i32) as f32,
-                                    ((ratio * (ch.r.s.y as f32)) as i32) as f32
+                                    (v.x + (self.ratio * (ch.bearing.x as f32)) as i32) as f32,
+                                    (v.y - (self.ratio * (ch.bearing.y as f32)) as i32) as f32,
+                                    ((self.ratio * (ch.r.s.x as f32)) as i32) as f32,
+                                    ((self.ratio * (ch.r.s.y as f32)) as i32) as f32
                                 ),
                                 t: vec4!(
-                                    (ch.r.o.x as f32) / (self.mat.size.x as f32),
-                                    (ch.r.o.y as f32) / (self.mat.size.y as f32),
-                                    (ch.r.s.x as f32) / (self.mat.size.x as f32),
-                                    (ch.r.s.y as f32) / (self.mat.size.y as f32)
+                                    (ch.r.o.x as f32) / (ui::FONT_TEXTURE_SIZE as f32),
+                                    (ch.r.o.y as f32) / (ui::FONT_TEXTURE_SIZE as f32),
+                                    (ch.r.s.x as f32) / (ui::FONT_TEXTURE_SIZE as f32),
+                                    (ch.r.s.y as f32) / (ui::FONT_TEXTURE_SIZE as f32)
                                 ),
-                                fbdq: vec4!(color,back_color,0,0x00000000),
+                                fbdq: vec4!(color,back_color,0,0x00000000 | self.proto.layer),
                             });
-                            v.x += (ratio * (ch.advance as f32)) as i32;
+                            v.x += (self.ratio * (ch.advance as f32)) as i32;
                             break;
                         }
                     }

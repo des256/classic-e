@@ -18,7 +18,7 @@ fn main() {
     let ui = Rc::new(ui::UI::new(&system,&graphics).expect("Cannot open UI."));
 
     // load image into texture
-    let mut file = File::open("try/world.png").expect("cannot open file");
+    let mut file = File::open("static/images/world.png").expect("cannot open file");
     let mut buffer: Vec<u8> = Vec::new();
     file.read_to_end(&mut buffer).expect("unable to read file");
     let mat = image::decode::<pixel::ARGB8>(&buffer).expect("unable to decode");
