@@ -17,10 +17,10 @@ use gl::types::{
 };
 #[cfg(target_os="linux")]
 use x11::{
-    xlib::XID,
+    //xlib::XID,
     glx::{
         glXMakeCurrent,
-        glXSwapBuffers,
+        //glXSwapBuffers,
     },
 };
 #[cfg(target_os="windows")]
@@ -28,7 +28,7 @@ use {
     winapi::{
         um::wingdi::{
             wglMakeCurrent,
-            SwapBuffers,
+            //SwapBuffers,
         },
         shared::windef::HDC,
     },
@@ -39,105 +39,159 @@ pub struct Graphics {
     system: Rc<System>,
     pub(crate) sp: Cell<GLuint>,
     pub(crate) index_type: Cell<GLenum>,
-    pub(crate) target_is_framebuffer: Cell<bool>,
-#[cfg(target_os="linux")]
-    pub(crate) target_id: Cell<XID>,
-#[cfg(target_os="windows")]
-    pub(crate) target_hdc: Cell<HDC>,
 }
 
 #[doc(hidden)]
-pub trait OpenGLUniform {
+pub trait GLUniform {
     fn set_uniform(location: i32,value: Self);
 }
 
-impl OpenGLUniform for f32 {
+impl GLUniform for f32 {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform1f(location,value) };
     }
 }
 
-impl OpenGLUniform for Vec2<f32> {
+impl GLUniform for Vec2<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
-impl OpenGLUniform for Vec3<f32> {
+impl GLUniform for Vec3<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform3fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
-impl OpenGLUniform for Vec4<f32> {
+impl GLUniform for Vec4<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
-impl OpenGLUniform for u32 {
+impl GLUniform for u32 {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform1ui(location,value) };
     }
 }
 
-impl OpenGLUniform for Vec2<u32> {
+impl GLUniform for Vec2<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2uiv(location,1,&value as *const Self as *const GLuint) };
     }
 }
 
-impl OpenGLUniform for Vec3<u32> {
+impl GLUniform for Vec3<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform3uiv(location,1,&value as *const Self as *const GLuint) };
     }
 }
 
-impl OpenGLUniform for Vec4<u32> {
+impl GLUniform for Vec4<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4uiv(location,1,&value as *const Self as *const GLuint) };
     }
 }
 
-impl OpenGLUniform for i32 {
+impl GLUniform for i32 {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform1i(location,value) };
     }
 }
 
-impl OpenGLUniform for Vec2<i32> {
+impl GLUniform for Vec2<i32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2iv(location,1,&value as *const Self as *const GLint) };
     }
 }
 
-impl OpenGLUniform for Vec3<i32> {
+impl GLUniform for Vec3<i32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform3iv(location,1,&value as *const Self as *const GLint) };
     }
 }
 
-impl OpenGLUniform for Vec4<i32> {
+impl GLUniform for Vec4<i32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4iv(location,1,&value as *const Self as *const GLint) };
     }
 }
 
-impl OpenGLUniform for Rect<f32> {
+impl GLUniform for Rect<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
-impl OpenGLUniform for Rect<u32> {
+impl GLUniform for Rect<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4uiv(location,1,&value as *const Self as *const GLuint) };
     }
 }
 
-impl OpenGLUniform for Rect<i32> {
+impl GLUniform for Rect<i32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4iv(location,1,&value as *const Self as *const GLint) };
+    }
+}
+
+#[doc(hidden)]
+pub trait GLBindTexture {
+    fn do_bind(&self,graphics: &Graphics,stage: usize);
+}
+
+impl GLBindTexture for gpu::Framebuffer {
+    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
+            gl::BindTexture(gl::TEXTURE_2D,self.tex);
+        }
+    }
+}
+
+impl<T: gpu::GLFormat> GLBindTexture for gpu::Texture1D<T> {
+    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
+            gl::BindTexture(gl::TEXTURE_1D,self.tex);
+        }
+    }
+}
+
+impl<T: gpu::GLFormat> GLBindTexture for gpu::Texture2D<T> {
+    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
+            gl::BindTexture(gl::TEXTURE_2D,self.tex);
+        }
+    }
+}
+
+impl<T: gpu::GLFormat> GLBindTexture for gpu::Texture3D<T> {
+    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
+            gl::BindTexture(gl::TEXTURE_3D,self.tex);
+        }
+    }
+}
+
+impl<T: gpu::GLFormat> GLBindTexture for gpu::TextureCube<T> {
+    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
+            gl::BindTexture(gl::TEXTURE_CUBE_MAP,self.tex);
+        }
+    }
+}
+
+impl<T: gpu::GLFormat> GLBindTexture for gpu::Texture2DArray<T> {
+    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
+        unsafe {
+            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
+            gl::BindTexture(gl::TEXTURE_2D_ARRAY,self.tex);
+        }
     }
 }
 
@@ -157,7 +211,6 @@ impl BindTarget for Rc<gpu::Framebuffer> {
             gl::Viewport(0,0,self.size.x as i32,self.size.y as i32);
             gl::Scissor(0,0,self.size.x as i32,self.size.y as i32);
         }
-        graphics.target_is_framebuffer.set(true);
     }
 }
 
@@ -172,61 +225,6 @@ impl BindTarget for Rc<Window> {
             gl::BindFramebuffer(gl::FRAMEBUFFER,0);
             gl::Viewport(0,0,size.x as i32,size.y as i32);
             gl::Scissor(0,0,size.x as i32,size.y as i32);
-        }
-        graphics.target_is_framebuffer.set(false);
-#[cfg(target_os="linux")]
-        graphics.target_id.set(self.id);
-#[cfg(target_os="windows")]
-        graphics.target_hdc.set(self.hdc);
-    }
-}
-
-#[doc(hidden)]
-pub trait BindTexture {
-    fn do_bind(&self,graphics: &Graphics,stage: usize);
-}
-
-impl BindTexture for gpu::Framebuffer {
-    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
-        unsafe {
-            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
-            gl::BindTexture(gl::TEXTURE_2D,self.tex);
-        }
-    }
-}
-
-impl<T: gpu::GLFormat> BindTexture for gpu::Texture1D<T> {
-    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
-        unsafe {
-            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
-            gl::BindTexture(gl::TEXTURE_1D,self.tex);
-        }
-    }
-}
-
-impl<T: gpu::GLFormat> BindTexture for gpu::Texture2D<T> {
-    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
-        unsafe {
-            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
-            gl::BindTexture(gl::TEXTURE_2D,self.tex);
-        }
-    }
-}
-
-impl<T: gpu::GLFormat> BindTexture for gpu::Texture3D<T> {
-    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
-        unsafe {
-            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
-            gl::BindTexture(gl::TEXTURE_3D,self.tex);
-        }
-    }
-}
-
-impl<T: gpu::GLFormat> BindTexture for gpu::TextureCube<T> {
-    fn do_bind(&self,_graphics: &Graphics,stage: usize) {
-        unsafe {
-            gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
-            gl::BindTexture(gl::TEXTURE_CUBE_MAP,self.tex);
         }
     }
 }
@@ -243,11 +241,6 @@ impl Graphics {
             system: Rc::clone(system),
             sp: Cell::new(0),
             index_type: Cell::new(gl::UNSIGNED_INT),
-            target_is_framebuffer: Cell::new(false),
-#[cfg(target_os="linux")]
-            target_id: Cell::new(0),
-#[cfg(target_os="windows")]
-            target_hdc: Cell::new(null_mut()),
         })
     }
 
@@ -258,28 +251,27 @@ impl Graphics {
         target.do_bind(&self);
     }
 
-    /// (temporary) Present target.
-    pub fn present(&self) {
-        unsafe {
-            gl::Flush();
-            if !self.target_is_framebuffer.get() {
-#[cfg(target_os="linux")]
-                glXSwapBuffers(self.system.connection.get_raw_dpy(),self.target_id.get());
-#[cfg(target_os="windows")]
-                SwapBuffers(self.target_hdc.get());
-            }
-        }
+    /// (temporary) Flush current situation.
+    pub fn flush(&self) {
+        unsafe { gl::Flush(); }
     }
 
     /// (temporary) Clear current target.
     /// ## Arguments
     /// * `color` - Color to clear with.
-    pub fn clear<T>(&self,color: T) where Vec4<f32>: From<T> {
-        let color = Vec4::<f32>::from(color);
+    pub fn clear<T: ColorParameter>(&self,color: T) {
+        let color = color.into_vec4();
         unsafe {
             gl::ClearColor(color.x,color.y,color.z,color.w);
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
+    }
+
+    /// (temporary) Draw points.
+    /// ## Arguments
+    /// * `n` - Number of vertices.
+    pub fn draw_points(&self,n: i32) {
+        unsafe { gl::DrawArrays(gl::POINTS,0,n) };
     }
 
     /// (temporary) Draw triangle fan.
@@ -294,6 +286,13 @@ impl Graphics {
     /// * `n` - Number of vertices.
     pub fn draw_triangles(&self,n: i32) {
         unsafe { gl::DrawArrays(gl::TRIANGLES,0,n) };
+    }
+
+    /// (temporary) Draw points.
+    /// ## Arguments
+    /// * `n` - Number of vertices.
+    pub fn draw_indexed_points(&self,n: i32) {
+        unsafe { gl::DrawElements(gl::POINTS,n,self.index_type.get(),null_mut()) };
     }
 
     /// (temporary) Draw indexed triangle fan.
@@ -328,7 +327,7 @@ impl Graphics {
     /// ## Arguments
     /// * `stage` - Texture stage to bind to.
     /// * `texture` - Texture or framebuffer to bind.
-    pub fn bind_texture<T: BindTexture>(&self,stage: usize,texture: &T) {
+    pub fn bind_texture<T: GLBindTexture>(&self,stage: usize,texture: &T) {
         texture.do_bind(&self,stage);
     }
 
@@ -344,7 +343,7 @@ impl Graphics {
     /// ## Arguments
     /// * `name` - Variable name referenced in the shader program.
     /// * `value` - Value of the uniform.
-    pub fn set_uniform<T: OpenGLUniform>(&self,name: &str,value: T) {
+    pub fn set_uniform<T: GLUniform>(&self,name: &str,value: T) {
         let cname = CString::new(name).unwrap();
         let res = unsafe { gl::GetUniformLocation(self.sp.get(),cname.as_ptr() as *const GLchar) };
         T::set_uniform(res,value);

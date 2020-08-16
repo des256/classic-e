@@ -30,6 +30,7 @@ use {
             True,
         },
         glx::{
+            GLXDrawable,
             GLXFBConfig,
             GLXContext,
             glXGetProcAddress,
@@ -124,6 +125,9 @@ type GlXCreateContextAttribsARBProc = unsafe extern "C" fn(
 ) -> GLXContext;
 
 #[doc(hidden)]
+type GlXSwapIntervalEXT = unsafe extern "C" fn(dpy: *mut Display,drw: GLXDrawable,ivl: c_int);
+
+#[doc(hidden)]
 fn load_function(name: &str) -> *mut c_void {
     let newname = CString::new(name).unwrap();
     let pointer: *mut c_void = unsafe {
@@ -132,7 +136,7 @@ fn load_function(name: &str) -> *mut c_void {
         )
     };
     if pointer.is_null() {
-        panic!("(linux, ui+opengl) unable to access {}",name);
+        panic!("(linux, OpenGL) unable to access {}",name);
     }
     pointer
 }
@@ -155,6 +159,7 @@ pub struct System {
     _wm_net_state: u32,
     _wm_net_state_above: u32,
     epfd: c_int,
+    pub(crate) glx_swap_interval: GlXSwapIntervalEXT,
 }
 
 impl System {
@@ -170,7 +175,7 @@ impl System {
         connection.set_event_queue_owner(EventQueueOwner::Xcb);
         let fd = connection.as_raw_fd();
 
-        let (visual_screen,visualid,depth,fbconfig,glx_create_context_attribs) = {
+        let (visual_screen,visualid,depth,fbconfig,glx_create_context_attribs,glx_swap_interval) = {
             let mut glxmaj: c_int = 0;
             let mut glxmin: c_int = 0;
             unsafe {
@@ -234,7 +239,10 @@ impl System {
             let glx_create_context_attribs: GlXCreateContextAttribsARBProc = unsafe {
                 transmute(load_function("glXCreateContextAttribsARB"))
             };
-            (visual_screen,visualid,depth,fbconfig,glx_create_context_attribs)
+            let glx_swap_interval: GlXSwapIntervalEXT = unsafe {
+                transmute(load_function("glXSwapIntervalEXT"))
+            };
+            (visual_screen,visualid,depth,fbconfig,glx_create_context_attribs,glx_swap_interval)
         };
 
         let protocols_com = intern_atom(&connection,false,"WM_PROTOCOLS");
@@ -368,6 +376,7 @@ impl System {
             _wm_net_state: wm_net_state,
             _wm_net_state_above: wm_net_state_above,
             epfd: epfd,
+            glx_swap_interval: glx_swap_interval,
         })
     }
 
@@ -394,7 +403,7 @@ impl System {
             },
             BUTTON_PRESS => {
                 let button_press: &ButtonPressEvent = unsafe { cast_event(&xcb_event) };
-                let p = vec2!(button_press.event_x() as isize,button_press.event_y() as isize);
+                let p = vec2!(button_press.event_x() as i32,button_press.event_y() as i32);
                 let id = button_press.event() as XID;
                 match button_press.detail() {
                     1 => { return Some((id,Event::MousePress(p,Mouse::Left))); },
@@ -409,7 +418,7 @@ impl System {
             },
             BUTTON_RELEASE => {
                 let button_release: &ButtonReleaseEvent = unsafe { cast_event(&xcb_event) };
-                let p = vec2!(button_release.event_x() as isize,button_release.event_y() as isize);
+                let p = vec2!(button_release.event_x() as i32,button_release.event_y() as i32);
                 let id = button_release.event() as XID;
                 match button_release.detail() {
                     1 => { return Some((id,Event::MouseRelease(p,Mouse::Left))); },
@@ -420,13 +429,13 @@ impl System {
             },
             MOTION_NOTIFY => {
                 let motion_notify: &MotionNotifyEvent = unsafe { cast_event(&xcb_event) };
-                let p = vec2!(motion_notify.event_x() as isize,motion_notify.event_y() as isize);
+                let p = vec2!(motion_notify.event_x() as i32,motion_notify.event_y() as i32);
                 let id = motion_notify.event() as XID;
                 return Some((id,Event::MouseMove(p)));
             },
             CONFIGURE_NOTIFY => {
                 let configure_notify: &ConfigureNotifyEvent = unsafe { cast_event(&xcb_event) };
-                let s = vec2!(configure_notify.width() as isize,configure_notify.height() as isize);
+                let s = vec2!(configure_notify.width() as i32,configure_notify.height() as i32);
                 let id = configure_notify.event() as XID;
                 return Some((id,Event::Resize(s)));
             },
@@ -474,6 +483,20 @@ impl Drop for System {
         unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),0,null_mut()); }
         destroy_window(&self.connection,self.hidden_window as u32);
         unsafe { glXDestroyContext(self.connection.get_raw_dpy(),self.context); }
+    }
+}
+
+#[doc(hidden)]
+pub trait Id {
+    type Result;
+    fn id(&self) -> <Self as Id>::Result;
+}
+
+#[doc(hidden)]
+impl Id for Window {
+    type Result = XID;
+    fn id(&self) -> <Self as Id>::Result {
+        self.id
     }
 }
 

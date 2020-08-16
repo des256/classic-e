@@ -25,11 +25,17 @@ macro_rules! impl_clamp1 (
 impl_clamp1!(f32);
 impl_clamp1!(f64);*/
 
+pub trait Pixel {
+}
+
 /// 8-bit R pixel format.
 #[allow(dead_code)]
 #[derive(Copy,Clone)]
 pub struct R8 {
     pub d: u8,
+}
+
+impl Pixel for R8 {
 }
 
 impl Zero for R8 {
@@ -65,6 +71,9 @@ impl From<f32> for R8 {
 #[derive(Copy,Clone)]
 pub struct R3G3B2 {
     d: u8,
+}
+
+impl Pixel for R3G3B2 {
 }
 
 impl Zero for R3G3B2 {
@@ -159,6 +168,9 @@ impl_r3g3b2!(f64);
 #[derive(Copy,Clone)]
 pub struct ARGB2 {
     d: u8,
+}
+
+impl Pixel for ARGB2 {
 }
 
 impl Zero for ARGB2 {
@@ -263,6 +275,9 @@ pub struct R5G6B5 {
     d: u16,
 }
 
+impl Pixel for R5G6B5 {
+}
+
 impl Zero for R5G6B5 {
     /// Return black R5G6B5 pixel.
     fn zero() -> R5G6B5 {
@@ -355,6 +370,9 @@ impl_r5g6b5!(f64);
 #[derive(Copy,Clone)]
 pub struct ARGB4 {
     d: u16,
+}
+
+impl Pixel for ARGB4 {
 }
 
 impl Zero for ARGB4 {
@@ -457,6 +475,9 @@ impl_argb4!(f64);
 #[derive(Copy,Clone)]
 pub struct A1RGB5 {
     d: u16,
+}
+
+impl Pixel for A1RGB5 {
 }
 
 impl Zero for A1RGB5 {
@@ -573,6 +594,9 @@ pub struct RGB8 {
     b: u8,
 }
 
+impl Pixel for RGB8 {
+}
+
 impl Zero for RGB8 {
     /// Return black RGB8 pixel.
     fn zero() -> RGB8 {
@@ -658,6 +682,9 @@ pub struct ARGB8 {
     g: u8,
     r: u8,
     a: u8,
+}
+
+impl Pixel for ARGB8 {
 }
 
 impl Zero for ARGB8 {
@@ -747,6 +774,9 @@ impl_argb8!(f64);
 #[derive(Copy,Clone)]
 pub struct A2RGB10 {
     d: u32,
+}
+
+impl Pixel for A2RGB10 {
 }
 
 impl Zero for A2RGB10 {

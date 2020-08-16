@@ -5,6 +5,8 @@ use crate::*;
 use std::{
     ffi::c_void,
     rc::Rc,
+    marker::PhantomData,
+    ptr::null,
 };
 use gl::types::{
     GLuint,
@@ -47,20 +49,19 @@ impl GLVertex for Vec4<f32> {
 
 /// Vertex buffer GPU resource.
 pub struct VertexBuffer<T: GLVertex> {
-    _vertices: Vec<T>,
     pub(crate) vao: GLuint,
     pub(crate) vbo: GLuint,
+    phantom: PhantomData<T>,
 }
 
 impl<T: GLVertex> VertexBuffer<T> {
     /// (temporary) Create new vertex buffer.
     /// ## Arguments
     /// * `graphics` - Graphics context to create vertexbuffer for.
-    /// * `vertices` - Vector of vertices to upload.
     /// ## Returns
     /// * `Ok(VertexBuffer)` - The new vertex buffer.
     /// * `Err(SystemError)` - The vertex buffer could not be created.
-    pub fn new(_graphics: &Rc<gpu::Graphics>,vertices: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
+    pub fn new(_graphics: &Rc<gpu::Graphics>) -> Result<VertexBuffer<T>,SystemError> {
         let mut vao: GLuint = 0;
         let mut vbo: GLuint = 0;
         unsafe {
@@ -68,14 +69,44 @@ impl<T: GLVertex> VertexBuffer<T> {
             gl::BindVertexArray(vao);
             gl::GenBuffers(1,&mut vbo);
             gl::BindBuffer(gl::ARRAY_BUFFER,vbo);
-            gl::BufferData(gl::ARRAY_BUFFER,T::len() * vertices.len() as isize,vertices.as_ptr() as *const c_void,gl::STATIC_DRAW);
+            gl::BufferData(gl::ARRAY_BUFFER,1,null() as *const c_void,gl::STATIC_DRAW);
             T::bind();
         }
         Ok(VertexBuffer {
-            _vertices: vertices,
             vao: vao,
             vbo: vbo,
+            phantom: PhantomData,
         })
+    }
+
+    /// (temporary) Create new vertex buffer from Vec.
+    /// /// ## Arguments
+    /// * `graphics` - Graphics context to create texture for.
+    /// * `src` - Vec containing source data.
+    /// ## Returns
+    /// * `Ok(VertexBuffer)` - The new vertex buffer.
+    /// * `Err(SystemError)` - The vertex buffer could not be created.
+    pub fn new_from_vec(_graphics: &Rc<gpu::Graphics>,src: &Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
+        let vertexbuffer = VertexBuffer::new(_graphics)?;
+        vertexbuffer.load(0,src);
+        Ok(vertexbuffer)
+    }
+
+    /// (temporary) Load data into vertex buffer
+    /// ## Arguments
+    /// * `o` - offset.
+    /// * `src` - Vec containing source data.
+    pub fn load(&self,o: usize,src: &Vec<T>) {
+        unsafe { 
+            gl::BindVertexArray(self.vao);
+            gl::BufferData(gl::ARRAY_BUFFER,T::len() * (o + src.len()) as isize,null() as *const c_void,gl::STATIC_DRAW);
+            gl::BufferSubData(
+                gl::ARRAY_BUFFER,
+                T::len() * (o as isize),
+                T::len() * src.len() as isize,
+                src.as_ptr() as *const c_void
+            );
+        }
     }
 }
 

@@ -43,13 +43,26 @@ impl<T: gpu::GLFormat> Texture2D<T> {
     }
 
     /// (temporary) Create new 2D texture from Mat.
-    /// # Arguments
+    /// ## Arguments
     /// * `graphics` - Graphics context to create texture for.
-    /// * `image` - Mat to upload to the GPU.
-    pub fn new_from_mat(graphics: &Rc<gpu::Graphics>,image: &Mat<T>) -> Result<Texture2D<T>,SystemError> {
-        let texture = Texture2D::new(graphics,image.size);
-        unsafe { gl::TexSubImage2D(gl::TEXTURE_2D,0,0,0,image.size.x as i32,image.size.y as i32,T::gl_format(),T::gl_type(),image.data.as_ptr() as *const c_void) };
-        texture
+    /// * `src` - Mat containing source data.
+    /// ## Returns
+    /// * `Ok(Texture2D)` - The new 2D texture.
+    /// * `Err(SystemError)` - The 2D texture could not be created.
+    pub fn new_from_mat(graphics: &Rc<gpu::Graphics>,src: &Mat<T>) -> Result<Texture2D<T>,SystemError> {
+        let texture = Texture2D::new(graphics,src.size)?;
+        texture.load(vec2!(0,0),src);
+        Ok(texture)
+    }
+
+    /// (temporary) Load data into 2D texture.
+    /// ## Arguments
+    /// * `o` - offset.
+    /// * `src` - Mat containing source data.
+    pub fn load(&self,o: Vec2<usize>,src: &Mat<T>) {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D,self.tex);
+            gl::TexSubImage2D(gl::TEXTURE_2D,0,o.x as i32,o.y as i32,src.size.x as i32,src.size.y as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void) };
     }
 }
 

@@ -72,15 +72,15 @@ pub enum Event {
     /// Key was released.
     KeyRelease(u8),
     /// Mouse button was pressed.
-    MousePress(Vec2<isize>,Mouse),
+    MousePress(Vec2<i32>,Mouse),
     /// Mouse button was released.
-    MouseRelease(Vec2<isize>,Mouse),
+    MouseRelease(Vec2<i32>,Mouse),
     /// Mouse wheel was moved.
     MouseWheel(Wheel),
     /// Mouse was moved.
-    MouseMove(Vec2<isize>),
+    MouseMove(Vec2<i32>),
     /// Window was resized.
-    Resize(Vec2<isize>),
+    Resize(Vec2<i32>),
     /// Window close button was pressed.
     Close,
 }

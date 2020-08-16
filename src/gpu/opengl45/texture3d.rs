@@ -20,11 +20,11 @@ impl<T: gpu::GLFormat> Texture3D<T> {
     /// (temporary) Create new 3D texture.
     /// ## Arguments
     /// * `graphics` - Graphics context to create texture for.
-    /// * `image` - Mat to upload to the GPU.
+    /// * `size` - Size of the texture.
     /// ## Returns
     /// * `Ok(Texture3D)` - The new 3D texture.
     /// * `Err(SystemError)` - The 3D texture could not be created.
-    pub fn new(_graphics: &Rc<gpu::Graphics>,image: &Ten<T>) -> Result<Texture3D<T>,SystemError> {
+    pub fn new(_graphics: &Rc<gpu::Graphics>,size: Vec3<usize>) -> Result<Texture3D<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -34,14 +34,37 @@ impl<T: gpu::GLFormat> Texture3D<T> {
             gl::TexParameteri(gl::TEXTURE_3D,gl::TEXTURE_WRAP_R,gl::REPEAT as i32);
             gl::TexParameteri(gl::TEXTURE_3D,gl::TEXTURE_MIN_FILTER,gl::LINEAR as i32);
             gl::TexParameteri(gl::TEXTURE_3D,gl::TEXTURE_MAG_FILTER,gl::LINEAR as i32);
-            gl::TexStorage3D(gl::TEXTURE_3D,1,T::gl_internal_format(),image.size.x as i32,image.size.y as i32,image.size.z as i32);
-            gl::TexSubImage3D(gl::TEXTURE_3D,0,0,0,0,image.size.x as i32,image.size.y as i32,image.size.z as i32,T::gl_format(),T::gl_type(),image.data.as_ptr() as *const c_void);
-        };
+            gl::TexStorage3D(gl::TEXTURE_3D,1,T::gl_internal_format(),size.x as i32,size.y as i32,size.z as i32);
+        }
         Ok(Texture3D {
             tex: tex,
-            size: image.size,
+            size: size,
             phantom: PhantomData,
         })
+    }
+
+    /// (temporary) Create new 3D texture from Ten.
+    /// ## Arguments
+    /// * `graphics` - Graphics context to create texture for.
+    /// * `src` - Ten containing source data.
+    /// ## Returns
+    /// * `Ok(Texture3D)` - The new 3D texture.
+    /// * `Err(SystemError)` - The 3D texture could not be created.
+    pub fn new_from_ten(graphics: &Rc<gpu::Graphics>,src: &Ten<T>) -> Result<Texture3D<T>,SystemError> {
+        let texture = Texture3D::new(graphics,src.size)?;
+        texture.load(vec3!(0,0,0),src);
+        Ok(texture)
+    }
+
+    /// (temporary) Load data into 3D texture.
+    /// ## Arguments
+    /// * `o` - offset.
+    /// * `src` - Ten containing source data.
+    pub fn load(&self,o: Vec3<usize>,src: &Ten<T>) {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_3D,self.tex);
+            gl::TexSubImage3D(gl::TEXTURE_3D,0,o.x as i32,o.y as i32,o.z as i32,src.size.x as i32,src.size.y as i32,src.size.z as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void);
+        }
     }
 }
 

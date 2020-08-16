@@ -57,7 +57,7 @@ fn main() {
                 Event::Render => {
                     println!("Render");
                     graphics.bind_target(&window);
-                    graphics.clear(pixel::ARGB8::from(0xFF001122));
+                    graphics.clear(0xFF001122);
                     rendered = true;
                 },
                 Event::Close => {
@@ -69,7 +69,7 @@ fn main() {
 
         // if anything was updated, swap buffers
         if rendered {
-            graphics.present();
+            gpu::present(&system,&window);
         }
     }
 }

@@ -20,11 +20,11 @@ impl<T: gpu::GLFormat> Texture1D<T> {
     /// (temporary) Create new 1D texture.
     /// ## Arguments
     /// * `graphics` - Graphics context to create texture for.
-    /// * `image` - Vec to upload to the GPU.
+    /// * `size` - Size of the texture.
     /// ## Returns
     /// * `Ok(Texture1D)` - The new 1D texture.
     /// * `Err(SystemError)` - The 1D texture could not be created.
-    pub fn new(_graphics: &Rc<gpu::Graphics>,image: &Vec<T>) -> Result<Texture1D<T>,SystemError> {
+    pub fn new(_graphics: &Rc<gpu::Graphics>,size: usize) -> Result<Texture1D<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -32,14 +32,38 @@ impl<T: gpu::GLFormat> Texture1D<T> {
             gl::TexParameteri(gl::TEXTURE_1D,gl::TEXTURE_WRAP_S,gl::REPEAT as i32);
             gl::TexParameteri(gl::TEXTURE_1D,gl::TEXTURE_MIN_FILTER,gl::LINEAR as i32);
             gl::TexParameteri(gl::TEXTURE_1D,gl::TEXTURE_MAG_FILTER,gl::LINEAR as i32);
-            gl::TexStorage1D(gl::TEXTURE_1D,1,T::gl_internal_format(),image.len() as i32);
-            gl::TexSubImage1D(gl::TEXTURE_1D,0,0,image.len() as i32,T::gl_format(),T::gl_type(),image.as_ptr() as *const c_void);
+            gl::TexStorage1D(gl::TEXTURE_1D,1,T::gl_internal_format(),size as i32);
         };
         Ok(Texture1D {
             tex: tex,
-            size: image.len(),
+            size: size,
             phantom: PhantomData,
         })
+    }
+
+    /// (temporary) Create new 1D texture from Vec.
+    /// ## Arguments
+    /// * `graphics` - Graphics context to create texture for.
+    /// * `src` - Vec containing source data.
+    /// ## Returns
+    /// * `Ok(Texture1D)` - The new 1D texture.
+    /// * `Err(SystemError)` - The 1D texture could not be created.
+    pub fn new_from_vec(graphics: &Rc<gpu::Graphics>,src: &Vec<T>) -> Result<Texture1D<T>,SystemError> {
+        let texture = Texture1D::new(graphics,src.len())?;
+        texture.load(0,src);
+        Ok(texture)
+    }
+
+    /// (temporary) Load data into 1D texture.
+    /// ## Arguments
+    /// * `o` - offset.
+    /// * `src` - Vec containing source data.
+    pub fn load(&self,o: usize,src: &Vec<T>) {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_1D,self.tex);
+            gl::TexSubImage1D(gl::TEXTURE_1D,0,o as i32,src.len() as i32,T::gl_format(),T::gl_type(),src.as_ptr() as *const c_void);
+        }
+
     }
 }
 
