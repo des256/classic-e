@@ -17,7 +17,7 @@ fn main() {
     let graphics = Rc::new(gpu::Graphics::new(&system).expect("Cannot open GPU."));
 
     // initialize UI
-    let ui = Rc::new(ui::UI::new(&system,&graphics).expect("Cannot open UI."));
+    let ui = Rc::new(ui::UI::new(&system,&graphics,"static/fonts").expect("Cannot open UI."));
 
     // create variety of fonts
     let sans16 = Rc::new(ui::Font::new(&ui.proto_sans,16).expect("unable to load font"));

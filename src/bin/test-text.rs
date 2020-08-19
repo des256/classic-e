@@ -13,7 +13,7 @@ fn main() {
     let graphics = Rc::new(gpu::Graphics::new(&system).expect("Cannot open GPU."));
 
     // initialize UI
-    let ui = Rc::new(ui::UI::new(&system,&graphics).expect("Cannot open UI."));
+    let ui = Rc::new(ui::UI::new(&system,&graphics,"static/fonts").expect("Cannot open UI."));
 
     // create text widget
     let widget = Rc::new(ui::Text::new(&ui,"Hello, World!",&ui.font).expect("Cannot create text."));

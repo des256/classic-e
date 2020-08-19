@@ -42,7 +42,7 @@ impl UI {
     /// ## Arguments
     /// * `system` - System to create the UI context for.
     /// * `graphics` - GPU graphics context to use.
-    pub fn new(system: &Rc<System>,graphics: &Rc<gpu::Graphics>) -> Result<UI,SystemError> {
+    pub fn new(system: &Rc<System>,graphics: &Rc<gpu::Graphics>,font_dir: &str) -> Result<UI,SystemError> {
 
         // create uber shader
         let uber_vs = r#"
@@ -154,9 +154,9 @@ impl UI {
 
         // create font atlas texture array
         let font_textures = Rc::new(gpu::Texture2DArray::<pixel::R8>::new(&graphics,vec3!(ui::FONT_TEXTURE_SIZE as usize,ui::FONT_TEXTURE_SIZE as usize,3)).expect("unable to allocate font texture atlas"));
-        let proto_sans = Rc::new(ui::FontProto::new(&font_textures,"static/fonts/sans.fnt",0).expect("Unable to load font"));
-        let proto_serif = Rc::new(ui::FontProto::new(&font_textures,"static/fonts/serif.fnt",1).expect("Unable to load font"));
-        let proto_mono = Rc::new(ui::FontProto::new(&font_textures,"static/fonts/mono.fnt",2).expect("Unable to load font"));
+        let proto_sans = Rc::new(ui::FontProto::new(&font_textures,&format!("{}/sans.fnt",font_dir),0).expect("Unable to load font"));
+        let proto_serif = Rc::new(ui::FontProto::new(&font_textures,&format!("{}/serif.fnt",font_dir),1).expect("Unable to load font"));
+        let proto_mono = Rc::new(ui::FontProto::new(&font_textures,&format!("{}/mono.fnt",font_dir),2).expect("Unable to load font"));
 
         // create default font
         let font = Rc::new(ui::Font::new(&proto_sans,16).expect("unable to load font"));

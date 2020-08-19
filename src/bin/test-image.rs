@@ -15,7 +15,7 @@ fn main() {
     let graphics = Rc::new(gpu::Graphics::new(&system).expect("Cannot open GPU."));
 
     // initialize UI
-    let ui = Rc::new(ui::UI::new(&system,&graphics).expect("Cannot open UI."));
+    let ui = Rc::new(ui::UI::new(&system,&graphics,"static/fonts").expect("Cannot open UI."));
 
     // load image into texture
     let mut file = File::open("static/images/world.png").expect("cannot open file");
