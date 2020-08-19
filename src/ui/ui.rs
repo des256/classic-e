@@ -9,8 +9,7 @@ use std::{
 
 enum UIDelta {
     Skip,
-    Build,
-    Render,
+    Draw,
 }
 
 pub struct UIWindow {
@@ -201,7 +200,7 @@ impl UI {
         self.windows.borrow_mut().push(UIWindow {
             window: window,
             widget: Rc::clone(widget),
-            delta: UIDelta::Build,
+            delta: UIDelta::Draw,
             buffer: Vec::new(),
             vertexbuffer: gpu::VertexBuffer::<ui::UIRect>::new(&self.graphics).expect("Unable to create vertexbuffer"),
         });
@@ -219,6 +218,22 @@ impl UI {
                 break;
             }
         }
+    }
+
+    /// Draw standard widget from vertexbuffer.
+    pub fn draw(&self,canvas_size: Vec2<i32>,vertexbuffer: &gpu::VertexBuffer::<ui::UIRect>,points: usize) {
+        self.graphics.bind_shader(&self.uber_shader);
+        self.graphics.bind_texture(0,&*self.font_textures);
+        self.graphics.bind_texture(1,&self.icons_textures.array);
+        self.graphics.bind_texture(2,&self.packed_textures.array);
+        self.graphics.bind_texture(3,&self.large_textures.array);
+        self.graphics.set_uniform("alpha_textures",0);
+        self.graphics.set_uniform("icons_textures",1);
+        self.graphics.set_uniform("packed_textures",2);
+        self.graphics.set_uniform("large_textures",3);
+        self.graphics.bind_vertexbuffer(&vertexbuffer);
+        self.graphics.set_uniform("canvas_size",vec2!(canvas_size.x as f32,canvas_size.y as f32));
+        self.graphics.draw_points(points as i32);
     }
 
     /// Run UI.
@@ -255,13 +270,13 @@ impl UI {
 
                             // system wants to render this window
                             Event::Render => {
-                                window.delta = UIDelta::Render;
+                                window.delta = UIDelta::Draw;
                             },
 
                             // system notifies that this window changed size
                             Event::Resize(s) => {
                                 window.window.size.set(vec2!(s.x as usize,s.y as usize));
-                                window.delta = UIDelta::Build;
+                                window.delta = UIDelta::Draw;
                             },
 
                             // user wants to close this window
@@ -279,9 +294,7 @@ impl UI {
                                 let pos = (window_size - widget_size) / 2;
 
                                 // handle the event
-                                if let ui::HandleResult::HandledRebuild = window.widget.handle(&event,rect!(pos.x as i32,pos.y as i32,widget_size.x as i32,widget_size.y as i32)) {
-                                    window.delta = UIDelta::Build;
-                                }
+                                window.widget.handle(&event,rect!(pos.x as i32,pos.y as i32,widget_size.x as i32,widget_size.y as i32));
                             },
                         }        
                         break;
@@ -294,7 +307,7 @@ impl UI {
                 self.graphics.bind_target(&window.window);
 
                 // if widget tree needs to be rebuilt, rebuild it
-                if let UIDelta::Build = window.delta {
+                if let UIDelta::Draw = window.delta {
 
                     // (temporary) calculate where the widget is in the window
                     let widget_size_f = window.widget.measure();
@@ -303,27 +316,7 @@ impl UI {
                     let pos = (window_size - widget_size) / 2;
 
                     // rebuild the window
-                    window.buffer.clear();
-                    window.widget.build(&mut window.buffer,rect!(pos.x as i32,pos.y as i32,widget_size.x as i32,widget_size.y as i32));
-                    window.vertexbuffer.load(0,&window.buffer);
-                }
-
-                // redraw if needed
-                if let UIDelta::Skip = window.delta { } else {
-                    self.graphics.bind_shader(&self.uber_shader);
-                    self.graphics.bind_texture(0,&*self.font_textures);
-                    self.graphics.bind_texture(1,&self.icons_textures.array);
-                    self.graphics.bind_texture(2,&self.packed_textures.array);
-                    self.graphics.bind_texture(3,&self.large_textures.array);
-                    self.graphics.set_uniform("alpha_textures",0);
-                    self.graphics.set_uniform("icons_textures",1);
-                    self.graphics.set_uniform("packed_textures",2);
-                    self.graphics.set_uniform("large_textures",3);
-                    self.graphics.clear(0xFF001133);
-                    self.graphics.bind_vertexbuffer(&window.vertexbuffer);
-                    let window_size = window.window.size.get();
-                    self.graphics.set_uniform("canvas_size",vec2!(window_size.x as f32,window_size.y as f32));
-                    self.graphics.draw_points(window.buffer.len() as i32);
+                    window.widget.draw(vec2!(window_size.x as i32,window_size.y as i32),rect!(pos.x as i32,pos.y as i32,widget_size.x as i32,widget_size.y as i32));
                     self.graphics.flush();
                 }
             }
@@ -332,7 +325,7 @@ impl UI {
             for window in self.windows.borrow_mut().iter_mut() {
 
                 // if redraw happened, present
-                if let UIDelta::Skip = window.delta { } else {
+                if let UIDelta::Draw = window.delta {
                     gpu::present(&self.system,&window.window);
                 }
                 

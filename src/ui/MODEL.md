@@ -1,8 +1,8 @@
 # How to UI
 
-There are 2 basic types of window connected to the system: App windows and Popup windows. App windows have a border, titlebar, can change size, maximize/minimize, etc. Popup windows have no border, and are generally hovering above app windows. Both window types have a rendering context, and the contents of the windows are rendered by a 3D rendering callback.
+Each window hosts a widget. There are many widgets. They all implement the Widget trait. UI runs the main loop:
 
-The windows are owned by the global UI object. Each window has an event closure that deals with the specifics of an event for that window. Events are run by `ui.pump()`.
+1. Events from the system are passed down to widget.handle()
+2. If the widget needs to be drawn, call widget.draw()
 
-This should hide Win32 and X11 issues.
-
+Widget drawing also creates a new vertexbuffer where needed. The reason is that some widgets do not fit in uber shader mode, and separating those who are and aren't is a hassle (and it's not yet clear whether or not it is indeed faster to chunk everything together into one vertexbuffer).

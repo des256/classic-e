@@ -1,6 +1,7 @@
 # PRIORITY
 
 - zoomable/pannable frame tree idea
+- all widgets have their own draw call
 - texture loading from file
 
 # FOR LATER

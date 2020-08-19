@@ -47,16 +47,16 @@ impl ui::Widget for Text {
         self.font.borrow().measure(&self.text.borrow()) + 2 * self.padding.get()
     }
 
-    fn handle(&self,event: &Event,_space: Rect<i32>) -> ui::HandleResult {
-        match event {
-            _ => { ui::HandleResult::Unhandled },
-        }
+    fn handle(&self,event: &Event,_space: Rect<i32>) {
     }
 
-    fn build(&self,buffer: &mut Vec<ui::UIRect>,space: Rect<i32>) {
+    fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
+        let mut buffer: Vec<ui::UIRect> = Vec::new();
         let padding = self.padding.get();
         let color = u32::from(self.color.get());
         let back_color = u32::from(self.back_color.get());
-        self.font.borrow().build_text(buffer,space.o + padding,&self.text.borrow(),0.0,color,back_color);
+        self.font.borrow().build_text(&mut buffer,space.o + padding,&self.text.borrow(),0.0,color,back_color);
+        let vertexbuffer = gpu::VertexBuffer::new_from_vec(&self.ui.graphics,&buffer).expect("Unable to create vertexbuffer");
+        self.ui.draw(canvas_size,&vertexbuffer,buffer.len());
     }
 }

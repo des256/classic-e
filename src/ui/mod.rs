@@ -58,12 +58,6 @@ impl gpu::GLVertex for UIRect {
     }
 }
 
-pub enum HandleResult {
-    Unhandled,
-    Handled,
-    HandledRebuild,
-}
-
 /// Widget abstraction trait.
 pub trait Widget {
 
@@ -76,17 +70,13 @@ pub trait Widget {
     /// ## Arguments
     /// * `event` - Event to process.
     /// * `space` - The widget's rectangle.
-    /// ## Returns
-    /// * `Unhandled` - The widget has not handled the event.
-    /// * `Handled` - The widget handled the event, nothing needs to change.
-    /// * `HandledRebuld` - The widget handled the event and needs to be rebuilt.
-    fn handle(&self,event: &Event,space: Rect<i32>) -> HandleResult;
+    fn handle(&self,event: &Event,space: Rect<i32>);
 
-    /// Add UIRects to a vertex buffer.
+    /// Draw the widget.
     /// ## Arguments
-    /// * `buffer` - Vertex buffer to add to. The current size of this buffer is where this widget's portion of the buffer starts.
+    /// * `window_size` - Size of the window to draw in.
     /// * `space` - Space to put this widget in.
-    fn build(&self,buffer: &mut Vec<UIRect>,space: Rect<i32>);
+    fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>);
 }
 
 mod texture2darrayatlas;

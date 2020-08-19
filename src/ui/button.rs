@@ -58,46 +58,40 @@ impl ui::Widget for Button {
         self.font.borrow().measure(&self.text.borrow()) + 2 * (self.padding.get() + self.inner_padding.get())
     }
 
-    fn handle(&self,event: &Event,space: Rect<i32>) -> ui::HandleResult {
+    fn handle(&self,event: &Event,space: Rect<i32>) {
         match event {
             Event::MousePress(pos,mouse) => {
                 match mouse {
                     Mouse::Left => {
                         if (pos.x >= space.o.x) && (pos.y >= space.o.y) && (pos.x < space.o.x + space.s.x) && (pos.y < space.o.y + space.s.y) {
                             self.pressed.set(true);
-                            ui::HandleResult::HandledRebuild
-                        }
-                        else {
-                            ui::HandleResult::Unhandled
                         }
                     },
-                    _ => { ui::HandleResult::Unhandled },
+                    _ => { },
                 }
             },
             Event::MouseRelease(_pos,mouse) => {
                 match mouse {
                     Mouse::Left => {
                         self.pressed.set(false);
-                        ui::HandleResult::HandledRebuild
                     },
-                    _ => { ui::HandleResult::Unhandled },
+                    _ => { },
                 }
             },
             Event::MouseMove(pos) => {
                 if (pos.x >= space.o.x) && (pos.y >= space.o.y) && (pos.x < space.o.x + space.s.x) && (pos.y < space.o.y + space.s.y) {
                     self.hovering.set(true);
-                    ui::HandleResult::HandledRebuild
                 }
                 else {
                     self.hovering.set(false);
-                    ui::HandleResult::HandledRebuild
                 }
             },
-            _ => { ui::HandleResult::Unhandled },
+            _ => { },
         }
     }
 
-    fn build(&self,buffer: &mut Vec<ui::UIRect>,space: Rect<i32>) {
+    fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
+        let mut buffer: Vec<ui::UIRect> = Vec::new();
         let mut bgc = self.back_color.get();
         /*if self.pressed.get() {
             bgc = self.press_color.get();
@@ -117,6 +111,8 @@ impl ui::Widget for Button {
             t: vec4!(0.0,0.0,0.0,0.0),
             fbdq: vec4!(u32::from(bgc),u32::from(bgc),0,0x00000000),
         });
-        self.font.borrow().build_text(buffer,space.o + padding + inner_padding,&self.text.borrow(),0.0,u32::from(self.color.get()),u32::from(bgc));
+        self.font.borrow().build_text(&mut buffer,space.o + padding + inner_padding,&self.text.borrow(),0.0,u32::from(self.color.get()),u32::from(bgc));
+        let vertexbuffer = gpu::VertexBuffer::new_from_vec(&self.ui.graphics,&buffer).expect("Unable to create vertexbuffer");
+        self.ui.draw(canvas_size,&vertexbuffer,buffer.len());
     }
 }

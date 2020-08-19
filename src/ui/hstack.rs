@@ -49,13 +49,10 @@ impl ui::Widget for HStack {
         total_size + 2 * self.padding.get()
     }
 
-    fn handle(&self,event: &Event,_space: Rect<i32>) -> ui::HandleResult {
-        match event {
-            _ => { ui::HandleResult::Unhandled },
-        }
+    fn handle(&self,event: &Event,_space: Rect<i32>) {
     }
 
-    fn build(&self,buffer: &mut Vec<ui::UIRect>,space: Rect<i32>) {
+    fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
         let mut ox = space.o.x;
         let padding = self.padding.get();
         for widget in self.widgets.borrow().iter() {
@@ -66,7 +63,7 @@ impl ui::Widget for HStack {
                 ui::VAlignment::Center => { (space.o.y + (space.s.y - size.y) / 2,size.y / 2) },
                 ui::VAlignment::Fill => { (space.o.y,space.s.y) },
             };
-            widget.build(buffer,rect!(ox + padding.x,oy + padding.y,size.x - 2 * padding.x,sy - 2 * padding.y));
+            widget.draw(canvas_size,rect!(ox + padding.x,oy + padding.y,size.x - 2 * padding.x,sy - 2 * padding.y));
             ox += size.x;
         }
     }

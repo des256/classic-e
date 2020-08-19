@@ -34,23 +34,17 @@ impl Image {
 ui::impl_padding!(Image);
 
 impl ui::Widget for Image {
-    
-    //fn draw(&self,dc: &Rc<ui::DC>,space: Rect<i32>) {
-    //    dc.draw_texture(space.o + self.padding.get(),&self.tex.borrow());
-    //}
 
     fn measure(&self) -> Vec2<i32> {
         let size = self.tex.borrow().r.s;
         vec2!(size.x as i32,size.y as i32)
     }
 
-    fn handle(&self,event: &Event,_space: Rect<i32>) -> ui::HandleResult {
-        match event {
-            _ => { ui::HandleResult::Unhandled },
-        }
+    fn handle(&self,event: &Event,_space: Rect<i32>) {
     }
 
-    fn build(&self,buffer: &mut Vec<ui::UIRect>,space: Rect<i32>) {
+    fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
+        let mut buffer: Vec<ui::UIRect> = Vec::new();
         let padding = self.padding.get();
         let tex = self.tex.borrow();
         buffer.push(ui::UIRect {
@@ -68,5 +62,9 @@ impl ui::Widget for Image {
             ),
             fbdq: vec4!(0xFFFFFFFF,0xFF000000,0,0x00030000),
         });        
+        let vertexbuffer = gpu::VertexBuffer::new_from_vec(&self.ui.graphics,&buffer).expect("Unable to create vertexbuffer");
+        self.ui.draw(canvas_size,&vertexbuffer,buffer.len());
     }
 }
+
+
