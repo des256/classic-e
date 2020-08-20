@@ -47,7 +47,7 @@ impl ui::Widget for Text {
         self.font.borrow().measure(&self.text.borrow()) + 2 * self.padding.get()
     }
 
-    fn handle(&self,event: &Event,_space: Rect<i32>) {
+    fn handle(&self,_event: &Event,_space: Rect<i32>) {
     }
 
     fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {

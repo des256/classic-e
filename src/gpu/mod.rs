@@ -4,6 +4,7 @@
 //! GPU access.
 
 /// (temporary) Blending mode.
+#[derive(Clone,Copy)]
 pub enum BlendMode {
     /// Replace target with source.
     Replace,

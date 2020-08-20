@@ -16,8 +16,8 @@ pub struct UIWindow {
     window: Rc<Window>,                           // window
     widget: Rc<dyn ui::Widget>,                   // widget in this window
     delta: UIDelta,                               // what to do in order to validate
-    buffer: Vec<ui::UIRect>,                      // buffer with UIRects
-    vertexbuffer: gpu::VertexBuffer<ui::UIRect>,  // GPU representation
+    //buffer: Vec<ui::UIRect>,                      // buffer with UIRects
+    //vertexbuffer: gpu::VertexBuffer<ui::UIRect>,  // GPU representation
 }
 
 /// UI subsystem.
@@ -158,7 +158,7 @@ impl UI {
         let proto_mono = Rc::new(ui::FontProto::new(&font_textures,&format!("{}/mono.fnt",font_dir),2).expect("Unable to load font"));
 
         // create default font
-        let font = Rc::new(ui::Font::new(&proto_sans,16).expect("unable to load font"));
+        let font = Rc::new(ui::Font::new(&proto_sans,12).expect("unable to load font"));
 
         // create texture array for icons (generally same size)
         let icons_textures = Rc::new(ui::Texture2DArrayAtlas::<pixel::ARGB8>::new(&graphics,vec2!(1024,1024)).expect("unable to allocate icon texture atlas"));
@@ -201,8 +201,8 @@ impl UI {
             window: window,
             widget: Rc::clone(widget),
             delta: UIDelta::Draw,
-            buffer: Vec::new(),
-            vertexbuffer: gpu::VertexBuffer::<ui::UIRect>::new(&self.graphics).expect("Unable to create vertexbuffer"),
+            //buffer: Vec::new(),
+            //vertexbuffer: gpu::VertexBuffer::<ui::UIRect>::new(&self.graphics).expect("Unable to create vertexbuffer"),
         });
         true
     }
@@ -316,6 +316,7 @@ impl UI {
                     let pos = (window_size - widget_size) / 2;
 
                     // rebuild the window
+                    self.graphics.clear(0xFF001122);
                     window.widget.draw(vec2!(window_size.x as i32,window_size.y as i32),rect!(pos.x as i32,pos.y as i32,widget_size.x as i32,widget_size.y as i32));
                     self.graphics.flush();
                 }

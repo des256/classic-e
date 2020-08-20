@@ -42,7 +42,7 @@ fn main() {
     text7.set_back_color(0xFF001133);
     
     // create VStack
-    let widget = Rc::new(ui::VStack::new(&ui,vec![text1,text2,text3,text4,text5,text6,text7]));
+    let widget = Rc::new(ui::VStack::new(&ui,vec![text1,text2,text3,text4,text5,text6,text7]).expect("Cannot create VStack."));
     widget.set_halign(ui::HAlignment::Right);
 
     // open window to host the text widget

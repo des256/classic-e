@@ -48,7 +48,7 @@ fn main() {
     text6.set_back_color(0xFF001133);
     
     // create VStack
-    let vstack = Rc::new(ui::VStack::new(&ui,vec![text1,text2,text3,text4,text5,text6]));
+    let vstack = Rc::new(ui::VStack::new(&ui,vec![text1,text2,text3,text4,text5,text6]).expect("Cannot create VStack."));
 
     // create more widgets
     let text8 = Rc::new(ui::Text::new(&ui,"File",&ui.font).expect("Cannot create text."));
@@ -65,7 +65,7 @@ fn main() {
     text11.set_padding(vec2!(4,2));
 
     // create HStack
-    let widget = Rc::new(ui::HStack::new(&ui,vec![text8,text9,text10,text11,vstack]));
+    let widget = Rc::new(ui::HStack::new(&ui,vec![text8,text9,text10,text11,vstack]).expect("Cannot create HStack."));
     widget.set_valign(ui::VAlignment::Center);
 
     // open window to host the text widget

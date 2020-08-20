@@ -40,7 +40,7 @@ impl ui::Widget for Image {
         vec2!(size.x as i32,size.y as i32)
     }
 
-    fn handle(&self,event: &Event,_space: Rect<i32>) {
+    fn handle(&self,_event: &Event,_space: Rect<i32>) {
     }
 
     fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {

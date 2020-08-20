@@ -22,14 +22,14 @@ impl VStack {
     /// * `widgets` - Widgets in the stack.
     /// ## Returns
     /// The vertical stack widget.
-    pub fn new(ui: &Rc<ui::UI>,widgets: Vec<Rc<dyn ui::Widget>>) -> VStack {
-        VStack {
+    pub fn new(ui: &Rc<ui::UI>,widgets: Vec<Rc<dyn ui::Widget>>) -> Result<VStack,SystemError> {
+        Ok(VStack {
             _ui: Rc::clone(ui),
             padding: Cell::new(vec2!(0,0)),
             halign: Cell::new(ui::HAlignment::Left),
             widgets: RefCell::new(widgets),
             //ca: Cell::new(ui::HAlignment::Left),
-        }
+        })
     }
 }
 
@@ -49,7 +49,7 @@ impl ui::Widget for VStack {
         total_size + 2 * self.padding.get()
     }
 
-    fn handle(&self,event: &Event,_space: Rect<i32>) {
+    fn handle(&self,_event: &Event,_space: Rect<i32>) {
     }
 
     fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {

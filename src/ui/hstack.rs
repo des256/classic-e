@@ -22,14 +22,14 @@ impl HStack {
     /// * `widgets` - Widgets in the stack.
     /// ## Returns
     /// The horizontal stack widget.
-    pub fn new(ui: &Rc<ui::UI>,widgets: Vec<Rc<dyn ui::Widget>>) -> HStack {
-        HStack {
+    pub fn new(ui: &Rc<ui::UI>,widgets: Vec<Rc<dyn ui::Widget>>) -> Result<HStack,SystemError> {
+        Ok(HStack {
             _ui: Rc::clone(ui),
             padding: Cell::new(vec2!(0,0)),
             valign: Cell::new(ui::VAlignment::Top),
             widgets: RefCell::new(widgets),
             //ca: Cell::new(ui::VAlignment::Top),
-        }
+        })
     }
 }
 
@@ -49,7 +49,7 @@ impl ui::Widget for HStack {
         total_size + 2 * self.padding.get()
     }
 
-    fn handle(&self,event: &Event,_space: Rect<i32>) {
+    fn handle(&self,_event: &Event,_space: Rect<i32>) {
     }
 
     fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
