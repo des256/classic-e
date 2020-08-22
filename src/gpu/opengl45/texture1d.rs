@@ -16,7 +16,7 @@ pub struct Texture1D<T: gpu::GLFormat> {
     phantom: PhantomData<T>,
 }
 
-impl<T: gpu::GLFormat> Texture1D<T> {    
+impl<T: gpu::GLFormat> Texture1D<T> {
     /// (temporary) Create new 1D texture.
     /// ## Arguments
     /// * `graphics` - Graphics context to create texture for.
@@ -64,6 +64,31 @@ impl<T: gpu::GLFormat> Texture1D<T> {
             gl::TexSubImage1D(gl::TEXTURE_1D,0,o as i32,src.len() as i32,T::gl_format(),T::gl_type(),src.as_ptr() as *const c_void);
         }
 
+    }
+
+
+    pub fn set_filter(&self,filter: gpu::TextureFilter) {
+        unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
+        match filter {
+            gpu::TextureFilter::Nearest => unsafe {
+                gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_MIN_FILTER,gl::NEAREST as i32);
+                gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_MAG_FILTER,gl::NEAREST as i32);
+            },
+            gpu::TextureFilter::Linear => unsafe {
+                gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_MIN_FILTER,gl::LINEAR as i32);
+                gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_MAG_FILTER,gl::LINEAR as i32);
+            }
+        }
+    }
+
+    pub fn set_wrap_x(&self,wrap: gpu::TextureWrap) {
+        unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
+        match wrap {
+            gpu::TextureWrap::Black => unsafe { gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_WRAP_S,gl::CLAMP_TO_BORDER as i32); },
+            gpu::TextureWrap::Edge => unsafe { gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_WRAP_S,gl::CLAMP_TO_EDGE as i32); },
+            gpu::TextureWrap::Repeat => unsafe { gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_WRAP_S,gl::REPEAT as i32); },
+            gpu::TextureWrap::Mirror => unsafe { gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_WRAP_S,gl::MIRRORED_REPEAT as i32); },            
+        }
     }
 }
 

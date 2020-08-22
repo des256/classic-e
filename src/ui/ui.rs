@@ -295,6 +295,7 @@ impl UI {
 
                                 // handle the event
                                 window.widget.handle(&event,rect!(pos.x as i32,pos.y as i32,widget_size.x as i32,widget_size.y as i32));
+                                window.delta = UIDelta::Draw;  // always redraw for now
                             },
                         }        
                         break;

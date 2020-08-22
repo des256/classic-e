@@ -3,6 +3,20 @@
 
 //! GPU access.
 
+#[derive(Clone,Copy)]
+pub enum TextureFilter {
+    Nearest,
+    Linear,
+}
+
+#[derive(Clone,Copy)]
+pub enum TextureWrap {
+    Black,
+    Edge,
+    Repeat,
+    Mirror,
+}
+
 /// (temporary) Blending mode.
 #[derive(Clone,Copy)]
 pub enum BlendMode {
