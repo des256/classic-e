@@ -137,7 +137,7 @@ impl UI {
                 vec4 bc = unpackUnorm4x8(fs_in.fbdq.y).zyxw;
                 float d = float(fs_in.fbdq.z);
                 uint qm = fs_in.fbdq.w >> 16;
-                uint ql = fs_in.fbdq.w & 0xFFFF;
+                uint ql = uint(fs_in.fbdq.w) & uint(0xFFFF);
                 vec4 t = vec4(0,0,0,0);
                 switch(qm) {
                     case 0: t = texture(alpha_textures,vec3(fs_in.t.x,fs_in.t.y,ql)).xxxx; break;
