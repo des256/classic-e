@@ -49,9 +49,9 @@ impl<T: gpu::GLFormat> Texture2DArray<T> {
     /// ## Returns
     /// * `Ok(Texture2DArray)` - The new 2D texture array.
     /// * `Err(SystemError)` - The 2D texture array could not be created.
-    pub fn new_from_ten(graphics: &Rc<gpu::Graphics>,src: &Ten<T>) -> Result<Texture2DArray<T>,SystemError> {
+    pub fn new_from_ten(graphics: &Rc<gpu::Graphics>,src: Ten<T>) -> Result<Texture2DArray<T>,SystemError> {
         let texture = Texture2DArray::new(graphics,src.size)?;
-        texture.load(vec3!(0,0,0),src);
+        texture.load(vec3!(0,0,0),&src);
         Ok(texture)
     }
 

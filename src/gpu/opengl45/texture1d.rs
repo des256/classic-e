@@ -48,9 +48,9 @@ impl<T: gpu::GLFormat> Texture1D<T> {
     /// ## Returns
     /// * `Ok(Texture1D)` - The new 1D texture.
     /// * `Err(SystemError)` - The 1D texture could not be created.
-    pub fn new_from_vec(graphics: &Rc<gpu::Graphics>,src: &Vec<T>) -> Result<Texture1D<T>,SystemError> {
+    pub fn new_from_vec(graphics: &Rc<gpu::Graphics>,src: Vec<T>) -> Result<Texture1D<T>,SystemError> {
         let texture = Texture1D::new(graphics,src.len())?;
-        texture.load(0,src);
+        texture.load(0,&src);
         Ok(texture)
     }
 

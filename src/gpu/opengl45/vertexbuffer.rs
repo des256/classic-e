@@ -86,9 +86,9 @@ impl<T: GLVertex> VertexBuffer<T> {
     /// ## Returns
     /// * `Ok(VertexBuffer)` - The new vertex buffer.
     /// * `Err(SystemError)` - The vertex buffer could not be created.
-    pub fn new_from_vec(_graphics: &Rc<gpu::Graphics>,src: &Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
+    pub fn new_from_vec(_graphics: &Rc<gpu::Graphics>,src: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
         let vertexbuffer = VertexBuffer::new(_graphics)?;
-        vertexbuffer.load(0,src);
+        vertexbuffer.load(0,&src);
         Ok(vertexbuffer)
     }
 

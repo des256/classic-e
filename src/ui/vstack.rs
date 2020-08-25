@@ -8,33 +8,36 @@ use std::cell::RefCell;
 
 /// Vertical stack widget.
 pub struct VStack {
+    
+    /// Reference to UI context.
     _ui: Rc<ui::UI>,
-    padding: Cell<Vec2<i32>>,
-    halign: Cell<ui::HAlignment>,
+
+    /// Padding around the stack.
+    pub padding: Cell<Vec2<i32>>,
+
+    /// Horizontal alignment of the widgets.
+    pub halign: Cell<ui::HAlignment>,
+
+    /// The widgets.
     widgets: RefCell<Vec<Rc<dyn ui::Widget>>>,
-    //ca: Cell<ui::HAlignment>,
 }
 
 impl VStack {
-    /// Create new vertical stack widget.
+    /// Create new vertical stack from vec of widgets.
     /// ## Arguments
     /// * `ui` - UI context to create this vertical stack widget for.
     /// * `widgets` - Widgets in the stack.
     /// ## Returns
     /// The vertical stack widget.
-    pub fn new(ui: &Rc<ui::UI>,widgets: Vec<Rc<dyn ui::Widget>>) -> Result<VStack,SystemError> {
+    pub fn new_from_vec(ui: &Rc<ui::UI>,widgets: Vec<Rc<dyn ui::Widget>>) -> Result<VStack,SystemError> {
         Ok(VStack {
             _ui: Rc::clone(ui),
             padding: Cell::new(vec2!(0,0)),
             halign: Cell::new(ui::HAlignment::Left),
             widgets: RefCell::new(widgets),
-            //ca: Cell::new(ui::HAlignment::Left),
         })
     }
 }
-
-ui::impl_padding!(VStack);
-ui::impl_halign!(VStack);
 
 impl ui::Widget for VStack {
     fn measure(&self) -> Vec2<i32> {
@@ -55,9 +58,11 @@ impl ui::Widget for VStack {
     fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
         let mut oy = space.o.y;
         let padding = self.padding.get();
-        for widget in self.widgets.borrow().iter() {
+        let widgets = self.widgets.borrow();
+        let halign = self.halign.get();
+        for widget in widgets.iter() {
             let size = widget.measure();
-            let (ox,sx) = match self.halign.get() {
+            let (ox,sx) = match halign {
                 ui::HAlignment::Left => { (space.o.x,size.x) },
                 ui::HAlignment::Right => { (space.o.x + space.s.x - size.x,size.x) },
                 ui::HAlignment::Center => { (space.o.x + (space.s.x - size.x) / 2,size.x / 2) },

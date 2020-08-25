@@ -4,35 +4,15 @@
 use crate::*;
 
 /// Mouse button.
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub enum Mouse {
     Left,
     Middle,
     Right,
 }
 
-impl std::fmt::Display for Mouse {
-    fn fmt(&self,f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Mouse::Left => { write!(f,"left") },
-            Mouse::Middle => { write!(f,"middle") },
-            Mouse::Right => { write!(f,"right") },
-        }
-    }
-}
-
-impl std::fmt::Debug for Mouse {
-    fn fmt(&self,f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Mouse::Left => { write!(f,"left") },
-            Mouse::Middle => { write!(f,"middle") },
-            Mouse::Right => { write!(f,"right") },
-        }
-    }
-}
-
 /// Mouse wheel direction.
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub enum Wheel {
     Up,
     Down,
@@ -40,30 +20,8 @@ pub enum Wheel {
     Right,
 }
 
-impl std::fmt::Display for Wheel {
-    fn fmt(&self,f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Wheel::Up => { write!(f,"up") },
-            Wheel::Down => { write!(f,"down") },
-            Wheel::Left => { write!(f,"left") },
-            Wheel::Right => { write!(f,"right") },
-        }
-    }
-}
-
-impl std::fmt::Debug for Wheel {
-    fn fmt(&self,f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Wheel::Up => { write!(f,"up") },
-            Wheel::Down => { write!(f,"down") },
-            Wheel::Left => { write!(f,"left") },
-            Wheel::Right => { write!(f,"right") },
-        }
-    }
-}
-
 /// User interaction event.
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub enum Event {
     /// The window requires redrawing.
     Render,
@@ -86,15 +44,10 @@ pub enum Event {
 }
 
 /// System error result.
+#[derive(Copy,Clone,Debug)]
 pub enum SystemError {
     /// (temporary) Generic error.
     Generic,
-}
-
-impl std::fmt::Debug for SystemError {
-    fn fmt(&self,f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f,"generic error")
-    }
 }
 
 #[cfg(target_os="linux")]

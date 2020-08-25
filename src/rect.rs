@@ -33,21 +33,19 @@ impl<T: Display> Display for Rect<T> {
     }
 }
 
-#[doc(hidden)]
-pub fn init_rect<T>(o: crate::Vec2<T>,s: crate::Vec2<T>) -> crate::Rect<T> {
-    crate::Rect {
-        o: o,
-        s: s,
-    }
-}
-
 /// Create rectangle.
 #[macro_export]
 macro_rules! rect (
     ($o:expr,$s:expr) => (
-        init_rect($o,$s)
+        crate::Rect {
+            o: $o,
+            s: $s,
+        }
     );
     ($ox:expr,$oy:expr,$sx:expr,$sy:expr) => (
-        init_rect(vec2!($ox,$oy),vec2!($sx,$sy))
+        crate::Rect {
+            o: vec2!($ox,$oy),
+            s: vec2!($sx,$sy),
+        }
     );
 );

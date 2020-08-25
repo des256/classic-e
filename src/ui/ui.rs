@@ -16,8 +16,6 @@ pub struct UIWindow {
     window: Rc<Window>,                           // window
     widget: Rc<dyn ui::Widget>,                   // widget in this window
     delta: UIDelta,                               // what to do in order to validate
-    //buffer: Vec<ui::UIRect>,                      // buffer with UIRects
-    //vertexbuffer: gpu::VertexBuffer<ui::UIRect>,  // GPU representation
 }
 
 /// UI subsystem.
@@ -158,7 +156,7 @@ impl UI {
         let proto_mono = Rc::new(ui::FontProto::new(&font_textures,&format!("{}/mono.fnt",font_dir),2).expect("Unable to load font"));
 
         // create default font
-        let font = Rc::new(ui::Font::new(&proto_sans,12).expect("unable to load font"));
+        let font = Rc::new(ui::Font::new(&proto_sans,16).expect("unable to load font"));
 
         // create texture array for icons (generally same size)
         let icons_textures = Rc::new(ui::Texture2DArrayAtlas::<pixel::ARGB8>::new(&graphics,vec2!(1024,1024)).expect("unable to allocate icon texture atlas"));
@@ -220,8 +218,17 @@ impl UI {
         }
     }
 
-    /// Draw standard widget from vertexbuffer.
-    pub fn draw(&self,canvas_size: Vec2<i32>,vertexbuffer: &gpu::VertexBuffer::<ui::UIRect>,points: usize) {
+    /// Start drawing session.
+    pub fn begin_drawing(&self) -> Vec<ui::UIRect> {
+        Vec::new()
+    }
+
+    /// Finish drawing session.
+    // canvas_size should not be here, maybe better in start_drawing
+    pub fn end_drawing(&self,canvas_size: Vec2<i32>,buffer: Vec<ui::UIRect>,blend_mode: gpu::BlendMode) {
+        let points = buffer.len();
+        let vertexbuffer = gpu::VertexBuffer::<ui::UIRect>::new_from_vec(&self.graphics,buffer).expect("Unable to create vertexbuffer.");
+        self.graphics.set_blend(blend_mode);
         self.graphics.bind_shader(&self.uber_shader);
         self.graphics.bind_texture(0,&*self.font_textures);
         self.graphics.bind_texture(1,&self.icons_textures.array);
@@ -287,14 +294,9 @@ impl UI {
 
                             // anything else should be handled by the hosted widget
                             _ => {
-                                // (temporary) calculate where the widget is in the window
-                                let widget_size_f = window.widget.measure();
-                                let widget_size = vec2!(widget_size_f.x as usize,widget_size_f.y as usize);
-                                let window_size = window.window.size.get();
-                                let pos = (window_size - widget_size) / 2;
-
                                 // handle the event
-                                window.widget.handle(&event,rect!(pos.x as i32,pos.y as i32,widget_size.x as i32,widget_size.y as i32));
+                                let window_size = window.window.size.get();
+                                window.widget.handle(&event,rect!(0i32,0i32,window_size.x as i32,window_size.y as i32));
                                 window.delta = UIDelta::Draw;  // always redraw for now
                             },
                         }        
@@ -309,16 +311,9 @@ impl UI {
 
                 // if widget tree needs to be rebuilt, rebuild it
                 if let UIDelta::Draw = window.delta {
-
-                    // (temporary) calculate where the widget is in the window
-                    let widget_size_f = window.widget.measure();
-                    let widget_size = vec2!(widget_size_f.x as usize,widget_size_f.y as usize);
-                    let window_size = window.window.size.get();
-                    let pos = (window_size - widget_size) / 2;
-
-                    // rebuild the window
                     self.graphics.clear(0xFF001122);
-                    window.widget.draw(vec2!(window_size.x as i32,window_size.y as i32),rect!(pos.x as i32,pos.y as i32,widget_size.x as i32,widget_size.y as i32));
+                    let window_size = window.window.size.get();
+                    window.widget.draw(vec2!(window_size.x as i32,window_size.y as i32),rect!(0i32,0i32,window_size.x as i32,window_size.y as i32));
                     self.graphics.flush();
                 }
             }
@@ -334,5 +329,24 @@ impl UI {
                 window.delta = UIDelta::Skip;
             }
         }
+    }
+}
+
+pub trait UIRectFunctions {
+    fn push_text(&mut self,p: Vec2<i32>,text: &str,font: &ui::Font,color: u32,back_color: u32);
+    fn push_rect(&mut self,r: Rect<i32>,color: u32);
+}
+
+impl UIRectFunctions for Vec<ui::UIRect> {
+    fn push_text(&mut self,p: Vec2<i32>,text: &str,font: &ui::Font,color: u32,back_color: u32) {
+        font.build_text(self,p,text,0.0,color,back_color);
+    }
+
+    fn push_rect(&mut self,r: Rect<i32>,color: u32) {
+        self.push(ui::UIRect {
+            r: vec4!(r.o.x as f32,r.o.y as f32,r.s.x as f32,r.s.y as f32),
+            t: vec4!(0.0,0.0,0.0,0.0),
+            fbdq: vec4!(color,color,0,0x00000000),
+        });
     }
 }

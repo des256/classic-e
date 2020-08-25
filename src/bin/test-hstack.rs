@@ -2,10 +2,6 @@
 // Desmond Germans, 2020
 
 use e::*;
-use e::ui::Color;
-use e::ui::BackColor;
-use e::ui::Padding;
-use e::ui::VAlign;
 use std::rc::Rc;
 
 fn main() {
@@ -34,39 +30,29 @@ fn main() {
     let text4 = Rc::new(ui::Text::new(&ui,"Serif 32",&serif32).expect("Cannot create text."));
     let text5 = Rc::new(ui::Text::new(&ui,"Mono 16",&mono16).expect("Cannot create text."));
     let text6 = Rc::new(ui::Text::new(&ui,"Mono 32",&mono32).expect("Cannot create text."));
-    text1.set_color(0xFFFF0000);
-    text1.set_back_color(0xFF001133);
-    text2.set_color(0xFFFFFF00);
-    text2.set_back_color(0xFF001133);
-    text3.set_color(0xFF00FF00);
-    text3.set_back_color(0xFF001133);
-    text4.set_color(0xFF00FFFF);
-    text4.set_back_color(0xFF001133);
-    text5.set_color(0xFF0000FF);
-    text5.set_back_color(0xFF001133);
-    text6.set_color(0xFFFF00FF);
-    text6.set_back_color(0xFF001133);
+    text1.color.set(0xFFFF0000);
+    text2.color.set(0xFFFFFF00);
+    text3.color.set(0xFF00FF00);
+    text4.color.set(0xFF00FFFF);
+    text5.color.set(0xFF0000FF);
+    text6.color.set(0xFFFF00FF);
     
     // create VStack
-    let vstack = Rc::new(ui::VStack::new(&ui,vec![text1,text2,text3,text4,text5,text6]).expect("Cannot create VStack."));
+    let vstack = Rc::new(ui::VStack::new_from_vec(&ui,vec![text1,text2,text3,text4,text5,text6]).expect("Cannot create VStack."));
 
     // create more widgets
     let text8 = Rc::new(ui::Text::new(&ui,"File",&ui.font).expect("Cannot create text."));
-    text8.set_back_color(0xFF001133);
-    text8.set_padding(vec2!(4,2));
+    text8.padding.set(vec2!(4,2));
     let text9 = Rc::new(ui::Text::new(&ui,"Edit",&ui.font).expect("Cannot create text."));
-    text9.set_back_color(0xFF001133);
-    text9.set_padding(vec2!(4,2));
+    text9.padding.set(vec2!(4,2));
     let text10 = Rc::new(ui::Text::new(&ui,"Selection",&ui.font).expect("Cannot create text."));
-    text10.set_back_color(0xFF001133);
-    text10.set_padding(vec2!(4,2));
+    text10.padding.set(vec2!(4,2));
     let text11 = Rc::new(ui::Text::new(&ui,"View",&ui.font).expect("Cannot create text."));
-    text11.set_back_color(0xFF001133);
-    text11.set_padding(vec2!(4,2));
+    text11.padding.set(vec2!(4,2));
 
     // create HStack
-    let widget = Rc::new(ui::HStack::new(&ui,vec![text8,text9,text10,text11,vstack]).expect("Cannot create HStack."));
-    widget.set_valign(ui::VAlignment::Center);
+    let widget = Rc::new(ui::HStack::new_from_vec(&ui,vec![text8,text9,text10,text11,vstack]).expect("Cannot create HStack."));
+    widget.valign.set(ui::VAlignment::Center);
 
     // open window to host the text widget
     ui.open(&(widget as Rc<dyn ui::Widget>),rect!(50,50,640,360),"Test Window");

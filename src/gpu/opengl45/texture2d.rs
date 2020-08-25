@@ -49,9 +49,9 @@ impl<T: gpu::GLFormat> Texture2D<T> {
     /// ## Returns
     /// * `Ok(Texture2D)` - The new 2D texture.
     /// * `Err(SystemError)` - The 2D texture could not be created.
-    pub fn new_from_mat(graphics: &Rc<gpu::Graphics>,src: &Mat<T>) -> Result<Texture2D<T>,SystemError> {
+    pub fn new_from_mat(graphics: &Rc<gpu::Graphics>,src: Mat<T>) -> Result<Texture2D<T>,SystemError> {
         let texture = Texture2D::new(graphics,src.size)?;
-        texture.load(vec2!(0,0),src);
+        texture.load(vec2!(0,0),&src);
         Ok(texture)
     }
 

@@ -41,7 +41,7 @@ impl<T: GLIndex> IndexBuffer<T> {
     /// ## Returns
     /// * `Ok(IndexBuffer)` - The new index buffer.
     /// * `Err(SystemError)` - The index buffer could not be created.
-    pub fn new(_graphics: &Rc<gpu::Graphics>,indices: Vec<T>) -> Result<IndexBuffer<T>,SystemError> {
+    pub fn new_from_vec(_graphics: &Rc<gpu::Graphics>,indices: Vec<T>) -> Result<IndexBuffer<T>,SystemError> {
         let mut ibo: GLuint = 0;
         unsafe {
             gl::GenBuffers(1,&mut ibo);

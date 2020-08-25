@@ -2,18 +2,28 @@
 // Desmond Germans, 2020
 
 use crate::*;
+use crate::ui::UIRectFunctions;
 use std::rc::Rc;
 use std::cell::Cell;
 use std::cell::RefCell;
 
 /// Text widget.
 pub struct Text {
+
+    /// Reference to UI context.
     ui: Rc<ui::UI>,
-    padding: Cell<Vec2<i32>>,
-    text: RefCell<String>,
-    font: RefCell<Rc<ui::Font>>,
-    color: Cell<pixel::ARGB8>,
-    back_color: Cell<pixel::ARGB8>,
+
+    /// Padding around the text.
+    pub padding: Cell<Vec2<i32>>,
+
+    /// The text.
+    pub text: RefCell<String>,
+
+    /// Font to use when drawing the text.
+    pub font: RefCell<Rc<ui::Font>>,
+
+    /// Color of the text.
+    pub color: Cell<u32>,
 }
 
 impl Text {
@@ -31,15 +41,10 @@ impl Text {
             padding: Cell::new(vec2!(0,0)),
             text: RefCell::new(String::from(text)),
             font: RefCell::new(Rc::clone(font)),
-            color: Cell::new(pixel::ARGB8::from(0xFFFFFFFF)),
-            back_color: Cell::new(pixel::ARGB8::from(0xFF001133)),
+            color: Cell::new(0xFFFFFFFF),
         })
     }
 }
-
-ui::impl_color!(Text);
-ui::impl_back_color!(Text);
-ui::impl_padding!(Text);
 
 impl ui::Widget for Text {
     
@@ -51,12 +56,19 @@ impl ui::Widget for Text {
     }
 
     fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
-        let mut buffer: Vec<ui::UIRect> = Vec::new();
+
+        // begin drawing series
+        let mut buffer = self.ui.begin_drawing();
+
+        // draw the text
+        let font = self.font.borrow();
+        let text = self.text.borrow();
         let padding = self.padding.get();
-        let color = u32::from(self.color.get());
-        let back_color = u32::from(self.back_color.get());
-        self.font.borrow().build_text(&mut buffer,space.o + padding,&self.text.borrow(),0.0,color,back_color);
-        let vertexbuffer = gpu::VertexBuffer::new_from_vec(&self.ui.graphics,&buffer).expect("Unable to create vertexbuffer");
-        self.ui.draw(canvas_size,&vertexbuffer,buffer.len());
+        let color = self.color.get();
+
+        buffer.push_text(space.o + padding,&text,&font,color,0x00000000);
+
+        // end drawing series
+        self.ui.end_drawing(canvas_size,buffer,gpu::BlendMode::Over);
     }
 }

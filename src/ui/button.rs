@@ -2,22 +2,51 @@
 // Desmond Germans, 2020
 
 use crate::*;
+use crate::ui::UIRectFunctions;
 use std::rc::Rc;
 use std::cell::Cell;
 use std::cell::RefCell;
 
+/// Button hit test possibilities.
+#[derive(Copy,Clone,Debug)]
+pub enum ButtonHit {
+
+    /// Mouse is somewhere else.
+    Outside,
+
+    /// Mouse is over the button.
+    Button,
+}
+
 /// Button widget.
 pub struct Button {
+    
+    /// Reference to UI context.
     ui: Rc<ui::UI>,
-    text: RefCell<String>,
-    font: RefCell<Rc<ui::Font>>,
-    color: Cell<pixel::ARGB8>,
-    back_color: Cell<pixel::ARGB8>,
-    hover_back_color: Cell<pixel::ARGB8>,
-    padding: Cell<Vec2<i32>>,
-    inner_padding: Cell<Vec2<i32>>,
-    hovering: Cell<bool>,
-    pressed: Cell<bool>,
+
+    /// Hit state.
+    hit: Cell<ButtonHit>,
+
+    /// Text on the button.
+    pub text: RefCell<String>,
+
+    /// Font to use for button text.
+    pub font: RefCell<Rc<ui::Font>>,
+
+    /// Color of the button text.
+    pub color: Cell<u32>,
+
+    /// Color of the button face.
+    pub button_color: Cell<u32>,
+
+    /// Color of the button face when the mouse hovers over it.
+    pub hover_button_color: Cell<u32>,
+
+    /// Padding around the button.
+    pub padding: Cell<Vec2<i32>>,
+
+    /// Padding around the text on the button.
+    pub inner_padding: Cell<Vec2<i32>>,
 }
 
 impl Button {
@@ -32,58 +61,59 @@ impl Button {
     pub fn new(ui: &Rc<ui::UI>,text: &str,font: &Rc<ui::Font>) -> Result<Button,SystemError> {
         Ok(Button {
             ui: Rc::clone(ui),
+            hit: Cell::new(ButtonHit::Outside),
             text: RefCell::new(String::from(text)),
             font: RefCell::new(Rc::clone(font)),
-            color: Cell::new(pixel::ARGB8::from(0xFFFFFFFF)),
-            back_color: Cell::new(pixel::ARGB8::from(0xFF000000)),
-            hover_back_color: Cell::new(pixel::ARGB8::from(0xFF333300)),
+            color: Cell::new(0xFFFFFFFF),
+            button_color: Cell::new(0xFF000000),
+            hover_button_color: Cell::new(0xFF333300),
             padding: Cell::new(vec2!(0,0)),
             inner_padding: Cell::new(vec2!(4,2)),
-            hovering: Cell::new(false),
-            pressed: Cell::new(false),
         })
     }
 }
 
-ui::impl_textfont!(Button);
-ui::impl_color!(Button);
-ui::impl_back_color!(Button);
-ui::impl_hover_back_color!(Button);
-ui::impl_padding!(Button);
-ui::impl_inner_padding!(Button);
-
 impl ui::Widget for Button {
 
     fn measure(&self) -> Vec2<i32> {
-        self.font.borrow().measure(&self.text.borrow()) + 2 * (self.padding.get() + self.inner_padding.get())
+
+        let font = self.font.borrow();
+        let text = self.text.borrow();
+        let padding = self.padding.get();
+        let inner_padding = self.inner_padding.get();
+
+        font.measure(&text) + 2 * (padding + inner_padding)
     }
 
     fn handle(&self,event: &Event,space: Rect<i32>) {
+
+        // hit test
         match event {
-            Event::MousePress(pos,mouse) => {
+            Event::MousePress(pos,_) | Event::MouseRelease(pos,_) | Event::MouseMove(pos) => {
+                let padding = self.padding.get();
+                let mut rect = space;
+                rect.o += padding;
+                rect.s -= 2 * padding;
+                let mut hit = ButtonHit::Outside;
+                if rect.contains(&pos) {
+                    hit = ButtonHit::Button;
+                }
+                self.hit.set(hit);
+            },
+            _ => { },
+        }
+
+        // handle events
+        let hit = self.hit.get();
+        match event {
+            Event::MousePress(_,mouse) => {
                 match mouse {
                     Mouse::Left => {
-                        if (pos.x >= space.o.x) && (pos.y >= space.o.y) && (pos.x < space.o.x + space.s.x) && (pos.y < space.o.y + space.s.y) {
-                            self.pressed.set(true);
+                        if let ButtonHit::Button = hit {
+                            // TODO: button is pressed, so call some closure
                         }
                     },
                     _ => { },
-                }
-            },
-            Event::MouseRelease(_pos,mouse) => {
-                match mouse {
-                    Mouse::Left => {
-                        self.pressed.set(false);
-                    },
-                    _ => { },
-                }
-            },
-            Event::MouseMove(pos) => {
-                if (pos.x >= space.o.x) && (pos.y >= space.o.y) && (pos.x < space.o.x + space.s.x) && (pos.y < space.o.y + space.s.y) {
-                    self.hovering.set(true);
-                }
-                else {
-                    self.hovering.set(false);
                 }
             },
             _ => { },
@@ -91,28 +121,28 @@ impl ui::Widget for Button {
     }
 
     fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
-        let mut buffer: Vec<ui::UIRect> = Vec::new();
-        let mut bgc = self.back_color.get();
-        /*if self.pressed.get() {
-            bgc = self.press_color.get();
-        }
-        else*/ if self.hovering.get() {
-            bgc = self.hover_back_color.get();
-        }
+
+        // begin drawing series
+        let mut buffer = self.ui.begin_drawing();
+
+        let hit = self.hit.get();
+        let text = self.text.borrow();
+        let font = self.font.borrow();
+        let color = self.color.get();
+        let button_color = if let ButtonHit::Button = hit {
+            self.hover_button_color.get()
+        } else {
+            self.button_color.get()
+        };
         let padding = self.padding.get();
         let inner_padding = self.inner_padding.get();
-        buffer.push(ui::UIRect {
-            r: vec4!(
-                (space.o.x + padding.x) as f32,
-                (space.o.y + padding.y) as f32,
-                (space.s.x - 2 * padding.x) as f32,
-                (space.s.y - 2 * padding.y) as f32
-            ),
-            t: vec4!(0.0,0.0,0.0,0.0),
-            fbdq: vec4!(u32::from(bgc),u32::from(bgc),0,0x00000000),
-        });
-        self.font.borrow().build_text(&mut buffer,space.o + padding + inner_padding,&self.text.borrow(),0.0,u32::from(self.color.get()),u32::from(bgc));
-        let vertexbuffer = gpu::VertexBuffer::new_from_vec(&self.ui.graphics,&buffer).expect("Unable to create vertexbuffer");
-        self.ui.draw(canvas_size,&vertexbuffer,buffer.len());
+
+        buffer.push_rect(rect!(space.o + padding,space.s - 2 * padding),button_color);
+
+        // TODO: draw text always in center of button
+        buffer.push_text(space.o + padding + inner_padding,&text,&font,color,button_color);
+
+        // end drawing series
+        self.ui.end_drawing(canvas_size,buffer,gpu::BlendMode::Replace);
     }
 }

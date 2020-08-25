@@ -64,14 +64,14 @@ impl<T: gpu::GLFormat> TextureCube<T> {
     /// ## Returns
     /// * `Ok(TextureCube)` - The new cube texture.
     /// * `Err(SystemError)` - The cube texture could not be created.
-    pub fn new_from_mats(graphics: &Rc<gpu::Graphics>,src_xp: &Mat<T>,src_xn: &Mat<T>,src_yp: &Mat<T>,src_yn: &Mat<T>,src_zp: &Mat<T>,src_zn: &Mat<T>) -> Result<TextureCube<T>,SystemError> {
+    pub fn new_from_mats(graphics: &Rc<gpu::Graphics>,src_xp: Mat<T>,src_xn: Mat<T>,src_yp: Mat<T>,src_yn: Mat<T>,src_zp: Mat<T>,src_zn: Mat<T>) -> Result<TextureCube<T>,SystemError> {
         let texture = TextureCube::new(graphics,src_xp.size.x)?;
-        texture.load(CubeFace::PositiveX,vec2!(0,0),src_xp);
-        texture.load(CubeFace::NegativeX,vec2!(0,0),src_xn);
-        texture.load(CubeFace::PositiveY,vec2!(0,0),src_yp);
-        texture.load(CubeFace::NegativeY,vec2!(0,0),src_yn);
-        texture.load(CubeFace::PositiveZ,vec2!(0,0),src_zp);
-        texture.load(CubeFace::NegativeZ,vec2!(0,0),src_zn);
+        texture.load(CubeFace::PositiveX,vec2!(0,0),&src_xp);
+        texture.load(CubeFace::NegativeX,vec2!(0,0),&src_xn);
+        texture.load(CubeFace::PositiveY,vec2!(0,0),&src_yp);
+        texture.load(CubeFace::NegativeY,vec2!(0,0),&src_yn);
+        texture.load(CubeFace::PositiveZ,vec2!(0,0),&src_zp);
+        texture.load(CubeFace::NegativeZ,vec2!(0,0),&src_zn);
         Ok(texture)
     }
 

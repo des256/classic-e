@@ -50,9 +50,9 @@ impl<T: gpu::GLFormat> Texture3D<T> {
     /// ## Returns
     /// * `Ok(Texture3D)` - The new 3D texture.
     /// * `Err(SystemError)` - The 3D texture could not be created.
-    pub fn new_from_ten(graphics: &Rc<gpu::Graphics>,src: &Ten<T>) -> Result<Texture3D<T>,SystemError> {
+    pub fn new_from_ten(graphics: &Rc<gpu::Graphics>,src: Ten<T>) -> Result<Texture3D<T>,SystemError> {
         let texture = Texture3D::new(graphics,src.size)?;
-        texture.load(vec3!(0,0,0),src);
+        texture.load(vec3!(0,0,0),&src);
         Ok(texture)
     }
 

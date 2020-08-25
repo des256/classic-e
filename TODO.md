@@ -1,20 +1,17 @@
 # PRIORITY
 
-- zoomable/pannable frame tree idea
-- all widgets have their own draw call
 - texture loading from file
 
 # FOR LATER
 
+- remove texture atlas and dependency
+- revise uber shader after removing texture atlas stuff
+- Vec<UIRect>::push_image
+- zoomable/pannable frame tree idea
 - multiple window support in UI (syncing glXSwapBuffers seems to be difficult)
 - setup sensible glXSwapInterval for each window
 
-# INCOMING
-
-- ColorParameter as_u32 and as_vec4 instead of into
-
-
-# OTHER WIDGETS
+# OTHER WIDGET IDEAS
 
 - Accordeon
 - Breadcrumb
