@@ -2,7 +2,6 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use crate::ui::UIRectFunctions;
 use std::rc::Rc;
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -122,9 +121,6 @@ impl ui::Widget for Button {
 
     fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
 
-        // begin drawing series
-        let mut buffer = self.ui.begin_drawing();
-
         let hit = self.hit.get();
         let text = self.text.borrow();
         let font = self.font.borrow();
@@ -136,13 +132,7 @@ impl ui::Widget for Button {
         };
         let padding = self.padding.get();
         let inner_padding = self.inner_padding.get();
-
-        buffer.push_rect(rect!(space.o + padding,space.s - 2 * padding),button_color);
-
-        // TODO: draw text always in center of button
-        buffer.push_text(space.o + padding + inner_padding,&text,&font,color,button_color);
-
-        // end drawing series
-        self.ui.end_drawing(canvas_size,buffer,gpu::BlendMode::Replace);
+        self.ui.draw_rectangle(canvas_size,rect!(space.o + padding,space.s - 2 * padding),button_color,gpu::BlendMode::Replace);
+        self.ui.draw_text(canvas_size,space.o + padding + inner_padding,&text,color,&font);
     }
 }

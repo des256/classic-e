@@ -101,6 +101,12 @@ use {
             MOTION_NOTIFY,
             CONFIGURE_NOTIFY,
             CLIENT_MESSAGE,
+            grab_pointer_unchecked,
+            WINDOW_NONE,
+            CURSOR_NONE,
+            TIME_CURRENT_TIME,
+            GRAB_MODE_ASYNC,
+            ungrab_pointer,
         },
         cast_event,
         GenericEvent,
@@ -476,6 +482,29 @@ impl System {
         let mut epe = [epoll_event { events: EPOLLIN as u32,u64: 0, }];
         unsafe { epoll_wait(self.epfd,epe.as_mut_ptr(),1,-1) };
     }
+
+    /// Capture mouse pointer to specific window.
+    /// ## Arguments
+    /// * `window` - Window to capture to.
+    pub fn capture_mouse(&self,window: &Window) {
+        grab_pointer_unchecked(
+            &self.connection,
+            true,
+            window.id as u32,
+            (EVENT_MASK_BUTTON_PRESS | EVENT_MASK_BUTTON_RELEASE| EVENT_MASK_POINTER_MOTION) as u16,
+            GRAB_MODE_ASYNC as u8,
+            GRAB_MODE_ASYNC as u8,
+            WINDOW_NONE,
+            CURSOR_NONE,
+            TIME_CURRENT_TIME
+        );
+    }
+
+    /// Release mouse pointer.
+    pub fn release_mouse(&self) {
+        ungrab_pointer(&self.connection,TIME_CURRENT_TIME);
+    }
+
 }
 
 impl Drop for System {

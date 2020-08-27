@@ -2,7 +2,6 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use crate::ui::UIRectFunctions;
 use std::rc::Rc;
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -59,7 +58,7 @@ pub struct Book {
 }
 
 impl Book {
-    pub fn new_from_vec(ui: &Rc<ui::UI>,pages: Vec<(String,&Rc<dyn ui::Widget>)>) -> Result<Book,SystemError> {
+    pub fn new_from_vec(ui: &Rc<ui::UI>,pages: Vec<(String,Rc<dyn ui::Widget>)>) -> Result<Book,SystemError> {
         // upgrade the page list
         let mut new_pages: Vec<(String,Rc<dyn ui::Widget>)> = Vec::new();
         for page in pages.iter() {
@@ -199,9 +198,6 @@ impl ui::Widget for Book {
 
     fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
 
-        // begin drawing
-        let mut buffer = self.ui.begin_drawing();
-
         let pages = self.pages.borrow();
         let font = self.font.borrow();
         let hit = self.hit.get();
@@ -235,15 +231,12 @@ impl ui::Widget for Book {
                     tc = hover_tab_color;
                 }
             }
-            buffer.push_rect(tab_rect,tc);
-            buffer.push_text(tab_rect.o + inner_padding,&title,&font,color,tc);
+            self.ui.draw_rectangle(canvas_size,tab_rect,tc,gpu::BlendMode::Replace);
+            self.ui.draw_text(canvas_size,tab_rect.o + inner_padding,&title,color,&font);
             tab_rect.o.x += tab_rect.s.x;
             i += 1;
         }
-        buffer.push_rect(rect!(tab_rect.o,vec2!(space.s.x - tab_rect.o.x,tab_rect.s.y)),tab_back_color);
-
-        // end drawing
-        self.ui.end_drawing(canvas_size,buffer,gpu::BlendMode::Replace);
+        self.ui.draw_rectangle(canvas_size,rect!(tab_rect.o,vec2!(space.s.x - tab_rect.o.x,tab_rect.s.y)),tab_back_color,gpu::BlendMode::Replace);
 
         // draw current page
         if pages.len() > 0 {

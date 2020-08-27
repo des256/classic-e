@@ -6,6 +6,10 @@ use std::{
     rc::Rc,
     cell::RefCell,
 };
+use gl::types::{
+    GLuint,
+    GLvoid,
+};
 
 enum UIDelta {
     Skip,
@@ -18,15 +22,38 @@ pub struct UIWindow {
     delta: UIDelta,                               // what to do in order to validate
 }
 
+// TODO: the more tightly packed UIRect will come later
+#[derive(Copy,Clone)]
+#[repr(C)]
+pub struct UIRect {
+    pub(crate) r: Vec4<f32>,  // x, y, w, h
+    pub(crate) t: Vec4<f32>,  // x, y, w, h
+}
+
+// TODO: this means that specifically only OpenGL is supported for now; solve this later
+impl gpu::GLVertex for UIRect {
+    fn bind() -> Vec<GLuint> {
+        unsafe {
+            gl::EnableVertexAttribArray(0);
+            gl::VertexAttribPointer(0,4,gl::FLOAT,gl::FALSE,32,0 as *const GLvoid);
+            gl::EnableVertexAttribArray(1);
+            gl::VertexAttribPointer(1,4,gl::FLOAT,gl::FALSE,32,16 as *const GLvoid);
+        }
+        vec![0,1]
+    }
+
+    fn len() -> isize {
+        32
+    }
+}
+
 /// UI subsystem.
 pub struct UI {
     pub system: Rc<System>,
     pub graphics: Rc<gpu::Graphics>,
-    pub uber_shader: gpu::Shader,
-    pub font_textures: Rc<gpu::Texture2DArray<pixel::R8>>,
-    pub icons_textures: Rc<ui::Texture2DArrayAtlas<pixel::ARGB8>>,
-    pub packed_textures: Rc<ui::Texture2DArrayAtlas<pixel::ARGB8>>,
-    pub large_textures: Rc<ui::Texture2DArrayAtlas<pixel::ARGB8>>,
+    pub flat_shader: gpu::Shader,
+    pub alpha_shader: gpu::Shader,
+    pub color_shader: gpu::Shader,
     pub proto_sans: Rc<ui::FontProto>,
     pub proto_serif: Rc<ui::FontProto>,
     pub proto_mono: Rc<ui::FontProto>,
@@ -41,26 +68,25 @@ impl UI {
     /// * `graphics` - GPU graphics context to use.
     pub fn new(system: &Rc<System>,graphics: &Rc<gpu::Graphics>,font_dir: &str) -> Result<UI,SystemError> {
 
-        // create uber shader
-        let uber_vs = r#"
+        // generic vertex shader
+        let vs = r#"
             #version 420 core
-
+            
             layout(location = 0) in vec4 ir;
             layout(location = 1) in vec4 it;
-            layout(location = 2) in uvec4 ifbdq;
-
+            
             out Rect {
                 vec4 t;
-                flat uvec4 fbdq;
             } vs_out;
-
+            
             void main() {
                 gl_Position = ir;
                 vs_out.t = it;
-                vs_out.fbdq = ifbdq;
             }
         "#;
-        let uber_gs = r#"
+
+        // generic geometry shader
+        let gs = r#"
             #version 420 core
 
             uniform vec2 canvas_size;
@@ -70,19 +96,16 @@ impl UI {
 
             in Rect {
                 vec4 t;
-                flat uvec4 fbdq;
             } gs_in[];
 
             out Vertex {
                 vec2 t;
-                flat uvec4 fbdq;
             } gs_out;
 
             void main() {
 
                 vec4 r = gl_in[0].gl_Position;
                 vec4 t = gs_in[0].t;
-                uvec4 fbdq = gs_in[0].fbdq;
 
                 vec4 pn = vec4(
                     -1.0 + 2.0 * r.x / canvas_size.x,
@@ -93,88 +116,111 @@ impl UI {
 
                 gl_Position = vec4(pn.x,pn.y,0.0,1.0);
                 gs_out.t = vec2(t.x,t.y);
-                gs_out.fbdq = fbdq;
                 EmitVertex();
 
                 gl_Position = vec4(pn.x + pn.z,pn.y,0.0,1.0);
                 gs_out.t = vec2(t.x + t.z,t.y);
-                gs_out.fbdq = fbdq;
                 EmitVertex();
 
                 gl_Position = vec4(pn.x,pn.y + pn.w,0.0,1.0);
                 gs_out.t = vec2(t.x,t.y + t.w);
-                gs_out.fbdq = fbdq;
                 EmitVertex();
 
                 gl_Position = vec4(pn.x + pn.z,pn.y + pn.w,0.0,1.0);
                 gs_out.t = vec2(t.x + t.z,t.y + t.w);
-                gs_out.fbdq = fbdq;
                 EmitVertex();
 
                 EndPrimitive();
             }
         "#;
 
-        let uber_fs = r#"
+        // flat fragment shader
+        let flat_fs = r#"
             #version 420 core
 
-            uniform sampler2DArray alpha_textures;
-            uniform sampler2DArray icons_textures;
-            uniform sampler2DArray packed_textures;
-            uniform sampler2DArray large_textures;
+            uniform vec4 color;
 
             in Vertex {
                 vec2 t;
-                flat uvec4 fbdq;
             } fs_in;
 
             out vec4 o;
 
             void main() {
-                vec4 fc = unpackUnorm4x8(fs_in.fbdq.x).zyxw;
-                vec4 bc = unpackUnorm4x8(fs_in.fbdq.y).zyxw;
-                float d = float(fs_in.fbdq.z);
-                uint qm = fs_in.fbdq.w >> 16;
-                uint ql = uint(fs_in.fbdq.w) & uint(0xFFFF);
-                vec4 t = vec4(0,0,0,0);
-                switch(qm) {
-                    case 0: t = texture(alpha_textures,vec3(fs_in.t.x,fs_in.t.y,ql)).xxxx; break;
-                    case 1: t = texture(icons_textures,vec3(fs_in.t.x,fs_in.t.y,ql)); break;
-                    case 2: t = texture(packed_textures,vec3(fs_in.t.x,fs_in.t.y,ql)); break;
-                    case 3: t = texture(large_textures,vec3(fs_in.t.x,fs_in.t.y,ql)); break;
-                }
-                o = bc * (1.0 - t.w) + fc * t;
-                //o = ta;
+                o = color;    
             }
         "#;
-        let uber_shader = gpu::Shader::new(&graphics,uber_vs,Some(uber_gs),uber_fs).expect("what?");
 
-        // create font atlas texture array
-        let font_textures = Rc::new(gpu::Texture2DArray::<pixel::R8>::new(&graphics,vec3!(ui::FONT_TEXTURE_SIZE as usize,ui::FONT_TEXTURE_SIZE as usize,3)).expect("unable to allocate font texture atlas"));
-        let proto_sans = Rc::new(ui::FontProto::new(&font_textures,&format!("{}/sans.fnt",font_dir),0).expect("Unable to load font"));
-        let proto_serif = Rc::new(ui::FontProto::new(&font_textures,&format!("{}/serif.fnt",font_dir),1).expect("Unable to load font"));
-        let proto_mono = Rc::new(ui::FontProto::new(&font_textures,&format!("{}/mono.fnt",font_dir),2).expect("Unable to load font"));
+        // alpha texture (font/icons) fragment shader
+        let alpha_fs = r#"
+            #version 420 core
+            
+            uniform vec4 color;
+            uniform sampler2D alpha_texture;
+            
+            in Vertex {
+                vec2 t;
+            } fs_in;
+            
+            out vec4 o;
+            
+            void main() {
+                float t = texture(alpha_texture,fs_in.t).x;
+                o = vec4(color.xyz,t);
+            }
+        "#;
+
+        // color texture (images) fragment shader
+        let color_fs = r#"
+            #version 420 core
+
+            uniform vec4 color;
+            uniform sampler2D color_texture;
+            
+            in Vertex {
+                vec2 t;
+            } fs_in;
+            
+            out vec4 o;
+            
+            void main() {
+                vec4 t = texture(color_texture,fs_in.t);
+                o = color * t;
+            }
+        "#;
+
+        let flat_shader = gpu::Shader::new(&graphics,vs,Some(gs),flat_fs).expect("Unable to create flat shader.");
+        let alpha_shader = gpu::Shader::new(&graphics,vs,Some(gs),alpha_fs).expect("Unable to create alpha shader.");
+        let color_shader = gpu::Shader::new(&graphics,vs,Some(gs),color_fs).expect("Unable to create color shader.");
+
+        let proto_sans = Rc::new(
+            ui::FontProto::new(
+                &graphics,
+                &format!("{}/sans.fnt",font_dir)
+            ).expect("Unable to load font")
+        );
+        let proto_serif = Rc::new(
+            ui::FontProto::new(
+                &graphics,
+                &format!("{}/serif.fnt",font_dir)
+            ).expect("Unable to load font")
+        );
+        let proto_mono = Rc::new(
+            ui::FontProto::new(
+                &graphics,
+                &format!("{}/mono.fnt",font_dir)
+            ).expect("Unable to load font")
+        );
 
         // create default font
         let font = Rc::new(ui::Font::new(&proto_sans,16).expect("unable to load font"));
 
-        // create texture array for icons (generally same size)
-        let icons_textures = Rc::new(ui::Texture2DArrayAtlas::<pixel::ARGB8>::new(&graphics,vec2!(1024,1024)).expect("unable to allocate icon texture atlas"));
-
-        // create texture array for packed images (all different)
-        let packed_textures = Rc::new(ui::Texture2DArrayAtlas::<pixel::ARGB8>::new(&graphics,vec2!(1024,1024)).expect("unable to allocate packed texture atlas"));
-
-        // create texture array for large textures (one per texture)
-        let large_textures = Rc::new(ui::Texture2DArrayAtlas::<pixel::ARGB8>::new(&graphics,vec2!(4096,4096)).expect("unable to allocate icon texture atlas"));
-        
         Ok(UI {
             system: Rc::clone(system),
             graphics: Rc::clone(graphics),
-            uber_shader: uber_shader,
-            font_textures: font_textures,
-            icons_textures: icons_textures,
-            packed_textures: packed_textures,
-            large_textures: large_textures,
+            flat_shader: flat_shader,
+            alpha_shader: alpha_shader,
+            color_shader: color_shader,
             proto_sans: proto_sans,
             proto_serif: proto_serif,
             proto_mono: proto_mono,
@@ -199,8 +245,6 @@ impl UI {
             window: window,
             widget: Rc::clone(widget),
             delta: UIDelta::Draw,
-            //buffer: Vec::new(),
-            //vertexbuffer: gpu::VertexBuffer::<ui::UIRect>::new(&self.graphics).expect("Unable to create vertexbuffer"),
         });
         true
     }
@@ -223,23 +267,98 @@ impl UI {
         Vec::new()
     }
 
-    /// Finish drawing session.
-    // canvas_size should not be here, maybe better in start_drawing
-    pub fn end_drawing(&self,canvas_size: Vec2<i32>,buffer: Vec<ui::UIRect>,blend_mode: gpu::BlendMode) {
-        let points = buffer.len();
+    /// (temporary) Draw rectangle.
+    /// ## Arguments
+    /// * `canvas_size` - Size of target canvas.
+    /// * `r` - Rectangle to draw.
+    /// * `color` - Color to draw rectangle in.
+    /// * `blend_mode` - Blend mode for the rectangle.
+    pub fn draw_rectangle<C: ColorParameter>(&self,canvas_size: Vec2<i32>,r: Rect<i32>,color: C,blend_mode: gpu::BlendMode) {
+        let mut buffer: Vec<UIRect> = Vec::new();
+        buffer.push(UIRect {
+            r: vec4!(r.o.x as f32,r.o.y as f32,r.s.x as f32,r.s.y as f32),
+            t: vec4!(0.0,0.0,0.0,0.0),
+        });
         let vertexbuffer = gpu::VertexBuffer::<ui::UIRect>::new_from_vec(&self.graphics,buffer).expect("Unable to create vertexbuffer.");
         self.graphics.set_blend(blend_mode);
-        self.graphics.bind_shader(&self.uber_shader);
-        self.graphics.bind_texture(0,&*self.font_textures);
-        self.graphics.bind_texture(1,&self.icons_textures.array);
-        self.graphics.bind_texture(2,&self.packed_textures.array);
-        self.graphics.bind_texture(3,&self.large_textures.array);
-        self.graphics.set_uniform("alpha_textures",0);
-        self.graphics.set_uniform("icons_textures",1);
-        self.graphics.set_uniform("packed_textures",2);
-        self.graphics.set_uniform("large_textures",3);
+        self.graphics.bind_shader(&self.flat_shader);
         self.graphics.bind_vertexbuffer(&vertexbuffer);
         self.graphics.set_uniform("canvas_size",vec2!(canvas_size.x as f32,canvas_size.y as f32));
+        self.graphics.set_uniform("color",color.into_vec4());
+        self.graphics.draw_points(1);
+    }
+
+    /// Draw image.
+    /// ## Arguments
+    /// * `canvas_size` - Size of target canvas.
+    /// * `r` - Rectangle to draw image in.
+    /// * `texture` - Image to draw.
+    /// * `color` - Color to multiply with the image.
+    /// * `blend_mode` - Blend mode for the rectangle.
+    pub fn draw_image<C: ColorParameter,T: gpu::GLFormat>(&self,canvas_size: Vec2<i32>,r: Rect<i32>,texture: &gpu::Texture2D<T>,color: C,blend_mode: gpu::BlendMode) {
+        let mut buffer: Vec<UIRect> = Vec::new();
+        buffer.push(UIRect {
+            r: vec4!(r.o.x as f32,r.o.y as f32,r.s.x as f32,r.s.y as f32),
+            t: vec4!(0.0,0.0,1.0,1.0),
+        });
+        let vertexbuffer = gpu::VertexBuffer::<ui::UIRect>::new_from_vec(&self.graphics,buffer).expect("Unable to create vertexbuffer.");
+        self.graphics.set_blend(blend_mode);
+        self.graphics.bind_shader(&self.flat_shader);
+        self.graphics.bind_vertexbuffer(&vertexbuffer);
+        self.graphics.bind_texture(0,texture);
+        self.graphics.set_uniform("canvas_size",vec2!(canvas_size.x as f32,canvas_size.y as f32));
+        self.graphics.set_uniform("color_texture",0);
+        self.graphics.set_uniform("color",color.into_vec4());
+        self.graphics.draw_points(1);
+    }
+
+    /// Draw text.
+    /// ## Arguments
+    /// * `canvas_size` - Size of target canvas.
+    /// * `p` - Position to draw the text at.
+    /// * `text` - Text to draw.
+    /// * `color` - Color to multiply with the image.
+    /// * `font` - font to use.
+    pub fn draw_text<C: ColorParameter>(&self,canvas_size: Vec2<i32>,p: Vec2<i32>,text: &str,color: C,font: &ui::Font) {
+        let mut buffer: Vec<UIRect> = Vec::new();
+        for s in font.proto.sets.iter() {
+            if s.font_size == font.font_size {
+                let mut v = vec2!(p.x,p.y + (font.ratio * (s.y_bearing as f32)) as i32);
+                for c in text.chars() {
+                    let code = c as u32;
+                    for ch in s.characters.iter() {
+                        if ch.n == code {
+                            buffer.push(ui::UIRect {
+                                r: vec4!(
+                                    (v.x + (font.ratio * (ch.bearing.x as f32)) as i32) as f32,
+                                    (v.y - (font.ratio * (ch.bearing.y as f32)) as i32) as f32,
+                                    ((font.ratio * (ch.r.s.x as f32)) as i32) as f32,
+                                    ((font.ratio * (ch.r.s.y as f32)) as i32) as f32
+                                ),
+                                t: vec4!(
+                                    (ch.r.o.x as f32) / (font.proto.texture.size.x as f32),
+                                    (ch.r.o.y as f32) / (font.proto.texture.size.y as f32),
+                                    (ch.r.s.x as f32) / (font.proto.texture.size.x as f32),
+                                    (ch.r.s.y as f32) / (font.proto.texture.size.y as f32)
+                                ),
+                            });
+                            v.x += (font.ratio * (ch.advance as f32)) as i32;
+                            break;
+                        }
+                    }
+                }
+                break;
+            }
+        }
+        let points = buffer.len();
+        let vertexbuffer = gpu::VertexBuffer::<ui::UIRect>::new_from_vec(&self.graphics,buffer).expect("Unable to create vertexbuffer.");
+        self.graphics.set_blend(gpu::BlendMode::Over);
+        self.graphics.bind_shader(&self.alpha_shader);
+        self.graphics.bind_vertexbuffer(&vertexbuffer);
+        self.graphics.bind_texture(0,&font.proto.texture);
+        self.graphics.set_uniform("canvas_size",vec2!(canvas_size.x as f32,canvas_size.y as f32));
+        self.graphics.set_uniform("alpha_texture",0);
+        self.graphics.set_uniform("color",color.into_vec4());
         self.graphics.draw_points(points as i32);
     }
 
@@ -329,24 +448,5 @@ impl UI {
                 window.delta = UIDelta::Skip;
             }
         }
-    }
-}
-
-pub trait UIRectFunctions {
-    fn push_text(&mut self,p: Vec2<i32>,text: &str,font: &ui::Font,color: u32,back_color: u32);
-    fn push_rect(&mut self,r: Rect<i32>,color: u32);
-}
-
-impl UIRectFunctions for Vec<ui::UIRect> {
-    fn push_text(&mut self,p: Vec2<i32>,text: &str,font: &ui::Font,color: u32,back_color: u32) {
-        font.build_text(self,p,text,0.0,color,back_color);
-    }
-
-    fn push_rect(&mut self,r: Rect<i32>,color: u32) {
-        self.push(ui::UIRect {
-            r: vec4!(r.o.x as f32,r.o.y as f32,r.s.x as f32,r.s.y as f32),
-            t: vec4!(0.0,0.0,0.0,0.0),
-            fbdq: vec4!(color,color,0,0x00000000),
-        });
     }
 }

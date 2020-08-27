@@ -7,49 +7,51 @@ use std::cell::Cell;
 use std::cell::RefCell;
 
 /// Image widget.
-pub struct Image {
+pub struct Image<T: gpu::GLFormat> {  // GLFormat should not be referred to here, possibly move back into gpu
 
     /// Reference to UI context.
-    ui: Rc<ui::UI>,
+    _ui: Rc<ui::UI>,
 
     /// Padding around the image.
-    padding: Cell<Vec2<i32>>,
+    _padding: Cell<Vec2<i32>>,
 
-    /// (temporary) Atlassed piece of texture to use.
-    tex: RefCell<Rc<ui::Texture2DSub<pixel::ARGB8>>>,
+    /// (temporary) Texture to use.
+    tex: RefCell<Rc<gpu::Texture2D<T>>>,
 }
 
-impl Image {
+impl<T: gpu::GLFormat> Image<T> {
 
     /// Create new image widget.
     /// # Arguments
     /// * `ui` - UI context for this widget.
-    /// * `tex` - (temporary) Atlassed piece of texture to use.
+    /// * `tex` - (temporary) Texture to use.
     /// # Returns
     /// * `Ok(image)` - The image widget.
     /// * `Err(_)` - The image widget could not be created.
-    pub fn new(ui: &Rc<ui::UI>,tex: &Rc<ui::Texture2DSub<pixel::ARGB8>>) -> Result<Image,SystemError> {
+    pub fn new(ui: &Rc<ui::UI>,tex: &Rc<gpu::Texture2D<T>>) -> Result<Image<T>,SystemError> {
         Ok(Image {
-            ui: Rc::clone(ui),
-            padding: Cell::new(vec2!(0,0)),
+            _ui: Rc::clone(ui),
+            _padding: Cell::new(vec2!(0,0)),
             tex: RefCell::new(Rc::clone(tex)),
         })
     }
 }
 
-impl ui::Widget for Image {
+impl<T: gpu::GLFormat> ui::Widget for Image<T> {
 
     fn measure(&self) -> Vec2<i32> {
-        let size = self.tex.borrow().r.s;
+        let size = self.tex.borrow().size;
         vec2!(size.x as i32,size.y as i32)
     }
 
     fn handle(&self,_event: &Event,_space: Rect<i32>) {
     }
 
-    fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
+    fn draw(&self,_canvas_size: Vec2<i32>,_space: Rect<i32>) {
 
-        // begin drawing series
+        // replace with code specifically for this texture
+
+        /*// begin drawing series
         let mut buffer = self.ui.begin_drawing();
 
         let padding = self.padding.get();
@@ -73,7 +75,7 @@ impl ui::Widget for Image {
         });
 
         // end drawing series
-        self.ui.end_drawing(canvas_size,buffer,gpu::BlendMode::Replace);
+        self.ui.end_drawing(canvas_size,buffer,gpu::BlendMode::Replace);*/
     }
 }
 

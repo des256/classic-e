@@ -4,10 +4,6 @@
 //! UI Widgets.
 
 use crate::*;
-use gl::types::{
-    GLuint,
-    GLvoid,
-};
 
 pub const FONT_TEXTURE_SIZE: u32 = 1024;
 
@@ -27,34 +23,6 @@ pub enum VAlignment {
     Center,
     Bottom,
     Fill,
-}
-
-// TODO: the more tightly packed UIRect will come later
-#[derive(Copy,Clone)]
-#[repr(C)]
-pub struct UIRect {
-    pub(crate) r: Vec4<f32>,  // x, y, w, h
-    pub(crate) t: Vec4<f32>,  // x, y, w, h
-    pub(crate) fbdq: Vec4<u32>,  // f, b, d, q
-}
-
-// TODO: this means that specifically only OpenGL is supported for now; solve this later
-impl gpu::GLVertex for UIRect {
-    fn bind() -> Vec<GLuint> {
-        unsafe {
-            gl::EnableVertexAttribArray(0);
-            gl::VertexAttribPointer(0,4,gl::FLOAT,gl::FALSE,48,0 as *const GLvoid);
-            gl::EnableVertexAttribArray(1);
-            gl::VertexAttribPointer(1,4,gl::FLOAT,gl::FALSE,48,16 as *const GLvoid);
-            gl::EnableVertexAttribArray(2);
-            gl::VertexAttribIPointer(2,4,gl::UNSIGNED_INT,48,32 as *const GLvoid);
-        }
-        vec![0,1,2]
-    }
-
-    fn len() -> isize {
-        48
-    }
 }
 
 /// Widget abstraction trait.
@@ -77,9 +45,6 @@ pub trait Widget {
     /// * `space` - Space to put this widget in.
     fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>);
 }
-
-mod texture2darrayatlas;
-pub use texture2darrayatlas::*;
 
 mod font;
 pub use font::*;

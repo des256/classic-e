@@ -4,12 +4,10 @@
 
 # FOR LATER
 
-- remove texture atlas and dependency
-- revise uber shader after removing texture atlas stuff
-- Vec<UIRect>::push_image
 - zoomable/pannable frame tree idea
 - multiple window support in UI (syncing glXSwapBuffers seems to be difficult)
 - setup sensible glXSwapInterval for each window
+- capture mouse
 
 # OTHER WIDGET IDEAS
 
@@ -23,3 +21,8 @@
 - Splitter
 - TimePicker
 - Tree
+
+# MOUSE CAPTURE
+
+Widgets can capture mouse events from all over the screen. 
+When a window receives an event, if the window wasn't already capturing, start capturing the mouse and simulate an "enter" event. When the mouse leaves the window area and none of the widgets is capturing, release the mouse and simulate a "leave" event.

@@ -45,13 +45,12 @@ fn get_i32(buffer: &[u8]) -> i32 {
 pub struct FontProto {
     pub(crate) _filename: String,
     pub(crate) sets: Vec<CharacterSet>,
-    //pub(crate) mat: Mat<pixel::R8>,
-    pub(crate) layer: u32,
+    pub(crate) texture: gpu::Texture2D<pixel::R8>,
 }
 
 impl FontProto {
     #[doc(hidden)]
-    pub fn new(textures: &Rc<gpu::Texture2DArray::<pixel::R8>>,filename: &str,layer: u32) -> Result<FontProto,SystemError> {
+    pub fn new(graphics: &Rc<gpu::Graphics>,filename: &str) -> Result<FontProto,SystemError> {
         let mut file = match File::open(filename) {
             Ok(file) => file,
             Err(_) => { return Err(SystemError::Generic); },
@@ -100,12 +99,11 @@ impl FontProto {
                 mat.set(vec2!(x,y),pixel::R8 { d: bref[y * (atlas_size_x as usize) + x] });
             }
         }
-        textures.load_mat(layer as usize,vec2!(0,0),&mat);
+        let texture = gpu::Texture2D::new_from_mat(graphics,mat)?;
         Ok(FontProto {
             _filename: filename.to_string(),
             sets: sets,
-            //mat: mat,
-            layer: layer,
+            texture: texture,
         })
     }
 }
@@ -158,48 +156,5 @@ impl Font {
             }
         }
         vec2!(x,height)
-    }
-
-    /// Add text onto vertexbuffer.
-    /// ## Arguments
-    /// * `uirects` - Vector containing the UIRects for the vertexbuffer.
-    /// * `p` - Position of the text.
-    /// * `text` - Text to add.
-    /// * `d` - Depth of the text.
-    /// * `color` - Main color.
-    /// * `back_color` - Background color.
-    pub fn build_text<T: ColorParameter>(&self,uirects: &mut Vec<ui::UIRect>,p: Vec2<i32>,text: &str,_d: f32,color: T,back_color: T) where u32: From<T> {
-        let color = u32::from(color);
-        let back_color = u32::from(back_color);
-        for s in self.proto.sets.iter() {
-            if s.font_size == self.font_size {
-                let mut v = vec2!(p.x,p.y + (self.ratio * (s.y_bearing as f32)) as i32);
-                for c in text.chars() {
-                    let code = c as u32;
-                    for ch in s.characters.iter() {
-                        if ch.n == code {
-                            uirects.push(ui::UIRect {
-                                r: vec4!(
-                                    (v.x + (self.ratio * (ch.bearing.x as f32)) as i32) as f32,
-                                    (v.y - (self.ratio * (ch.bearing.y as f32)) as i32) as f32,
-                                    ((self.ratio * (ch.r.s.x as f32)) as i32) as f32,
-                                    ((self.ratio * (ch.r.s.y as f32)) as i32) as f32
-                                ),
-                                t: vec4!(
-                                    (ch.r.o.x as f32) / (ui::FONT_TEXTURE_SIZE as f32),
-                                    (ch.r.o.y as f32) / (ui::FONT_TEXTURE_SIZE as f32),
-                                    (ch.r.s.x as f32) / (ui::FONT_TEXTURE_SIZE as f32),
-                                    (ch.r.s.y as f32) / (ui::FONT_TEXTURE_SIZE as f32)
-                                ),
-                                fbdq: vec4!(color,back_color,0,0x00000000 | self.proto.layer),
-                            });
-                            v.x += (self.ratio * (ch.advance as f32)) as i32;
-                            break;
-                        }
-                    }
-                }
-                break;
-            }
-        }
     }
 }

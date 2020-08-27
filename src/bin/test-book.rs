@@ -37,7 +37,10 @@ fn main() {
     vstack.halign.set(ui::HAlignment::Center);
 
     // create book
-    let book = Rc::new(ui::Book::new_from_vec(&ui,vec![("Hello".to_string(),button),("World".to_string(),vstack)]).expect("Cannot create book."));
+    let book = Rc::new(ui::Book::new_from_vec(&ui,vec![
+        ("Hello".to_string(),button),
+        ("World".to_string(),vstack)
+    ]).expect("Cannot create book."));
 
     // open window to host the book
     ui.open(&(book as Rc<dyn ui::Widget>),rect!(50,50,640,360),"Test Window");

@@ -15,7 +15,27 @@ use {
         },
         glx::glXMakeCurrent,
     },
-    xcb::xproto::*,
+    xcb::xproto::{
+        CW_EVENT_MASK,
+        EVENT_MASK_EXPOSURE,
+        EVENT_MASK_KEY_PRESS,
+        EVENT_MASK_KEY_RELEASE,
+        EVENT_MASK_BUTTON_PRESS,
+        EVENT_MASK_BUTTON_RELEASE,
+        EVENT_MASK_POINTER_MOTION,
+        EVENT_MASK_STRUCTURE_NOTIFY,
+        CW_COLORMAP,
+        create_window,
+        WINDOW_CLASS_INPUT_OUTPUT,
+        map_window,
+        change_property,
+        PROP_MODE_REPLACE,
+        ATOM_WM_NAME,
+        ATOM_STRING,
+        ATOM_ATOM,
+        unmap_window,
+        destroy_window,
+    }
 };
 
 /// OS window (for desktop environments).

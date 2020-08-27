@@ -2,7 +2,6 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use crate::ui::UIRectFunctions;
 use std::rc::Rc;
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -57,18 +56,12 @@ impl ui::Widget for Text {
 
     fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
 
-        // begin drawing series
-        let mut buffer = self.ui.begin_drawing();
-
         // draw the text
         let font = self.font.borrow();
         let text = self.text.borrow();
         let padding = self.padding.get();
         let color = self.color.get();
 
-        buffer.push_text(space.o + padding,&text,&font,color,0x00000000);
-
-        // end drawing series
-        self.ui.end_drawing(canvas_size,buffer,gpu::BlendMode::Over);
+        self.ui.draw_text(canvas_size,space.o + padding,&text,color,&font);
     }
 }

@@ -22,7 +22,7 @@ fn main() {
     let mut buffer: Vec<u8> = Vec::new();
     file.read_to_end(&mut buffer).expect("unable to read file");
     let mat = image::decode::<pixel::ARGB8>(&buffer).expect("unable to decode");
-    let texture = Rc::new(ui::Texture2DSub::new_from_mat(&ui.large_textures,&mat).expect("unable to create texture"));
+    let texture = Rc::new(gpu::Texture2D::new_from_mat(&graphics,mat).expect("unable to create texture"));
 
     // create image widget
     let widget = Rc::new(ui::Image::new(&ui,&texture).expect("Cannot create image."));
