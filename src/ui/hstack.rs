@@ -12,6 +12,9 @@ pub struct HStack {
     /// Reference to UI context.
     _ui: Rc<ui::UI>,
 
+    /// Rectangle.
+    pub r: Cell<Rect<i32>>,
+
     /// Padding around the stack.
     pub padding: Cell<Vec2<i32>>,
 
@@ -32,6 +35,7 @@ impl HStack {
     pub fn new_from_vec(ui: &Rc<ui::UI>,widgets: Vec<Rc<dyn ui::Widget>>) -> Result<HStack,SystemError> {
         Ok(HStack {
             _ui: Rc::clone(ui),
+            r: Cell::new(rect!(0,0,1,1)),
             padding: Cell::new(vec2!(0,0)),
             valign: Cell::new(ui::VAlignment::Top),
             widgets: RefCell::new(widgets),
@@ -52,14 +56,21 @@ impl ui::Widget for HStack {
         total_size + 2 * self.padding.get()
     }
 
-    fn handle(&self,_event: &Event,_space: Rect<i32>) {
+    fn handle(&self,event: &Event) {
+        // TODO: handle resize by changing the sizes of the children
+        if let Event::Reconfigure(r) = event {
+            
+        }
     }
 
-    fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
-        let mut ox = space.o.x;
+    fn draw(&self,canvas_size: Vec2<i32>) {
+
+        let r = self.r.get();
         let padding = self.padding.get();
-        let widgets = self.widgets.borrow();
         let valign = self.valign.get();
+        let widgets = self.widgets.borrow();
+
+        let mut ox = r.o.x;
         for widget in widgets.iter() {
             let size = widget.measure();
             let (oy,sy) = match valign {

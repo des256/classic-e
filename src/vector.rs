@@ -7,7 +7,7 @@ use std::fmt::{Display,Formatter,Debug,Result};
 use std::ops::{Add,Sub,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign,Neg};
 
 /// Elementary 2-vector.
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct Vec2<T> {
     pub x: T,
     pub y: T,
@@ -23,12 +23,6 @@ macro_rules! impl_vec2 (
         }
 
         impl Display for Vec2<$t> {
-            fn fmt(&self,f: &mut Formatter) -> Result {
-                write!(f,"({},{})",self.x,self.y)
-            }
-        }
-
-        impl Debug for Vec2<$t> {
             fn fmt(&self,f: &mut Formatter) -> Result {
                 write!(f,"({},{})",self.x,self.y)
             }
@@ -211,7 +205,7 @@ impl_vec2_neg!(f64);
 impl_vec2_flt!(f64);
 
 /// Elementary 3-vector.
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct Vec3<T> {
     pub x: T,
     pub y: T,
@@ -229,12 +223,6 @@ macro_rules! impl_vec3 (
         }
 
         impl Display for Vec3<$t> {
-            fn fmt(&self,f: &mut Formatter) -> Result {
-                write!(f,"({},{},{})",self.x,self.y,self.z)
-            }
-        }
-
-        impl Debug for Vec3<$t> {
             fn fmt(&self,f: &mut Formatter) -> Result {
                 write!(f,"({},{},{})",self.x,self.y,self.z)
             }
@@ -450,7 +438,7 @@ impl_vec3_neg!(f64);
 impl_vec3_flt!(f64);
 
 /// Elementary 4-vector.
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct Vec4<T> {
     pub x: T,
     pub y: T,
@@ -470,12 +458,6 @@ macro_rules! impl_vec4 (
         }
 
         impl Display for Vec4<$t> {
-            fn fmt(&self,f: &mut Formatter) -> Result {
-                write!(f,"({},{},{},{})",self.x,self.y,self.z,self.w)
-            }
-        }
-
-        impl Debug for Vec4<$t> {
             fn fmt(&self,f: &mut Formatter) -> Result {
                 write!(f,"({},{},{},{})",self.x,self.y,self.z,self.w)
             }

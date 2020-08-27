@@ -7,7 +7,7 @@ use std::fmt::{Display,Formatter,Result,Debug};
 use std::ops::{Add,Sub,Neg,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign};
 
 /// Elementary 2x2 matrix.
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct Mat2x2<T> {
     pub x: Vec2<T>,
     pub y: Vec2<T>,
@@ -36,12 +36,6 @@ macro_rules! impl_mat2x2 (
         }
         
         impl Display for Mat2x2<$t> {
-            fn fmt(&self,f: &mut Formatter) -> Result {
-                write!(f,"({}; {};)",self.x,self.y)
-            }
-        }
-        
-        impl Debug for Mat2x2<$t> {
             fn fmt(&self,f: &mut Formatter) -> Result {
                 write!(f,"({}; {};)",self.x,self.y)
             }
@@ -199,7 +193,7 @@ impl_mat2x2!(f32);
 impl_mat2x2!(f64);
 
 /// Elementary 3x3 matrix.
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct Mat3x3<T> {
     pub x: Vec3<T>,
     pub y: Vec3<T>,
@@ -390,12 +384,6 @@ macro_rules! impl_mat3x3 (
             }
         }
         
-        impl Debug for Mat3x3<$t> {
-            fn fmt(&self,f: &mut Formatter) -> Result {
-                write!(f,"({}; {}; {};)",self.x,self.y,self.z)
-            }
-        }
-        
         impl Zero for Mat3x3<$t> {
             /// Return empty 3x3-matrix.
             fn zero() -> Mat3x3<$t> {
@@ -575,7 +563,7 @@ impl_mat3x3!(f32);
 impl_mat3x3!(f64);
 
 /// Elementary 4x4 matrix.
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct Mat4x4<T> {
     pub x: Vec4<T>,
     pub y: Vec4<T>,
@@ -854,12 +842,6 @@ macro_rules! impl_mat4x4 (
         }
         
         impl Display for Mat4x4<$t> {
-            fn fmt(&self,f: &mut Formatter) -> Result {
-                write!(f,"({}; {}; {}; {};)",self.x,self.y,self.z,self.w)
-            }
-        }
-        
-        impl Debug for Mat4x4<$t> {
             fn fmt(&self,f: &mut Formatter) -> Result {
                 write!(f,"({}; {}; {}; {};)",self.x,self.y,self.z,self.w)
             }

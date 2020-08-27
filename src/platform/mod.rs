@@ -37,8 +37,8 @@ pub enum Event {
     MouseWheel(Wheel),
     /// Mouse was moved.
     MouseMove(Vec2<i32>),
-    /// Window was resized.
-    Resize(Vec2<i32>),
+    /// Window was resized/moved.
+    Reconfigure(Rect<i32>),
     /// Window close button was pressed.
     Close,
 }

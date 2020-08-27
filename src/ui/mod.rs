@@ -36,14 +36,12 @@ pub trait Widget {
     /// Handle an event on the widget.
     /// ## Arguments
     /// * `event` - Event to process.
-    /// * `space` - The widget's rectangle.
-    fn handle(&self,event: &Event,space: Rect<i32>);
+    fn handle(&self,event: &Event);
 
     /// Draw the widget.
     /// ## Arguments
     /// * `window_size` - Size of the window to draw in.
-    /// * `space` - Space to put this widget in.
-    fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>);
+    fn draw(&self,canvas_size: Vec2<i32>);
 }
 
 mod font;

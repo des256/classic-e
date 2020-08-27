@@ -12,6 +12,9 @@ pub struct Text {
     /// Reference to UI context.
     ui: Rc<ui::UI>,
 
+    /// Text rectangle.
+    pub r: Cell<Rect<i32>>,
+
     /// Padding around the text.
     pub padding: Cell<Vec2<i32>>,
 
@@ -37,6 +40,7 @@ impl Text {
     pub fn new(ui: &Rc<ui::UI>,text: &str,font: &Rc<ui::Font>) -> Result<Text,SystemError> {
         Ok(Text {
             ui: Rc::clone(ui),
+            r: Cell::new(rect!(0,0,1,1)),
             padding: Cell::new(vec2!(0,0)),
             text: RefCell::new(String::from(text)),
             font: RefCell::new(Rc::clone(font)),
@@ -51,17 +55,24 @@ impl ui::Widget for Text {
         self.font.borrow().measure(&self.text.borrow()) + 2 * self.padding.get()
     }
 
-    fn handle(&self,_event: &Event,_space: Rect<i32>) {
+    fn handle(&self,event: &Event) {
+        match event {
+            Event::Reconfigure(r) => {
+                self.r.set(*r);
+                // rebuild local vertices?
+            }
+        }
     }
 
-    fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
+    fn draw(&self,canvas_size: Vec2<i32>) {
 
         // draw the text
-        let font = self.font.borrow();
-        let text = self.text.borrow();
+        let r = self.r.get();
         let padding = self.padding.get();
+        let text = self.text.borrow();
+        let font = self.font.borrow();
         let color = self.color.get();
 
-        self.ui.draw_text(canvas_size,space.o + padding,&text,color,&font);
+        self.ui.draw_text(canvas_size,r.o + padding,&text,color,&font);
     }
 }

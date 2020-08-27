@@ -441,9 +441,9 @@ impl System {
             },
             CONFIGURE_NOTIFY => {
                 let configure_notify: &ConfigureNotifyEvent = unsafe { cast_event(&xcb_event) };
-                let s = vec2!(configure_notify.width() as i32,configure_notify.height() as i32);
+                let r = rect!(configure_notify.x() as i32,configure_notify.y() as i32,configure_notify.width() as i32,configure_notify.height() as i32);
                 let id = configure_notify.event() as XID;
-                return Some((id,Event::Resize(s)));
+                return Some((id,Event::Reconfigure(r)));
             },
             CLIENT_MESSAGE => {
                 let client_message : &ClientMessageEvent = unsafe { cast_event(&xcb_event) };

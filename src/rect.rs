@@ -6,7 +6,7 @@ use std::ops::Add;
 use std::fmt::{Display,Formatter,Result};
 
 /// Rectangle.
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct Rect<T> {
     pub o: Vec2<T>,
     pub s: Vec2<T>,
