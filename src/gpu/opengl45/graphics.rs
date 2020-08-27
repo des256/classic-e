@@ -216,15 +216,15 @@ impl BindTarget for Rc<gpu::Framebuffer> {
 
 impl BindTarget for Rc<Window> {
     fn do_bind(&self,graphics: &Graphics) {
-        let size = self.size.get();
+        let size = self.r.get().s;
         unsafe {
 #[cfg(target_os="linux")]
             glXMakeCurrent(graphics.system.connection.get_raw_dpy(),self.id,graphics.system.context);
 #[cfg(target_os="windows")]
             wglMakeCurrent(self.hdc,self.system.hglrc);
             gl::BindFramebuffer(gl::FRAMEBUFFER,0);
-            gl::Viewport(0,0,size.x as i32,size.y as i32);
-            gl::Scissor(0,0,size.x as i32,size.y as i32);
+            gl::Viewport(0,0,size.x,size.y);
+            gl::Scissor(0,0,size.x,size.y);
         }
     }
 }

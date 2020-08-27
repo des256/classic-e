@@ -26,6 +26,9 @@ pub struct Book {
     /// Reference to UI context.
     ui: Rc<ui::UI>,
 
+    /// Rectangle.
+    r: Cell<Rect<i32>>,
+
     /// Hit state.
     hit: Cell<BookHit>,
 
@@ -55,6 +58,12 @@ pub struct Book {
 
     /// Background color in empty part next to tabs.
     pub tab_back_color: Cell<u32>,
+
+    /// Current page rectangle.
+    page_rect: Cell<Rect<i32>>,
+
+    /// Page is capturing the mouse.
+    page_is_capturing: Cell<bool>,
 }
 
 impl Book {
@@ -66,6 +75,7 @@ impl Book {
         }
         Ok(Book {
             ui: Rc::clone(ui),
+            r: Cell::new(rect!(0,0,1,1)),
             hit: Cell::new(BookHit::Outside),
             pages: RefCell::new(new_pages),
             current_index: Cell::new(0),
@@ -76,7 +86,39 @@ impl Book {
             tab_color: Cell::new(0xFF001133),
             hover_tab_color: Cell::new(0xFF002266),
             tab_back_color: Cell::new(0xFF000000),
+            page_rect: Cell::new(rect!(0,0,1,1)),
+            page_is_capturing: Cell::new(false),
         })
+    }
+
+    fn test_hit(&self,pos: Vec2<i32>) -> BookHit {
+
+        let pages = self.pages.borrow();
+        let padding = self.padding.get();
+        let inner_padding = self.inner_padding.get();
+        let font = self.font.borrow();
+        let page_rect = self.page_rect.get();
+
+        let r = rect!(padding,self.r.get().s - 2 * padding);
+        if r.contains(&pos) {
+            if page_rect.contains(&pos) {
+                return BookHit::Page;
+            }
+            let mut tab_rect = rect!(0i32,0i32,0i32,0i32);
+            tab_rect.o = r.o + padding;
+            let mut i = 0usize;
+            for page in pages.iter() {
+                let title = &page.0;
+                tab_rect.s = font.measure(&title) + 2 * inner_padding;
+                if tab_rect.contains(&pos) {
+                    return BookHit::Tab(i);
+                }
+                tab_rect.o.x += tab_rect.s.x;
+                i += 1;
+            }
+        }
+
+        BookHit::Outside
     }
 }
 
@@ -124,80 +166,32 @@ impl ui::Widget for Book {
         book_size + 2 * padding
     }
 
-    fn handle(&self,event: &Event,space: Rect<i32>) {
+    fn get_rect(&self) -> Rect<i32> {
+        self.r.get()
+    }
+
+    fn set_rect(&self,r: Rect<i32>) {
+
+        self.r.set(r);
 
         let pages = self.pages.borrow();
-        let font = self.font.borrow();
-        let padding = self.padding.get();
         let inner_padding = self.inner_padding.get();
-        let current_index = self.current_index.get();
+        let font = self.font.borrow();
 
-        // calculate page rect
-        let mut page_rect = space;
         let mut tab_size = vec2!(0i32,0i32);
         if pages.len() > 0 {
             tab_size = font.measure(&pages[0].0) + 2 * inner_padding;
         }
-        page_rect.o.y += tab_size.y;
-        page_rect.s.y -= tab_size.y;
-
-        // hit test
-        match event {
-            Event::MousePress(pos,_) | Event::MouseRelease(pos,_) | Event::MouseMove(pos) => {
-                let mut hit = BookHit::Outside;
-                if space.contains(pos) {
-                    let mut tab_rect = rect!(0i32,0i32,0i32,0i32);
-                    tab_rect.o = space.o + padding;
-                    let mut i = 0usize;
-                    for page in pages.iter() {
-                        let title = &page.0;
-                        tab_rect.s = font.measure(&title) + 2 * inner_padding;
-                        if tab_rect.contains(pos) {
-                            hit = BookHit::Tab(i);
-                            break;
-                        }
-                        tab_rect.o.x += tab_rect.s.x;
-                        i += 1;
-                    }
-                    if pos.y >= tab_rect.o.y + tab_rect.s.y {
-                        hit = BookHit::Page;
-                    }
-                }
-                self.hit.set(hit);
-            },
-
-            _ => { },
-        }
-
-        // handle event
-        // TODO: not sure if this is going to be the sensible way in the end...
-        let hit = self.hit.get();
-        match hit {
-
-            // pass down to current page, if any
-            BookHit::Page => {
-                if pages.len() > 0 {
-                    if current_index < pages.len() {
-                        pages[current_index].1.handle(event,page_rect);
-                    }
-                }    
-            },
-
-            // click on tab
-            BookHit::Tab(i) => {
-                if let Event::MousePress(_,mouse) = event {
-                    if let Mouse::Left = mouse {
-                        self.current_index.set(i);
-                    }
-                }
-            },
-
-            _ => { },
+        let page_rect = rect!(0,tab_size.y,r.s.x,r.s.y - tab_size.y);
+        self.page_rect.set(page_rect);
+        for page in pages.iter() {
+            page.1.set_rect(page_rect);
         }
     }
 
-    fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
+    fn draw(&self) {
 
+        let r = self.r.get();
         let pages = self.pages.borrow();
         let font = self.font.borrow();
         let hit = self.hit.get();
@@ -209,18 +203,9 @@ impl ui::Widget for Book {
         let inner_padding = self.inner_padding.get();
         let current_index = self.current_index.get();
 
-        // calculate page rect
-        let mut page_rect = space;
-        let mut tab_size = vec2!(0i32,0i32);
-        if pages.len() > 0 {
-            tab_size = font.measure(&pages[0].0) + 2 * inner_padding;
-        }
-        page_rect.o.y += tab_size.y;
-        page_rect.s.y -= tab_size.y;
-
         // draw tab bar
         let mut tab_rect = rect!(0i32,0i32,0i32,0i32);
-        tab_rect.o = space.o + padding;
+        tab_rect.o = r.o + padding;
         let mut i = 0usize;
         for page in pages.iter() {
             let title = &page.0;
@@ -231,18 +216,121 @@ impl ui::Widget for Book {
                     tc = hover_tab_color;
                 }
             }
-            self.ui.draw_rectangle(canvas_size,tab_rect,tc,gpu::BlendMode::Replace);
-            self.ui.draw_text(canvas_size,tab_rect.o + inner_padding,&title,color,&font);
+            self.ui.draw_rectangle(tab_rect,tc,gpu::BlendMode::Replace);
+            self.ui.draw_text(tab_rect.o + inner_padding,&title,color,&font);
             tab_rect.o.x += tab_rect.s.x;
             i += 1;
         }
-        self.ui.draw_rectangle(canvas_size,rect!(tab_rect.o,vec2!(space.s.x - tab_rect.o.x,tab_rect.s.y)),tab_back_color,gpu::BlendMode::Replace);
+        self.ui.draw_rectangle(rect!(tab_rect.o,vec2!(r.s.x - tab_rect.o.x,tab_rect.s.y)),tab_back_color,gpu::BlendMode::Replace);
 
         // draw current page
         if pages.len() > 0 {
             if current_index < pages.len() {
-                pages[current_index].1.draw(canvas_size,page_rect);
+                pages[current_index].1.draw();
             }
         }
+    }
+
+    fn mouse_press(&self,pos: Vec2<i32>,button: Mouse) -> bool {
+        let pages = self.pages.borrow();
+        let current_index = self.current_index.get();
+        let page_rect = self.page_rect.get();
+        if self.page_is_capturing.get() {
+            if pages.len() > 0 {
+                if current_index < pages.len() {
+                    if pages[current_index].1.mouse_press(pos - page_rect.o,button) {
+                        return true;
+                    }
+                }
+            }
+        }
+        self.page_is_capturing.set(false);
+        match self.hit.get() {
+            BookHit::Tab(i) => {
+                if let Mouse::Left = button {
+                    self.current_index.set(i);
+                    return true;
+                }    
+            },
+            BookHit::Page => {
+                if pages.len() > 0 {
+                    if current_index < pages.len() {
+                        if pages[current_index].1.mouse_press(pos - page_rect.o,button) {
+                            self.page_is_capturing.set(true);
+                            return true;
+                        }
+                    }
+                }        
+            },
+            _ => { },
+        }
+        false
+    }
+
+    fn mouse_release(&self,pos: Vec2<i32>,button: Mouse) -> bool {
+        let pages = self.pages.borrow();
+        let current_index = self.current_index.get();
+        let page_rect = self.page_rect.get();
+        if self.page_is_capturing.get() {
+            if pages.len() > 0 {
+                if current_index < pages.len() {
+                    if pages[current_index].1.mouse_release(pos - page_rect.o,button) {
+                        return true;
+                    }
+                }
+            }
+        }
+        self.page_is_capturing.set(false);
+        match self.hit.get() {
+            BookHit::Tab(i) => {
+                return true;
+            },
+            BookHit::Page => {
+                if pages.len() > 0 {
+                    if current_index < pages.len() {
+                        if pages[current_index].1.mouse_release(pos - page_rect.o,button) {
+                            self.page_is_capturing.set(true);
+                            return true;
+                        }
+                    }
+                }        
+            },
+            _ => { },
+        }
+        false
+    }
+
+    fn mouse_move(&self,pos: Vec2<i32>) -> bool {
+        let pages = self.pages.borrow();
+        let current_index = self.current_index.get();
+        let page_rect = self.page_rect.get();
+        if self.page_is_capturing.get() {
+            if pages.len() > 0 {
+                if current_index < pages.len() {
+                    if pages[current_index].1.mouse_move(pos - page_rect.o) {
+                        return true;
+                    }
+                }
+            }
+        }
+        self.page_is_capturing.set(false);
+        let hit = self.test_hit(pos);
+        self.hit.set(hit);
+        match hit {
+            BookHit::Tab(i) => {
+                return true;
+            },
+            BookHit::Page => {
+                if pages.len() > 0 {
+                    if current_index < pages.len() {
+                        if pages[current_index].1.mouse_move(pos - page_rect.o) {
+                            return true;
+                        }
+                    }
+                }        
+            },
+            _ => { },
+        }
+        false
     }
 }

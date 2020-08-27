@@ -12,6 +12,9 @@ pub struct Image<T: gpu::GLFormat> {  // GLFormat should not be referred to here
     /// Reference to UI context.
     _ui: Rc<ui::UI>,
 
+    /// Rectangle.
+    _r: Cell<Rect<i32>>,
+
     /// Padding around the image.
     _padding: Cell<Vec2<i32>>,
 
@@ -31,6 +34,7 @@ impl<T: gpu::GLFormat> Image<T> {
     pub fn new(ui: &Rc<ui::UI>,tex: &Rc<gpu::Texture2D<T>>) -> Result<Image<T>,SystemError> {
         Ok(Image {
             _ui: Rc::clone(ui),
+            _r: Cell::new(rect!(0,0,1,1)),
             _padding: Cell::new(vec2!(0,0)),
             tex: RefCell::new(Rc::clone(tex)),
         })
@@ -44,10 +48,7 @@ impl<T: gpu::GLFormat> ui::Widget for Image<T> {
         vec2!(size.x as i32,size.y as i32)
     }
 
-    fn handle(&self,_event: &Event,_space: Rect<i32>) {
-    }
-
-    fn draw(&self,_canvas_size: Vec2<i32>,_space: Rect<i32>) {
+    fn draw(&self) {
 
         // replace with code specifically for this texture
 

@@ -4,6 +4,7 @@
 use crate::*;
 use std::{
     rc::Rc,
+    cell::Cell,
     cell::RefCell,
 };
 use gl::types::{
@@ -17,9 +18,9 @@ enum UIDelta {
 }
 
 pub struct UIWindow {
-    window: Rc<Window>,                           // window
-    widget: Rc<dyn ui::Widget>,                   // widget in this window
-    delta: UIDelta,                               // what to do in order to validate
+    window: Rc<Window>,          // window
+    widget: Rc<dyn ui::Widget>,  // widget in this window
+    delta: UIDelta,              // what to do in order to validate
 }
 
 // TODO: the more tightly packed UIRect will come later
@@ -59,6 +60,8 @@ pub struct UI {
     pub proto_mono: Rc<ui::FontProto>,
     pub font: Rc<ui::Font>,
     pub windows: RefCell<Vec<UIWindow>>,
+    current_window_size: Cell<Vec2<i32>>,
+    capturing_index: Cell<Option<i32>>,
 }
 
 impl UI {
@@ -89,7 +92,7 @@ impl UI {
         let gs = r#"
             #version 420 core
 
-            uniform vec2 canvas_size;
+            uniform vec2 window_size;
             
             layout(points) in;
             layout(triangle_strip,max_vertices = 4) out;
@@ -108,10 +111,10 @@ impl UI {
                 vec4 t = gs_in[0].t;
 
                 vec4 pn = vec4(
-                    -1.0 + 2.0 * r.x / canvas_size.x,
-                    1.0 - 2.0 * r.y / canvas_size.y,
-                    2.0 * r.z / canvas_size.x,
-                    -2.0 * r.w / canvas_size.y
+                    -1.0 + 2.0 * r.x / window_size.x,
+                    1.0 - 2.0 * r.y / window_size.y,
+                    2.0 * r.z / window_size.x,
+                    -2.0 * r.w / window_size.y
                 );
 
                 gl_Position = vec4(pn.x,pn.y,0.0,1.0);
@@ -226,6 +229,8 @@ impl UI {
             proto_mono: proto_mono,
             font: font,
             windows: RefCell::new(Vec::new()),
+            current_window_size: Cell::new(vec2!(0,0)),
+            capturing_index: Cell::new(None),
         })
     }
 
@@ -237,7 +242,7 @@ impl UI {
     /// ## Returns
     /// * `false` - Window could not be created.
     /// * `true` - Window was created.
-    pub fn open(&self,widget: &Rc<dyn ui::Widget>,r: Rect<isize>,title: &str) -> bool {
+    pub fn open(&self,widget: &Rc<dyn ui::Widget>,r: Rect<i32>,title: &str) -> bool {
         let window = Rc::new(Window::new(&self.system,r,title).expect("unable to create window"));
         self.graphics.bind_target(&window);
         unsafe { (self.system.glx_swap_interval)(self.system.connection.get_raw_dpy(),window.id,0) };
@@ -262,10 +267,10 @@ impl UI {
         }
     }
 
-    /// Start drawing session.
-    pub fn begin_drawing(&self) -> Vec<ui::UIRect> {
-        Vec::new()
-    }
+    // Start drawing session.
+    //pub fn begin_drawing(&self) -> Vec<ui::UIRect> {
+    //    Vec::new()
+    //}
 
     /// (temporary) Draw rectangle.
     /// ## Arguments
@@ -273,7 +278,7 @@ impl UI {
     /// * `r` - Rectangle to draw.
     /// * `color` - Color to draw rectangle in.
     /// * `blend_mode` - Blend mode for the rectangle.
-    pub fn draw_rectangle<C: ColorParameter>(&self,canvas_size: Vec2<i32>,r: Rect<i32>,color: C,blend_mode: gpu::BlendMode) {
+    pub fn draw_rectangle<C: ColorParameter>(&self,r: Rect<i32>,color: C,blend_mode: gpu::BlendMode) {
         let mut buffer: Vec<UIRect> = Vec::new();
         buffer.push(UIRect {
             r: vec4!(r.o.x as f32,r.o.y as f32,r.s.x as f32,r.s.y as f32),
@@ -283,7 +288,8 @@ impl UI {
         self.graphics.set_blend(blend_mode);
         self.graphics.bind_shader(&self.flat_shader);
         self.graphics.bind_vertexbuffer(&vertexbuffer);
-        self.graphics.set_uniform("canvas_size",vec2!(canvas_size.x as f32,canvas_size.y as f32));
+        let window_size = self.current_window_size.get();
+        self.graphics.set_uniform("window_size",vec2!(window_size.x as f32,window_size.y as f32));
         self.graphics.set_uniform("color",color.into_vec4());
         self.graphics.draw_points(1);
     }
@@ -295,7 +301,7 @@ impl UI {
     /// * `texture` - Image to draw.
     /// * `color` - Color to multiply with the image.
     /// * `blend_mode` - Blend mode for the rectangle.
-    pub fn draw_image<C: ColorParameter,T: gpu::GLFormat>(&self,canvas_size: Vec2<i32>,r: Rect<i32>,texture: &gpu::Texture2D<T>,color: C,blend_mode: gpu::BlendMode) {
+    pub fn draw_image<C: ColorParameter,T: gpu::GLFormat>(&self,r: Rect<i32>,texture: &gpu::Texture2D<T>,color: C,blend_mode: gpu::BlendMode) {
         let mut buffer: Vec<UIRect> = Vec::new();
         buffer.push(UIRect {
             r: vec4!(r.o.x as f32,r.o.y as f32,r.s.x as f32,r.s.y as f32),
@@ -306,7 +312,8 @@ impl UI {
         self.graphics.bind_shader(&self.flat_shader);
         self.graphics.bind_vertexbuffer(&vertexbuffer);
         self.graphics.bind_texture(0,texture);
-        self.graphics.set_uniform("canvas_size",vec2!(canvas_size.x as f32,canvas_size.y as f32));
+        let window_size = self.current_window_size.get();
+        self.graphics.set_uniform("window_size",vec2!(window_size.x as f32,window_size.y as f32));
         self.graphics.set_uniform("color_texture",0);
         self.graphics.set_uniform("color",color.into_vec4());
         self.graphics.draw_points(1);
@@ -319,7 +326,7 @@ impl UI {
     /// * `text` - Text to draw.
     /// * `color` - Color to multiply with the image.
     /// * `font` - font to use.
-    pub fn draw_text<C: ColorParameter>(&self,canvas_size: Vec2<i32>,p: Vec2<i32>,text: &str,color: C,font: &ui::Font) {
+    pub fn draw_text<C: ColorParameter>(&self,p: Vec2<i32>,text: &str,color: C,font: &ui::Font) {
         let mut buffer: Vec<UIRect> = Vec::new();
         for s in font.proto.sets.iter() {
             if s.font_size == font.font_size {
@@ -356,7 +363,8 @@ impl UI {
         self.graphics.bind_shader(&self.alpha_shader);
         self.graphics.bind_vertexbuffer(&vertexbuffer);
         self.graphics.bind_texture(0,&font.proto.texture);
-        self.graphics.set_uniform("canvas_size",vec2!(canvas_size.x as f32,canvas_size.y as f32));
+        let window_size = self.current_window_size.get();
+        self.graphics.set_uniform("window_size",vec2!(window_size.x as f32,window_size.y as f32));
         self.graphics.set_uniform("alpha_texture",0);
         self.graphics.set_uniform("color",color.into_vec4());
         self.graphics.draw_points(points as i32);
@@ -392,37 +400,111 @@ impl UI {
                     let window = &mut self.windows.borrow_mut()[i];
                     if Rc::ptr_eq(&win,&window.window) {
 
+                        window.delta = UIDelta::Draw;
+
                         match event {
 
                             // system wants to render this window
-                            Event::Render => {
-                                window.delta = UIDelta::Draw;
-                            },
+                            Event::Render => { },
 
-                            // system notifies that this window changed size
-                            Event::Resize(s) => {
-                                window.window.size.set(vec2!(s.x as usize,s.y as usize));
-                                window.delta = UIDelta::Draw;
+                            // system notifies that this window moved/changed size
+                            Event::Reconfigure(r) => {
+                                window.window.r.set(r);
+                                window.widget.set_rect(rect!(vec2!(0,0),r.s));
                             },
 
                             // user wants to close this window
                             Event::Close => {
                                 running = false;  // TODO: closing other windows doesn't automatically mean end program; API user might want to ask something before actually quitting
-                                window.delta = UIDelta::Skip;
                             },
 
                             // anything else should be handled by the hosted widget
-                            _ => {
-                                // handle the event
-                                let window_size = window.window.size.get();
-                                window.widget.handle(&event,rect!(0i32,0i32,window_size.x as i32,window_size.y as i32));
-                                window.delta = UIDelta::Draw;  // always redraw for now
+                            Event::KeyPress(key) => {
+                                window.widget.key_press(key);
+                            },
+
+                            Event::KeyRelease(key) => {
+                                window.widget.key_release(key);
+                            },
+
+                            Event::MousePress(pos,button) => {
+                                if window.widget.mouse_press(pos,button) {
+                                    match self.capturing_index.get() {
+                                        Some(index) => {
+                                            if index != i as i32 {
+                                                self.system.capture_mouse(&window.window);
+                                                self.capturing_index.set(Some(i as i32));
+                                            }    
+                                        },
+                                        None => {
+                                            self.system.capture_mouse(&window.window);
+                                            self.capturing_index.set(Some(i as i32));
+                                        },
+                                    }
+                                }
+                                else {
+                                    if let Some(_) = self.capturing_index.get() {
+                                        self.system.release_mouse();
+                                        self.capturing_index.set(None);    
+                                    }
+                                }
+                            },
+
+                            Event::MouseRelease(pos,button) => {
+                                if window.widget.mouse_release(pos,button) {
+                                    match self.capturing_index.get() {
+                                        Some(index) => {
+                                            if index != i as i32 {
+                                                self.system.capture_mouse(&window.window);
+                                                self.capturing_index.set(Some(i as i32));
+                                            }    
+                                        },
+                                        None => {
+                                            self.system.capture_mouse(&window.window);
+                                            self.capturing_index.set(Some(i as i32));
+                                        },
+                                    }
+                                }
+                                else {
+                                    if let Some(_) = self.capturing_index.get() {
+                                        self.system.release_mouse();
+                                        self.capturing_index.set(None);    
+                                    }
+                                }
+                            },
+
+                            Event::MouseWheel(wheel) => {
+                                window.widget.mouse_wheel(wheel);
+                            },
+
+                            Event::MouseMove(pos) => {
+                                if window.widget.mouse_move(pos) {
+                                    match self.capturing_index.get() {
+                                        Some(index) => {
+                                            if index != i as i32 {
+                                                self.system.capture_mouse(&window.window);
+                                                self.capturing_index.set(Some(i as i32));
+                                            }    
+                                        },
+                                        None => {
+                                            self.system.capture_mouse(&window.window);
+                                            self.capturing_index.set(Some(i as i32));
+                                        },
+                                    }
+                                }
+                                else {
+                                    if let Some(_) = self.capturing_index.get() {
+                                        self.system.release_mouse();
+                                        self.capturing_index.set(None);    
+                                    }
+                                }
                             },
                         }        
                         break;
                     }
                 }
             }
+
             for window in self.windows.borrow_mut().iter_mut() {
 
                 // bind to this window
@@ -430,9 +512,10 @@ impl UI {
 
                 // if widget tree needs to be rebuilt, rebuild it
                 if let UIDelta::Draw = window.delta {
+                    let r = window.window.r.get();
+                    self.current_window_size.set(r.s);  // so window_size in the shader corresponds to the actual window size
                     self.graphics.clear(0xFF001122);
-                    let window_size = window.window.size.get();
-                    window.widget.draw(vec2!(window_size.x as i32,window_size.y as i32),rect!(0i32,0i32,window_size.x as i32,window_size.y as i32));
+                    window.widget.draw();
                     self.graphics.flush();
                 }
             }

@@ -41,7 +41,7 @@ use {
 /// OS window (for desktop environments).
 pub struct Window {
     system: Rc<System>,
-    pub size: Cell<Vec2<usize>>,
+    pub r: Cell<Rect<i32>>,
     pub(crate) id: XID,
 }
 
@@ -54,7 +54,7 @@ impl Window {
     /// ## Returns
     /// * `Ok(Window)` - The new window.
     /// * `Err(SystemError)` - The window could not be created.
-    pub fn new(system: &Rc<System>,r: Rect<isize>,title: &str) -> Result<Window,SystemError> {
+    pub fn new(system: &Rc<System>,r: Rect<i32>,title: &str) -> Result<Window,SystemError> {
         let id = system.connection.generate_id() as XID;
         let values = [
             (CW_EVENT_MASK,
@@ -107,7 +107,7 @@ impl Window {
         Ok(Window {
             system: Rc::clone(system),
             id: id,
-            size: Cell::new(vec2!(r.s.x as usize,r.s.y as usize)),
+            r: Cell::new(r),
         })
     }
 }

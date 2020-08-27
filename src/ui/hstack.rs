@@ -23,6 +23,8 @@ pub struct HStack {
 
     /// The widgets.
     widgets: RefCell<Vec<Rc<dyn ui::Widget>>>,
+
+    capturing_widget: RefCell<Option<Rc<dyn ui::Widget>>>,
 }
 
 impl HStack {
@@ -39,6 +41,7 @@ impl HStack {
             padding: Cell::new(vec2!(0,0)),
             valign: Cell::new(ui::VAlignment::Top),
             widgets: RefCell::new(widgets),
+            capturing_widget: RefCell::new(None),
         })
     }
 }
@@ -56,31 +59,99 @@ impl ui::Widget for HStack {
         total_size + 2 * self.padding.get()
     }
 
-    fn handle(&self,event: &Event) {
-        // TODO: handle resize by changing the sizes of the children
-        if let Event::Reconfigure(r) = event {
-            
-        }
+    fn get_rect(&self) -> Rect<i32> {
+        self.r.get()
     }
 
-    fn draw(&self,canvas_size: Vec2<i32>) {
-
-        let r = self.r.get();
+    fn set_rect(&self,r: Rect<i32>) {
+        self.r.set(r);
         let padding = self.padding.get();
         let valign = self.valign.get();
         let widgets = self.widgets.borrow();
-
         let mut ox = r.o.x;
         for widget in widgets.iter() {
             let size = widget.measure();
             let (oy,sy) = match valign {
-                ui::VAlignment::Top => { (space.o.y,size.y) },
-                ui::VAlignment::Bottom => { (space.o.y + space.s.y - size.y,size.y) },
-                ui::VAlignment::Center => { (space.o.y + (space.s.y - size.y) / 2,size.y / 2) },
-                ui::VAlignment::Fill => { (space.o.y,space.s.y) },
+                ui::VAlignment::Top => { (r.o.y,size.y) },
+                ui::VAlignment::Bottom => { (r.o.y + r.s.y - size.y,size.y) },
+                ui::VAlignment::Center => { (r.o.y + (r.s.y - size.y) / 2,size.y / 2) },
+                ui::VAlignment::Fill => { (r.o.y,r.s.y) },
             };
-            widget.draw(canvas_size,rect!(ox + padding.x,oy + padding.y,size.x - 2 * padding.x,sy - 2 * padding.y));
+            widget.set_rect(rect!(ox + padding.x,oy + padding.y,size.x - 2 * padding.x,sy - 2 * padding.y));
             ox += size.x;
         }
+    }
+
+    fn draw(&self) {
+        let widgets = self.widgets.borrow();
+        for widget in widgets.iter() {
+            widget.draw();
+        }
+    }
+
+    fn mouse_press(&self,pos: Vec2<i32>,button: Mouse) -> bool {
+        if let Some(widget) = &*self.capturing_widget.borrow() {
+            let r = widget.get_rect();
+            if widget.mouse_press(pos - r.o,button) {
+                return true;
+            }
+            *self.capturing_widget.borrow_mut() = None;
+        }
+        let widgets = self.widgets.borrow();
+        for widget in widgets.iter() {
+            let r = widget.get_rect();
+            if r.contains(&pos) {
+                if widget.mouse_press(pos - r.o,button) {
+                    *self.capturing_widget.borrow_mut() = Some(Rc::clone(widget));
+                    return true;
+                }
+                return false;
+            }
+        }
+        false
+    }
+
+    fn mouse_release(&self,pos: Vec2<i32>,button: Mouse) -> bool {
+        if let Some(widget) = &*self.capturing_widget.borrow() {
+            let r = widget.get_rect();
+            if widget.mouse_release(pos - r.o,button) {
+                return true;
+            }
+            *self.capturing_widget.borrow_mut() = None;
+        }
+        let widgets = self.widgets.borrow();
+        for widget in widgets.iter() {
+            let r = widget.get_rect();
+            if r.contains(&pos) {
+                if widget.mouse_release(pos - r.o,button) {
+                    *self.capturing_widget.borrow_mut() = Some(Rc::clone(widget));
+                    return true;
+                }
+                return false;
+            }
+        }
+        false
+    }
+
+    fn mouse_move(&self,pos: Vec2<i32>) -> bool {
+        if let Some(widget) = &*self.capturing_widget.borrow() {
+            let r = widget.get_rect();
+            if widget.mouse_move(pos - r.o) {
+                return true;
+            }
+            *self.capturing_widget.borrow_mut() = None;
+        }
+        let widgets = self.widgets.borrow();
+        for widget in widgets.iter() {
+            let r = widget.get_rect();
+            if r.contains(&pos) {
+                if widget.mouse_move(pos - r.o) {
+                    *self.capturing_widget.borrow_mut() = Some(Rc::clone(widget));
+                    return true;
+                }
+                return false;
+            }
+        }
+        false
     }
 }

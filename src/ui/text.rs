@@ -55,16 +55,15 @@ impl ui::Widget for Text {
         self.font.borrow().measure(&self.text.borrow()) + 2 * self.padding.get()
     }
 
-    fn handle(&self,event: &Event) {
-        match event {
-            Event::Reconfigure(r) => {
-                self.r.set(*r);
-                // rebuild local vertices?
-            }
-        }
+    fn get_rect(&self) -> Rect<i32> {
+        self.r.get()
     }
 
-    fn draw(&self,canvas_size: Vec2<i32>) {
+    fn set_rect(&self,r: Rect<i32>) {
+        self.r.set(r);
+    }
+
+    fn draw(&self) {
 
         // draw the text
         let r = self.r.get();
@@ -73,6 +72,6 @@ impl ui::Widget for Text {
         let font = self.font.borrow();
         let color = self.color.get();
 
-        self.ui.draw_text(canvas_size,r.o + padding,&text,color,&font);
+        self.ui.draw_text(r.o + padding,&text,color,&font);
     }
 }

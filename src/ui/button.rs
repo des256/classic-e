@@ -23,6 +23,9 @@ pub struct Button {
     /// Reference to UI context.
     ui: Rc<ui::UI>,
 
+    /// Rectangle.
+    r: Cell<Rect<i32>>,
+
     /// Hit state.
     hit: Cell<ButtonHit>,
 
@@ -60,6 +63,7 @@ impl Button {
     pub fn new(ui: &Rc<ui::UI>,text: &str,font: &Rc<ui::Font>) -> Result<Button,SystemError> {
         Ok(Button {
             ui: Rc::clone(ui),
+            r: Cell::new(rect!(0,0,1,1)),
             hit: Cell::new(ButtonHit::Outside),
             text: RefCell::new(String::from(text)),
             font: RefCell::new(Rc::clone(font)),
@@ -69,6 +73,16 @@ impl Button {
             padding: Cell::new(vec2!(0,0)),
             inner_padding: Cell::new(vec2!(4,2)),
         })
+    }
+
+    fn test_hit(&self,pos: Vec2<i32>) -> ButtonHit {
+        let padding = self.padding.get();
+        let r = rect!(padding,self.r.get().s - 2 * padding);
+        let mut hit = ButtonHit::Outside;
+        if r.contains(&pos) {
+            hit = ButtonHit::Button;
+        }
+        hit
     }
 }
 
@@ -84,43 +98,17 @@ impl ui::Widget for Button {
         font.measure(&text) + 2 * (padding + inner_padding)
     }
 
-    fn handle(&self,event: &Event,space: Rect<i32>) {
-
-        // hit test
-        match event {
-            Event::MousePress(pos,_) | Event::MouseRelease(pos,_) | Event::MouseMove(pos) => {
-                let padding = self.padding.get();
-                let mut rect = space;
-                rect.o += padding;
-                rect.s -= 2 * padding;
-                let mut hit = ButtonHit::Outside;
-                if rect.contains(&pos) {
-                    hit = ButtonHit::Button;
-                }
-                self.hit.set(hit);
-            },
-            _ => { },
-        }
-
-        // handle events
-        let hit = self.hit.get();
-        match event {
-            Event::MousePress(_,mouse) => {
-                match mouse {
-                    Mouse::Left => {
-                        if let ButtonHit::Button = hit {
-                            // TODO: button is pressed, so call some closure
-                        }
-                    },
-                    _ => { },
-                }
-            },
-            _ => { },
-        }
+    fn get_rect(&self) -> Rect<i32> {
+        self.r.get()
     }
 
-    fn draw(&self,canvas_size: Vec2<i32>,space: Rect<i32>) {
+    fn set_rect(&self,r: Rect<i32>) {
+        self.r.set(r);
+    }
 
+    fn draw(&self) {
+
+        let r = self.r.get();
         let hit = self.hit.get();
         let text = self.text.borrow();
         let font = self.font.borrow();
@@ -132,7 +120,38 @@ impl ui::Widget for Button {
         };
         let padding = self.padding.get();
         let inner_padding = self.inner_padding.get();
-        self.ui.draw_rectangle(canvas_size,rect!(space.o + padding,space.s - 2 * padding),button_color,gpu::BlendMode::Replace);
-        self.ui.draw_text(canvas_size,space.o + padding + inner_padding,&text,color,&font);
+
+        self.ui.draw_rectangle(rect!(r.o + padding,r.s - 2 * padding),button_color,gpu::BlendMode::Replace);
+        self.ui.draw_text(r.o + padding + inner_padding,&text,color,&font);
+    }
+
+    fn mouse_press(&self,_pos: Vec2<i32>,button: Mouse) -> bool {
+        let hit = self.hit.get();
+        match button {
+            Mouse::Left => {
+                if let ButtonHit::Button = hit {
+                    // call some sort of closure maybe
+                }
+            },
+
+            _ => { },
+        }
+        if let ButtonHit::Button = hit {
+            true
+        }
+        else {
+            false
+        }
+    }
+
+    fn mouse_move(&self,pos: Vec2<i32>) -> bool {
+        let hit = self.test_hit(pos);
+        self.hit.set(hit);
+        if let ButtonHit::Button = hit {
+            true
+        }
+        else {
+            false
+        }
     }
 }

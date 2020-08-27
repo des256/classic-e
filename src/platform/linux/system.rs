@@ -101,12 +101,12 @@ use {
             MOTION_NOTIFY,
             CONFIGURE_NOTIFY,
             CLIENT_MESSAGE,
-            grab_pointer_unchecked,
+            grab_pointer,
             WINDOW_NONE,
             CURSOR_NONE,
             TIME_CURRENT_TIME,
             GRAB_MODE_ASYNC,
-            ungrab_pointer,
+            ungrab_pointer_checked,
         },
         cast_event,
         GenericEvent,
@@ -487,7 +487,8 @@ impl System {
     /// ## Arguments
     /// * `window` - Window to capture to.
     pub fn capture_mouse(&self,window: &Window) {
-        grab_pointer_unchecked(
+        println!("XGrabPointer");
+        let com = grab_pointer(
             &self.connection,
             true,
             window.id as u32,
@@ -498,11 +499,18 @@ impl System {
             CURSOR_NONE,
             TIME_CURRENT_TIME
         );
+        match com.get_reply() {
+            Ok(_) => { },
+            Err(_) => {
+                println!("XGrabPointer error");
+            },
+        }
     }
 
     /// Release mouse pointer.
     pub fn release_mouse(&self) {
-        ungrab_pointer(&self.connection,TIME_CURRENT_TIME);
+        println!("XUngrabPointer");
+        ungrab_pointer_checked(&self.connection,TIME_CURRENT_TIME);
     }
 
 }

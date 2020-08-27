@@ -4,6 +4,9 @@
 //! UI Widgets.
 
 use crate::*;
+use std::{
+    rc::Rc,
+};
 
 pub const FONT_TEXTURE_SIZE: u32 = 1024;
 
@@ -31,17 +34,57 @@ pub trait Widget {
     /// Measure the widget.
     /// ## Returns
     /// Minimum dimensions for this widget.
-    fn measure(&self) -> Vec2<i32>;
+    fn measure(&self) -> Vec2<i32> { vec2!(0,0) }
 
-    /// Handle an event on the widget.
-    /// ## Arguments
-    /// * `event` - Event to process.
-    fn handle(&self,event: &Event);
+    /// Get the widget rect.
+    fn get_rect(&self) -> Rect<i32> { rect!(0,0,0,0) }
+
+    /// The widget rect changed.
+    fn set_rect(&self,_r: Rect<i32>) { }
 
     /// Draw the widget.
+    fn draw(&self) { }
+    
+    /// A key was pressed.
     /// ## Arguments
-    /// * `window_size` - Size of the window to draw in.
-    fn draw(&self,canvas_size: Vec2<i32>);
+    /// * `key` - The key value.
+    fn key_press(&self,key: u8) { }
+
+    /// A key was released.
+    /// ## Arguments
+    /// * `key` - The key value.
+    fn key_release(&self,key: u8) { }
+
+    /// A mouse button was pressed.
+    /// ## Arguments
+    /// * `pos` - The mouse cursor position.
+    /// * `button` - The mouse button.
+    /// ## Returns
+    /// * `true` - If mouse should be captured.
+    /// * `false` - If not.
+    fn mouse_press(&self,pos: Vec2<i32>,button: Mouse) -> bool { false }
+
+    /// A mouse button was released.
+    /// ## Arguments
+    /// * `pos` - The mouse cursor position.
+    /// * `button` - The mouse button.
+    /// ## Returns
+    /// * `true` - If mouse should be captured.
+    /// * `false` - If not.
+    fn mouse_release(&self,pos: Vec2<i32>,button: Mouse) -> bool { false }
+
+    /// The mouse wheel was moved.
+    /// ## Arguments
+    /// * `wheel` - The wheel direction.
+    fn mouse_wheel(&self,wheel: Wheel) { }
+
+    /// The mouse was moved.
+    /// ## Arguments
+    /// * `pos` - The mouse cursor position.
+    /// ## Returns
+    /// * `true` - If mouse should be captured.
+    /// * `false` - If not.
+    fn mouse_move(&self,pos: Vec2<i32>) -> bool { false }
 }
 
 mod font;
