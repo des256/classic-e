@@ -8,17 +8,6 @@ use std::{
     cell::RefCell,
 };
 
-enum UIDelta {
-    Skip,
-    Draw,
-}
-
-pub struct UIWindow {
-    window: Rc<Window>,
-    widget: Rc<RefCell<dyn ui::Widget>>,
-    delta: UIDelta,
-}
-
 // TODO: the more tightly packed UIRect will come later
 #[derive(Copy,Clone)]
 #[repr(C)]
@@ -38,9 +27,7 @@ pub struct DrawContext {
     pub r: Rect<i32>,
 }
 
-/// UI subsystem.
-pub struct UI {  // all system and graphics references live at least as long as UI
-    pub system: Rc<System>,
+pub struct UIAnchor {
     pub graphics: Rc<gpu::Graphics>,
     pub flat_shader: gpu::Shader,
     pub alpha_shader: gpu::Shader,
@@ -49,19 +36,14 @@ pub struct UI {  // all system and graphics references live at least as long as 
     pub proto_serif: Rc<ui::FontProto>,
     pub proto_mono: Rc<ui::FontProto>,
     pub font: Rc<ui::Font>,
-    pub windows: RefCell<Vec<UIWindow>>,
-    current_window_size: Cell<Vec2<i32>>,
-    capturing_index: Cell<Option<i32>>,
     rect_vb: gpu::VertexBuffer<Vec2<f32>>,
     draw_ub: gpu::UniformBuffer<UIRect>,
+    pub running: Cell<bool>,
+    pub two_over_current_window_size: Cell<Vec2<f32>>,
 }
 
-impl UI {
-    /// Create new UI context.
-    /// ## Arguments
-    /// * `system` - System to create the UI context for.
-    /// * `graphics` - GPU graphics context to use.
-    pub fn new(system: &Rc<System>,graphics: &Rc<gpu::Graphics>,font_dir: &str) -> Result<UI,SystemError> {
+impl UIAnchor {
+    pub fn new(_system: &Rc<System>,graphics: &Rc<gpu::Graphics>,font_dir: &str) -> Result<UIAnchor,SystemError> {
 
         // generic vertex shader
         let vs = r#"
@@ -191,8 +173,7 @@ impl UI {
         // create draw uniform buffer
         let draw_ub = gpu::UniformBuffer::<UIRect>::new(graphics).expect("unable to create uniform buffer");
 
-        Ok(UI {
-            system: Rc::clone(system),
+        Ok(UIAnchor {
             graphics: Rc::clone(graphics),
             flat_shader: flat_shader,
             alpha_shader: alpha_shader,
@@ -201,51 +182,16 @@ impl UI {
             proto_serif: proto_serif,
             proto_mono: proto_mono,
             font: font,
-            windows: RefCell::new(Vec::new()),
-            current_window_size: Cell::new(vec2!(0,0)),
-            capturing_index: Cell::new(None),
             rect_vb: rect_vb,
-            draw_ub: draw_ub,
+            draw_ub: draw_ub,  
+            running: Cell::new(true),
+            two_over_current_window_size: Cell::new(vec2!(0.0,0.0)),      
         })
     }
 
-    /// Open new window.
-    /// ## Arguments
-    /// * `widget` - Widget to host.
-    /// * `r` - Initial screen rectangle.
-    /// * `title` - Window title.
-    /// ## Returns
-    /// * `false` - Window could not be created.
-    /// * `true` - Window was created.
-    pub fn open(&self,widget: &Rc<RefCell<dyn ui::Widget>>,r: Rect<i32>,title: &str) -> bool {
-        let window = Rc::new(Window::new_framed(&self.system,r,title).expect("unable to create window"));
-        self.graphics.bind_target(&window);
-        unsafe { (self.system.glx_swap_interval)(self.system.connection.get_raw_dpy(),window.id,0) };
-        self.windows.borrow_mut().push(UIWindow {
-            window: window,
-            widget: Rc::clone(widget),
-            delta: UIDelta::Draw,
-        });
-        true
+    pub fn set_current_window_size(&self,size: Vec2<i32>) {
+        self.two_over_current_window_size.set(vec2!(2.0 / (size.x as f32),2.0 / (size.y as f32)));
     }
-
-    /// Close window.
-    /// ## Arguments
-    /// * `widget` - Widget that is hosted there.
-    pub fn close(&self,widget: &Rc<RefCell<dyn ui::Widget>>) {
-        let len = self.windows.borrow().len();
-        for i in 0..len {
-            if Rc::ptr_eq(widget,&self.windows.borrow()[i].widget) {
-                self.windows.borrow_mut().remove(i);
-                break;
-            }
-        }
-    }
-
-    // Start drawing session.
-    //pub fn begin_drawing(&self) -> Vec<ui::UIRect> {
-    //    Vec::new()
-    //}
 
     pub fn draw_rectangle<C: ColorParameter>(&self,r: Rect<i32>,color: C,blend_mode: gpu::BlendMode) {
         self.draw_ub.load(0,&vec![UIRect {
@@ -256,8 +202,8 @@ impl UI {
         self.graphics.bind_shader(&self.flat_shader);
         self.graphics.bind_vertexbuffer(&self.rect_vb);
         self.graphics.bind_uniformbuffer(1,"rect_block",&self.draw_ub);
-        let window_size = self.current_window_size.get();
-        self.graphics.set_uniform("tows",vec2!(2.0 / (window_size.x as f32),2.0 / (window_size.y as f32)));
+        let tows = self.two_over_current_window_size.get();
+        self.graphics.set_uniform("tows",tows);
         self.graphics.set_uniform("color",color.into_vec4());
         self.graphics.draw_instanced_triangle_fan(4,1);
     }
@@ -300,179 +246,137 @@ impl UI {
         self.graphics.bind_uniformbuffer(1,"rect_block",&self.draw_ub);
         self.graphics.bind_texture(0,&font.proto.texture);
         self.graphics.set_uniform("alpha_texture",0);
-        let window_size = self.current_window_size.get();
-        self.graphics.set_uniform("tows",vec2!(2.0 / (window_size.x as f32),2.0 / (window_size.y as f32)));
+        let tows = self.two_over_current_window_size.get();
+        self.graphics.set_uniform("tows",tows);
         self.graphics.set_uniform("color",color.into_vec4());
         self.graphics.draw_instanced_triangle_fan(4,buffer.len() as i32);
     }
+}
+
+/// UI subsystem.
+pub struct UI {  // all system and graphics references live at least as long as UI
+    pub system: Rc<System>,
+    pub anchor: Rc<UIAnchor>,
+    pub uiwindows: RefCell<Vec<Rc<UIWindow>>>,
+}
+
+impl UI {
+    /// Create new UI context.
+    /// ## Arguments
+    /// * `system` - System to create the UI context for.
+    /// * `graphics` - GPU graphics context to use.
+    pub fn new(system: &Rc<System>,graphics: &Rc<gpu::Graphics>,font_dir: &str) -> Result<UI,SystemError> {
+        Ok(UI {
+            system: Rc::clone(system),
+            anchor: Rc::new(UIAnchor::new(system,graphics,font_dir)?),
+            uiwindows: RefCell::new(Vec::new()),
+        })
+    }
+
+    /// Open new window.
+    /// ## Arguments
+    /// * `widget` - Widget to host.
+    /// * `r` - Initial screen rectangle.
+    /// * `title` - Window title.
+    pub fn open_frame(&self,r: Rect<i32>,title: &str,widget: &Rc<RefCell<dyn ui::Widget>>) {
+        let window = self.system.open_frame_window(r,title).expect("Unable to create frame.");
+        self.anchor.graphics.bind_target(&window);
+        widget.borrow_mut().set_rect(rect!(vec2!(0,0),r.s));
+        let uiwindow = Rc::new(UIWindow {
+            anchor: Rc::clone(&self.anchor),
+            window: Rc::clone(&window),
+            widget: Rc::clone(widget),
+        });
+        let closure_uiwindow = Rc::clone(&uiwindow);
+        window.set_handler(move |event| closure_uiwindow.handler(event));
+        //unsafe { (self.system.glx_swap_interval)(self.system.connection.get_raw_dpy(),window.id,0) };
+        self.uiwindows.borrow_mut().push(uiwindow);
+    }
+
+    /// Close window.
+    /// ## Arguments
+    /// * `widget` - Widget that is hosted there.
+    pub fn close(&self,widget: &Rc<RefCell<dyn ui::Widget>>) {
+        let len = self.uiwindows.borrow().len();
+        for i in 0..len {
+            if Rc::ptr_eq(widget,&self.uiwindows.borrow()[i].widget) {
+                self.uiwindows.borrow_mut().remove(i);
+                self.system.close_window(&self.uiwindows.borrow()[i].window);
+                break;
+            }
+        }
+    }
+
+    // Start drawing session.
+    //pub fn begin_drawing(&self) -> Vec<ui::UIRect> {
+    //    Vec::new()
+    //}
 
     /// Run UI.
     /// 
     /// This runs the event loop and rebuilds and redraws the windows if needed.
     pub fn run(&self) {
-
-        // keep on running
-        let mut running = true;
-
-        while running {
-
-            // create list of windows for System::poll
-            let mut winlist: Vec<Rc<Window>> = Vec::new();
-            for w in self.windows.borrow().iter() {
-                winlist.push(Rc::clone(&w.window));
-            }
-
-            // wait for an event to appear
+        self.anchor.running.set(true);
+        while self.anchor.running.get() {
             self.system.wait();
-
-            // handle all captured events
-            for winev in self.system.poll(&winlist) {
-
-                let win = winev.0;
-                let event = winev.1;
-                let len = self.windows.borrow().len();
-                for i in 0..len {
-
-                    // borrow window for this event
-                    let window = &mut self.windows.borrow_mut()[i];
-                    if Rc::ptr_eq(&win,&window.window) {
-
-                        window.delta = UIDelta::Draw;
-
-                        match event {
-
-                            // system wants to render this window
-                            Event::Render => { },
-
-                            // system notifies that this window moved/changed size
-                            Event::Reconfigure(r) => {
-                                window.window.r.set(r);
-                                window.widget.borrow_mut().set_rect(rect!(vec2!(0,0),r.s));
-                            },
-
-                            // user wants to close this window
-                            Event::Close => {
-                                running = false;  // TODO: closing other windows doesn't automatically mean end program; API user might want to ask something before actually quitting
-                            },
-
-                            // anything else should be handled by the hosted widget
-                            Event::KeyPress(_k) => {
-                            },
-
-                            Event::KeyRelease(_k) => {
-                            },
-
-                            Event::MousePress(_p,b) => {
-                                if let ui::MouseResult::ProcessedCapture = window.widget.borrow_mut().handle_mouse_press(b) {
-                                    match self.capturing_index.get() {
-                                        Some(index) => {
-                                            if index != i as i32 {
-                                                self.system.capture_mouse(&window.window);
-                                                self.capturing_index.set(Some(i as i32));
-                                            }    
-                                        },
-                                        None => {
-                                            self.system.capture_mouse(&window.window);
-                                            self.capturing_index.set(Some(i as i32));
-                                        },
-                                    }
-                                }
-                                else {
-                                    if let Some(_) = self.capturing_index.get() {
-                                        self.system.release_mouse();
-                                        self.capturing_index.set(None);    
-                                    }
-                                }
-                            },
-
-                            Event::MouseRelease(_,b) => {
-                                if let ui::MouseResult::ProcessedCapture = window.widget.borrow_mut().handle_mouse_release(b) {
-                                    match self.capturing_index.get() {
-                                        Some(index) => {
-                                            if index != i as i32 {
-                                                self.system.capture_mouse(&window.window);
-                                                self.capturing_index.set(Some(i as i32));
-                                            }    
-                                        },
-                                        None => {
-                                            self.system.capture_mouse(&window.window);
-                                            self.capturing_index.set(Some(i as i32));
-                                        },
-                                    }
-                                }
-                                else {
-                                    if let Some(_) = self.capturing_index.get() {
-                                        self.system.release_mouse();
-                                        self.capturing_index.set(None);    
-                                    }
-                                }
-                            },
-
-                            Event::MouseWheel(_w) => {
-                            },
-
-                            Event::MouseMove(p) => {
-                                if let ui::MouseResult::ProcessedCapture = window.widget.borrow_mut().handle_mouse_move(p) {
-                                    match self.capturing_index.get() {
-                                        Some(index) => {
-                                            if index != i as i32 {
-                                                self.system.capture_mouse(&window.window);
-                                                self.capturing_index.set(Some(i as i32));
-                                            }    
-                                        },
-                                        None => {
-                                            self.system.capture_mouse(&window.window);
-                                            self.capturing_index.set(Some(i as i32));
-                                        },
-                                    }
-                                }
-                                else {
-                                    if let Some(_) = self.capturing_index.get() {
-                                        self.system.release_mouse();
-                                        self.capturing_index.set(None);    
-                                    }
-                                }
-                            },
-                        }        
-                        break;
-                    }
-                }
-            }
-
-            /*{
-                let frames = self.frames.borrow();
-                println!("frames:");
-                for i in 0..9 {
-                    println!("    {}: rect {} scroll {} pf {}",i,frames[i].r,frames[i].s,frames[i].pf)
-                }
-            }*/
-
-            for window in self.windows.borrow_mut().iter_mut() {
-
-                // bind to this window
-                self.graphics.bind_target(&window.window);
-
-                // if widget tree needs to be rebuilt, rebuild it
-                if let UIDelta::Draw = window.delta {
-                    let r = window.window.r.get();
-                    self.current_window_size.set(r.s);  // so window_size in the shader corresponds to the actual window size
-                    self.graphics.clear(0xFF001122);
-                    let context = vec2!(0i32,0i32);
-                    window.widget.borrow_mut().draw(context);
-                    self.graphics.flush();
-                }
-            }
-
-            // swap buffers for all rendered windows
-            for window in self.windows.borrow_mut().iter_mut() {
-
-                // if redraw happened, present
-                if let UIDelta::Draw = window.delta {
-                    gpu::present(&self.system,&window.window);
-                }
-                
-                window.delta = UIDelta::Skip;
-            }
+            self.system.flush();
         }
+    }
+}
+
+pub struct UIWindow {
+    anchor: Rc<UIAnchor>,
+    window: Rc<Window>,
+    widget: Rc<RefCell<dyn ui::Widget>>,
+}
+
+impl UIWindow {
+    fn handler(&self,event: Event) {
+        match event {
+            Event::Render => {
+                self.anchor.graphics.bind_target(&self.window);   
+                self.anchor.graphics.clear(0xFF001122);
+                let context = vec2!(0i32,0i32);
+                self.anchor.set_current_window_size(self.window.r.get().s);
+                self.widget.borrow_mut().draw(context);
+                self.anchor.graphics.flush();
+                self.anchor.graphics.present(&self.window);
+            },
+
+            Event::Size(s) => {
+                self.widget.borrow_mut().set_rect(rect!(vec2!(0,0),s));
+            },
+
+            Event::Move(_o) => {
+            },
+
+            Event::Close => {
+                self.anchor.running.set(false);  // TODO: closing other windows doesn't automatically mean end program; API user might want to ask something before actually quitting
+            },
+
+            Event::KeyPress(_k) => {
+            },
+
+            Event::KeyRelease(_k) => {
+            },
+
+            Event::MousePress(_p,b) => {
+                // TODO: handle capturing
+                self.widget.borrow_mut().handle_mouse_press(b);
+            },
+
+            Event::MouseRelease(_,b) => {
+                // TODO: handle capturing
+                self.widget.borrow_mut().handle_mouse_release(b);
+            },
+
+            Event::MouseWheel(_w) => {
+            },
+
+            Event::MouseMove(p) => {
+                // TODO: handle capturing
+                self.widget.borrow_mut().handle_mouse_move(p);
+            },
+        }        
     }
 }

@@ -11,7 +11,7 @@ fn main() {
     let system = Rc::new(System::new().expect("Cannot open system."));
     let graphics = Rc::new(gpu::Graphics::new(&system).expect("Cannot open GPU."));
     let ui = Rc::new(ui::UI::new(&system,&graphics,"static/fonts").expect("Cannot open UI."));
-    let widget = Rc::new(RefCell::new(ui::Text::new(&ui,"Hello, World!",&ui.font)));
-    ui.open(&(widget as Rc<RefCell<dyn ui::Widget>>),rect!(50,50,640,360),"Test Window");
+    let widget = Rc::new(RefCell::new(ui::Text::new(&ui.anchor,"Hello, World!",&ui.anchor.font)));
+    ui.open_frame(rect!(50,50,640,360),"Text Test",&(widget as Rc<RefCell<dyn ui::Widget>>));
     ui.run();        
 }

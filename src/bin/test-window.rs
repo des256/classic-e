@@ -2,7 +2,17 @@
 // Desmond Germans, 2020
 
 use e::*;
-use std::rc::Rc;
+use std::{
+    rc::Rc,
+    cell::Cell,
+};
+
+fn handler(event: Event) -> bool {
+    if let Event::Close = event {
+        return false;
+    }
+    true
+}
 
 fn main() {
 
@@ -10,45 +20,20 @@ fn main() {
     let system = Rc::new(System::new().expect("Cannot open system."));
 
     // initialize graphics
-    let graphics = Rc::new(gpu::Graphics::new(&system).expect("Cannot open graphics."));
+    let _graphics = Rc::new(gpu::Graphics::new(&system).expect("Cannot open graphics."));
 
     // create window
-    let window = Rc::new(Window::new_framed(
-        &system,
+    let window = Rc::new(system.open_frame_window(
         rect!(50,50,640,360),
         "Test Window"
     ).expect("Cannot create window."));
 
-    // main loop
-    let mut running = true;
-    while running {
+    let running = Rc::new(Cell::new(true));
+    let closure_running = Rc::clone(&running);
+    window.set_handler(move |event| closure_running.set(handler(event)) );
 
-        // wait for event to happen
+    while running.get() {
         system.wait();
-
-        // keep track of graphics changes
-        let mut rendered = false;
-
-        // process all current events
-        for event in system.poll(&window) {
-
-            println!("Event: {:?}",event);
-            match event {
-                Event::Render => {
-                    graphics.bind_target(&window);
-                    graphics.clear(0xFF001122);
-                    rendered = true;
-                },
-                Event::Close => {
-                    running = false;
-                },
-                _ => { },
-            }
-        }
-
-        // if anything was updated, swap buffers
-        if rendered {
-            gpu::present(&system,&window);
-        }
+        system.flush();
     }
 }

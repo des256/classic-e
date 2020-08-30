@@ -35,8 +35,10 @@ pub enum Event {
     MouseWheel(MouseWheel),
     /// Mouse was moved.
     MouseMove(Vec2<i32>),
-    /// Window was resized/moved.
-    Reconfigure(Rect<i32>),
+    /// Window was resized.
+    Size(Vec2<i32>),
+    /// Window was moved.
+    Move(Vec2<i32>),
     /// The window requires redrawing.
     Render,
     /// Window close button was pressed.

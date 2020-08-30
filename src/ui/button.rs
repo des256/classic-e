@@ -25,9 +25,9 @@ pub struct Button {
 }
 
 impl Button {
-    pub fn new(ui: &Rc<ui::UI>,text: &str,font: &Rc<ui::Font>) -> Button {
+    pub fn new(anchor: &Rc<ui::UIAnchor>,text: &str,font: &Rc<ui::Font>) -> Button {
         Button {
-            core: ui::Core::new(ui),
+            core: ui::Core::new(anchor),
             hit: ButtonHit::Outside,
             text: String::from(text),
             font: Rc::clone(font),
@@ -61,8 +61,8 @@ impl ui::Widget for Button {
         else {
             self.button_color
         };
-        self.core.ui.draw_rectangle(rect!(local_context + self.padding,self.core.r.s - 2 * self.padding),bc,gpu::BlendMode::Replace);
-        self.core.ui.draw_text(local_context + self.padding + self.inner_padding,&self.text,self.color,&self.font);
+        self.core.anchor.draw_rectangle(rect!(local_context + self.padding,self.core.r.s - 2 * self.padding),bc,gpu::BlendMode::Replace);
+        self.core.anchor.draw_text(local_context + self.padding + self.inner_padding,&self.text,self.color,&self.font);
     }
 
     fn handle_mouse_press(&mut self,b: MouseButton) -> ui::MouseResult {

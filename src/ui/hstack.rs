@@ -15,9 +15,9 @@ pub struct HStack {
 }
 
 impl HStack {
-    pub fn new_from_vec(ui: &Rc<ui::UI>,widgets: Vec<Rc<RefCell<dyn ui::Widget>>>) -> HStack {
+    pub fn new_from_vec(anchor: &Rc<ui::UIAnchor>,widgets: Vec<Rc<RefCell<dyn ui::Widget>>>) -> HStack {
         HStack {
-            core: ui::Core::new_from_vec(ui,widgets),
+            core: ui::Core::new_from_vec(anchor,widgets),
             padding: vec2!(0,0),
             valign: ui::VAlignment::Top,
         }

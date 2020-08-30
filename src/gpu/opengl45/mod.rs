@@ -6,14 +6,6 @@ use gl::types::{
     GLuint,
     GLenum,
 };
-#[cfg(target_os="linux")]
-use x11::glx::{
-    glXSwapBuffers,
-};
-#[cfg(target_os="windows")]
-use winapi::um::wingdi::{
-    wglSwapBuffers,
-};
 
 #[doc(hidden)]
 pub trait GLFormat: Clone + Copy + Zero {
@@ -230,31 +222,6 @@ impl GLFormat for pixel::ARGB8 {
     fn gl_internal_format() -> GLuint { gl::RGBA8 as GLuint }
     fn gl_format() -> GLenum { gl::BGRA }
     fn gl_type() -> GLenum { gl::UNSIGNED_INT_8_8_8_8_REV }
-}
-
-/// (temporary) Enable/Disable VSync
-/// ## Arguments
-/// * state - Whether or not VSync should be enabled.
-pub fn set_vsync(system: &System,window: &Window,state: bool) {
-    unsafe {
-#[cfg(target_os="linux")]
-        (system.glx_swap_interval)(system.connection.get_raw_dpy(),window.id,if state { 1 } else { 0 });
-#[cfg(target_os="windows")]
-        wglSwapIntervalEXT(if state { 1 } else { 0 });
-    }
-}
-
-/// (temporary) Present target.
-/// ## Arguments
-/// * system - System reference.
-/// * window - Window to swap buffers for.
-pub fn present(system: &System,window: &Window) {
-    unsafe {
-#[cfg(target_os="linux")]
-        glXSwapBuffers(system.connection.get_raw_dpy(),window.id);
-#[cfg(target_os="windows")]
-        SwapBuffers(window.hdc);
-    }
 }
 
 mod graphics;

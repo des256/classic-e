@@ -10,14 +10,20 @@ use {
                 c_void,
                 c_int,
             },
+            windows::ffi::OsStrExt,
         },
-        ffi::CString,
+        ffi::{
+            CString,
+            OsStr,
+        },
         mem::transmute,
         ptr::null_mut,
         rc::Rc,
-        os::windows::ffi::OsStrExt,
-        ffi::OsStr,
         iter::once,
+        cell::{
+            Cell,
+            RefCell,
+        },
     },
     winapi::{
         shared::{
@@ -36,11 +42,14 @@ use {
                 LRESULT,
                 FLOAT,
                 BOOL,
+                DWORD,
+                FALSE,
             },
         },
         um::{
             winuser::{
                 WM_SIZE,
+                WM_MOVE,
                 WM_CLOSE,
                 WM_KEYDOWN,
                 WM_KEYUP,
@@ -80,6 +89,17 @@ use {
                 GWLP_USERDATA,
                 ValidateRect,
                 GetClientRect,
+                WS_OVERLAPPEDWINDOW,
+                WS_POPUPWINDOW,
+                WS_EX_APPWINDOW,
+                WS_EX_WINDOWEDGE,
+                AdjustWindowRectEx,
+                CW_USEDEFAULT,
+                ShowWindow,
+                SW_SHOW,
+                SW_HIDE,
+                SetForegroundWindow,
+                SetFocus,
             },
             wingdi::{
                 wglGetProcAddress,
@@ -103,6 +123,11 @@ use {
         },
     },
 };
+
+pub const KEY_UP: u8 = 38;
+pub const KEY_DOWN: u8 = 40;
+pub const KEY_LEFT: u8 = 37;
+pub const KEY_RIGHT: u8 = 39;
 
 const WGL_DRAW_TO_WINDOW_ARB: c_int = 0x2001;
 const WGL_SUPPORT_OPENGL_ARB: c_int = 0x2010;
@@ -137,31 +162,12 @@ type WglCreateContextAttribsARBProc = unsafe extern "C" fn(
     attribList: *const c_int
 ) -> HGLRC;
 
+type WglSwapIntervalEXT = unsafe extern "C" fn(
+    interval: c_int
+) -> BOOL;
+
 pub(crate) fn win32_string(value: &str) -> Vec<u16> {
     OsStr::new(value).encode_wide().chain(once(0)).collect()
-}
-
-enum EventCollector<'a> {
-    Single(&'a mut Vec<Event>),
-    Multi(&'a Vec<Rc<Window>>,&'a mut Vec<(Rc<Window>,Event)>),
-}
-
-impl<'a> EventCollector<'a> {
-    pub fn push(&mut self,hwnd: HWND,event: Event) {
-        match self {
-            EventCollector::Single(events) => {
-                events.push(event);
-            },
-            EventCollector::Multi(windows,events) => {
-                for window in windows.iter() {
-                    if window.hwnd == hwnd {
-                        events.push((Rc::clone(window),event));
-                        break;
-                    }
-                }
-            },
-        }
-    }
 }
 
 unsafe extern "system" fn win32_proc(
@@ -170,87 +176,13 @@ unsafe extern "system" fn win32_proc(
     wparam: WPARAM,
     lparam: LPARAM
 ) -> LRESULT {
-    let collector_ptr = GetWindowLongPtrW(hwnd,GWLP_USERDATA) as *mut EventCollector;
-    let collector = match collector_ptr.as_mut() {
-        Some(collector) => collector,
+    let window = GetWindowLongPtrW(hwnd,GWLP_USERDATA) as *mut c_void;
+    let window = match window.as_mut() {
+        Some(window) => window,
         None => { return DefWindowProcW(hwnd,message,wparam,lparam); },
     };
-    let wparam_hi = (wparam >> 16) as u16;
-    let wparam_lo = (wparam & 0x0000FFFF) as u16;
-    let lparam_hi = (lparam >> 16) as u16;
-    let lparam_lo = (lparam & 0x0000FFFF) as u16;
-    match message {
-        WM_KEYDOWN => {
-            collector.push(hwnd,Event::KeyPress(wparam_lo as u8));
-        },
-        WM_KEYUP => {
-            collector.push(hwnd,Event::KeyRelease(wparam_lo as u8));
-        },
-        WM_LBUTTONDOWN => {
-            collector.push(hwnd,Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Left));
-        },
-        WM_LBUTTONUP => {
-            collector.push(hwnd,Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Left));
-        },
-        WM_MBUTTONDOWN => {
-            collector.push(hwnd,Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Middle));
-        },
-        WM_MBUTTONUP => {
-            collector.push(hwnd,Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Middle));
-        },
-        WM_RBUTTONDOWN => {
-            collector.push(hwnd,Event::MousePress(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Right));
-        },
-        WM_RBUTTONUP => {
-            collector.push(hwnd,Event::MouseRelease(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize),Mouse::Right));
-        },
-        WM_MOUSEWHEEL => {
-            if wparam_hi >= 0x8000 {
-                collector.push(hwnd,Event::MouseWheel(Wheel::Down));
-            } else {
-                collector.push(hwnd,Event::MouseWheel(Wheel::Up));
-            }
-        },
-        WM_MOUSEMOVE => {
-            collector.push(hwnd,Event::MouseMove(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
-        },
-        WM_PAINT => {
-            let mut rc = RECT {
-                left: 0,
-                right: 0,
-                top: 0,
-                bottom: 0,
-            };
-            GetClientRect(hwnd,&mut rc);
-            ValidateRect(hwnd,&rc);
-            collector.push(hwnd,Event::Render);
-            /*let mut paintstruct = PAINTSTRUCT {
-                hdc: null_mut(),
-                fErase: FALSE,
-                rcPaint: RECT {
-                    left: 0,
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                },
-                fRestore: FALSE,
-                fIncUpdate: FALSE,
-                rgbReserved: [0; 32],
-            };
-            BeginPaint(hwnd,&mut paintstruct);
-            EndPaint(hwnd,&paintstruct);*/
-        },
-        WM_SIZE => {
-            collector.push(hwnd,Event::Resize(vec2!(lparam_lo as i16 as isize,lparam_hi as i16 as isize)));
-        },
-        WM_CLOSE => {
-            collector.push(hwnd,Event::Close);
-        },
-        _ => {
-            return DefWindowProcW(hwnd,message,wparam,lparam);
-        },
-    }
-    0   
+    let window: &mut Window = transmute(window);
+    window.wndproc(message,wparam,lparam)
 }
 
 fn load_function(hinstance: HINSTANCE,name: &str) -> *mut c_void {
@@ -273,13 +205,18 @@ fn load_function(hinstance: HINSTANCE,name: &str) -> *mut c_void {
     pointer
 }
 
-/// System context.
+pub(crate) struct SystemAnchor {
+    pub(crate) hglrc: HGLRC,
+    pub(crate) hidden_hdc: HDC,
+}
+
 pub struct System {
+    pub(crate) anchor: Rc<SystemAnchor>,
+    pub(crate) windows: RefCell<Vec<Rc<Window>>>,
     pub(crate) hinstance: HINSTANCE,
     pub(crate) pfid: i32,
     pub(crate) pfd: PIXELFORMATDESCRIPTOR,
-    pub(crate) hglrc: HGLRC,
-    pub(crate) hidden_hdc: HDC,
+    pub(crate) wgl_swap_interval: WglSwapIntervalEXT,
     pub(crate) hidden_hwnd: HWND,
 }
 
@@ -387,6 +324,12 @@ impl System {
                 load_function(opengl32_hinstance,"wglCreateContextAttribsARB")
             )
         };
+        let wgl_swap_interval: WglSwapIntervalEXT = unsafe {
+            transmute(
+                load_function(opengl32_hinstance,"wglSwapIntervalEXT")
+            )
+        };
+
         gl::load_with(|s| load_function(opengl32_hinstance,s));
         unsafe { wglDeleteContext(fake_hglrc) };
         unsafe { ReleaseDC(fake_hwnd,fake_hdc) };
@@ -495,38 +438,135 @@ impl System {
         }
 
         Ok(System {
+            anchor: Rc::new(SystemAnchor {
+                hglrc: hglrc,
+                hidden_hdc: hidden_hdc,
+            }),
+            windows: RefCell::new(Vec::new()),
             hinstance: hinstance,
             pfid: pfid,
             pfd: pfd,
-            hglrc: hglrc,
-            hidden_hdc: hidden_hdc,
-            hidden_hwnd: hidden_hwnd,
-        })    
+            hidden_hwnd: hidden_hwnd,    
+            wgl_swap_interval: wgl_swap_interval,
+        })
     }
 
-    /// Poll for events on one or more OS windows.
-    /// 
-    /// All events that are available for the window(s) are placed in a vector.
-    /// If no events are available, the method returns immediately with an
-    /// empty vector.
-    /// ## Arguments
-    /// * `targets` - Either a single window (`&Rc<Window>`) or a vector of
-    /// windows (`&Vec<Rc<Window>>`).
-    /// ## Returns
-    /// Vector of events occurred on a single window (`Vec<Event>`) or on
-    /// multiple windows (`Vec<(Rc<Window>,Event)>`).
-    pub fn poll<T: Pollable>(&self,targets: &T) -> T::Result {
-        targets.do_poll(&self)
+    pub fn hidden_hdc(&self) -> HDC {
+        self.anchor.hidden_hdc
     }
-    
-    /// Wait for events to arrive.
-    /// 
-    /// Blocks until an event arrives that can then be polled via the `poll`
-    /// method.
+
+    pub fn hglrc(&self) -> HGLRC {
+        self.anchor.hglrc
+    }
+
+    /// Flush all pending window events.
+    pub fn flush(&self) {
+        for window in self.windows.borrow().iter() {
+            unsafe {
+                // pass pointer to closure reference, which is a pointer to pointer to closure
+                SetWindowLongPtrW(
+                    window.hwnd,
+                    GWLP_USERDATA,
+                    Rc::downgrade(&window).into_raw() as *const c_void as isize
+                );
+            }
+        }
+        let mut msg = MSG {
+            hwnd: null_mut(),
+            message: 0,
+            wParam: 0,
+            lParam: 0,
+            time: 0,
+            pt: POINT { x: 0,y: 0, },
+        };
+        unsafe {
+            while PeekMessageW(&mut msg,null_mut(),0,0,PM_REMOVE) != 0 {
+                TranslateMessage(&msg);
+                DispatchMessageW(&msg);
+            }
+        }
+    }
+
+    /// Wait until new window events appear.
     pub fn wait(&self) {
         unsafe {
             WaitMessage();
         }
+    }
+
+    fn open_window(&self,r: Rect<i32>,title: &str,style: DWORD,exstyle: DWORD) -> Result<Rc<Window>,SystemError> {
+        let mut rc = RECT {
+            left: r.o.x,
+            right: r.o.x + r.s.x,
+            top: r.o.y,
+            bottom: r.o.y + r.s.y,
+        };
+        unsafe {
+            AdjustWindowRectEx(
+                &mut rc as *mut RECT,
+                style,
+                FALSE,
+                exstyle
+            )
+        };
+        let hwnd = unsafe { CreateWindowExW(
+            exstyle,
+            win32_string("E").as_ptr(),
+            win32_string(title).as_ptr(),
+            WS_CLIPSIBLINGS | WS_CLIPCHILDREN | style,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            rc.right - rc.left,
+            rc.bottom - rc.top,
+            null_mut(),
+            null_mut(),
+            self.hinstance,
+            null_mut())
+        };
+        if hwnd == null_mut() {
+            return Err(SystemError::Generic);
+        }
+        let hdc = unsafe { GetDC(hwnd) };
+        let window = Rc::new(Window {
+            anchor: Rc::clone(&self.anchor),
+            hwnd: hwnd,
+            hdc: hdc,
+            r: Cell::new(r),
+            handler: RefCell::new(None),
+        });
+        unsafe { SetPixelFormat(hdc,self.pfid,&self.pfd) };
+        unsafe { ShowWindow(hwnd,SW_SHOW) };
+        unsafe { SetForegroundWindow(hwnd) };
+        unsafe { SetFocus(hwnd) };
+        self.windows.borrow_mut().push(Rc::clone(&window));
+        Ok(window)
+    }
+
+    /// Create new framed window
+    pub fn open_frame_window(&self,r: Rect<i32>,title: &str) -> Result<Rc<Window>,SystemError> {
+        self.open_window(r,title,WS_OVERLAPPEDWINDOW,WS_EX_APPWINDOW | WS_EX_WINDOWEDGE)
+    }
+
+    /// Create new floating window
+    pub fn open_popup_window(&self,r: Rect<i32>) -> Result<Rc<Window>,SystemError> {
+        self.open_window(r,"",WS_POPUPWINDOW,0)
+    }
+
+    /// Close an open window
+    pub fn close_window(&self,window: &Rc<Window>) {
+        let len = self.windows.borrow().len();
+        for i in 0..len {
+            if Rc::ptr_eq(window,&self.windows.borrow()[i]) {
+                unsafe { ShowWindow(window.hwnd,SW_HIDE) };
+                self.windows.borrow_mut().remove(i);
+                break;
+            }
+        }
+    }
+
+    /// Release mouse pointer.
+    pub fn release_mouse(&self) {
+        // TODO
     }
 }
 
@@ -534,67 +574,142 @@ impl Drop for System {
     fn drop(&mut self) {
         unsafe {
             wglMakeCurrent(null_mut(),null_mut());
-            wglDeleteContext(self.hglrc);
-            ReleaseDC(self.hidden_hwnd,self.hidden_hdc);
+            wglDeleteContext(self.anchor.hglrc);
+            ReleaseDC(self.hidden_hwnd,self.anchor.hidden_hdc);
             DestroyWindow(self.hidden_hwnd);
         }
     }
 }
 
-#[doc(hidden)]
-pub trait Pollable {
-    type Result;
-    fn do_poll(&self,system: &System) -> <Self as Pollable>::Result;
+pub struct Window {
+    pub(crate) anchor: Rc<SystemAnchor>,
+    pub(crate) r: Cell<Rect<i32>>,
+    pub(crate) hwnd: HWND,
+    pub(crate) hdc: HDC,
+    pub(crate) handler: RefCell<Option<Box<dyn Fn(Event)>>>,
 }
 
-#[doc(hidden)]
-impl Pollable for Rc<Window> {
-    type Result = Vec<Event>;
-    fn do_poll(&self,_system: &System) -> <Self as Pollable>::Result {
-        let mut events: Vec<Event> = Vec::new();
-        let mut collector = EventCollector::Single(&mut events);
-        unsafe { SetWindowLongPtrW(self.hwnd,GWLP_USERDATA,&mut collector as *mut EventCollector as isize) };
-        let mut msg = MSG {
-            hwnd: null_mut(),
-            message: 0,
-            wParam: 0,
-            lParam: 0,
-            time: 0,
-            pt: POINT { x: 0,y: 0, },
-        };
-        unsafe {
-            while PeekMessageW(&mut msg,null_mut(),0,0,PM_REMOVE) != 0 {
-                TranslateMessage(&msg);
-                DispatchMessageW(&msg);
+impl Window {
+    /// Connect handler.
+    pub fn set_handler<F: Fn(Event) + 'static>(&self,handler: F) {
+        *self.handler.borrow_mut() = Some(Box::new(handler));
+    }
+
+    /// Capture mouse pointer to specific window.
+    pub fn capture_mouse(&self) {
+        // TODO
+    }
+
+    fn wndproc(&mut self,message: UINT,wparam: WPARAM,lparam: LPARAM) -> LRESULT {
+        if let Some(handler) = &*self.handler.borrow() {
+            let wparam_hi = (wparam >> 16) as u16;
+            let wparam_lo = (wparam & 0x0000FFFF) as u16;
+            let lparam_hi = (lparam >> 16) as u16;
+            let lparam_lo = (lparam & 0x0000FFFF) as u16;
+            match message {
+                WM_KEYDOWN => {
+                    handler(Event::KeyPress(wparam_lo as u8));
+                },
+                WM_KEYUP => {
+                    handler(Event::KeyRelease(wparam_lo as u8));
+                },
+                WM_LBUTTONDOWN => {
+                    handler(Event::MousePress(vec2!(lparam_lo as i32,lparam_hi as i32),MouseButton::Left));
+                },
+                WM_LBUTTONUP => {
+                    handler(Event::MouseRelease(vec2!(lparam_lo as i32,lparam_hi as i32),MouseButton::Left));
+                },
+                WM_MBUTTONDOWN => {
+                    handler(Event::MousePress(vec2!(lparam_lo as i32,lparam_hi as i32),MouseButton::Middle));
+                },
+                WM_MBUTTONUP => {
+                    handler(Event::MouseRelease(vec2!(lparam_lo as i32,lparam_hi as i32),MouseButton::Middle));
+                },
+                WM_RBUTTONDOWN => {
+                    handler(Event::MousePress(vec2!(lparam_lo as i32,lparam_hi as i32),MouseButton::Right));
+                },
+                WM_RBUTTONUP => {
+                    handler(Event::MouseRelease(vec2!(lparam_lo as i32,lparam_hi as i32),MouseButton::Right));
+                },
+                WM_MOUSEWHEEL => {
+                    if wparam_hi >= 0x8000 {
+                        handler(Event::MouseWheel(MouseWheel::Down));
+                    } else {
+                        handler(Event::MouseWheel(MouseWheel::Up));
+                    }
+                },
+                WM_MOUSEMOVE => {
+                    handler(Event::MouseMove(vec2!(lparam_lo as i32,lparam_hi as i32)));
+                },
+                WM_PAINT => {
+                    let mut rc = RECT {
+                        left: 0,
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                    };
+                    unsafe {
+                        GetClientRect(self.hwnd,&mut rc);
+                        ValidateRect(self.hwnd,&rc);
+                    }
+                    handler(Event::Render);
+        
+                    // NOTE: When resizing an overlapped window, MS Windows does not
+                    // return from DispatchMessage, but calls WndProc with WM_SIZE and
+                    // WM_PAINT internally; It assumes that WndProc can be used in
+                    // that fashion. After a window is resized, all pushed events all
+                    // of a sudden become available in one big chunk. This needs some
+                    // looking in to later.
+        
+                    /*let mut paintstruct = PAINTSTRUCT {
+                        hdc: null_mut(),
+                        fErase: FALSE,
+                        rcPaint: RECT {
+                            left: 0,
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                        },
+                        fRestore: FALSE,
+                        fIncUpdate: FALSE,
+                        rgbReserved: [0; 32],
+                    };
+                    BeginPaint(hwnd,&mut paintstruct);
+                    EndPaint(hwnd,&paintstruct);*/
+                },
+                WM_SIZE => {
+                    let mut r = self.r.get();
+                    r.s = vec2!(lparam_lo as i32,lparam_hi as i32);
+                    self.r.set(r);
+                    handler(Event::Size(r.s));
+                },
+                WM_MOVE => {
+                    let mut r = self.r.get();
+                    r.o = vec2!(lparam_lo as i32,lparam_hi as i32);
+                    self.r.set(r);
+                    handler(Event::Move(r.o));
+                },
+                WM_CLOSE => {
+                    handler(Event::Close);
+                },
+                _ => {
+                    return unsafe { DefWindowProcW(self.hwnd,message,wparam,lparam) };
+                },
             }
+            0
         }
-        events
+        else {
+            unsafe { DefWindowProcW(self.hwnd,message,wparam,lparam) }
+        }
     }
 }
 
-#[doc(hidden)]
-impl Pollable for Vec<Rc<Window>> {
-    type Result = Vec<(Rc<Window>,Event)>;
-    fn do_poll(&self,_system: &System) -> <Self as Pollable>::Result {
-        let mut events: Vec<(Rc<Window>,Event)> = Vec::new();
-        let mut collector = EventCollector::Multi(self,&mut events);
-        for window in self.iter() {
-            unsafe { SetWindowLongPtrW(window.hwnd,GWLP_USERDATA,&mut collector as *mut EventCollector as isize) };
-        }
-        let mut msg = MSG {
-            hwnd: null_mut(),
-            message: 0,
-            wParam: 0,
-            lParam: 0,
-            time: 0,
-            pt: POINT { x: 0,y: 0, },
-        };
+impl Drop for Window {
+    fn drop(&mut self) {
         unsafe {
-            while PeekMessageW(&mut msg,null_mut(),0,0,PM_REMOVE) != 0 {
-                TranslateMessage(&msg);
-                DispatchMessageW(&msg);
-            }
-        }    
-        events
+            wglMakeCurrent(self.anchor.hidden_hdc,self.anchor.hglrc);
+            ReleaseDC(self.hwnd,self.hdc);
+            DestroyWindow(self.hwnd);
+        }
     }
 }

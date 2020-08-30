@@ -17,10 +17,10 @@ use gl::types::{
 };
 #[cfg(target_os="linux")]
 use x11::{
-    //xlib::XID,
+    xlib::XID,
     glx::{
         glXMakeCurrent,
-        //glXSwapBuffers,
+        glXSwapBuffers,
     },
 };
 #[cfg(target_os="windows")]
@@ -28,9 +28,8 @@ use {
     winapi::{
         um::wingdi::{
             wglMakeCurrent,
-            //SwapBuffers,
+            SwapBuffers,
         },
-        shared::windef::HDC,
     },
 };
 
@@ -204,9 +203,9 @@ impl BindTarget for gpu::Framebuffer {
     fn do_bind(&self,graphics: &Graphics) {
         unsafe {
 #[cfg(target_os="linux")]
-            glXMakeCurrent(graphics.system.connection.get_raw_dpy(),graphics.system.hidden_window,graphics.system.context);
+            glXMakeCurrent(graphics.system.raw_dpy(),graphics.system.hidden_window_id(),graphics.system.context());
 #[cfg(target_os="windows")]
-            wglMakeCurrent(graphics.system.hidden_hdc,graphics.system.hglrc);
+            wglMakeCurrent(graphics.system.hidden_hdc(),graphics.system.hglrc());
             gl::BindFramebuffer(gl::FRAMEBUFFER,self.fbo);
             gl::Viewport(0,0,self.size.x as i32,self.size.y as i32);
             gl::Scissor(0,0,self.size.x as i32,self.size.y as i32);
@@ -215,13 +214,14 @@ impl BindTarget for gpu::Framebuffer {
 }
 
 impl BindTarget for Rc<Window> {
+#[allow(unused_variables)]
     fn do_bind(&self,graphics: &Graphics) {
         let size = self.r.get().s;
         unsafe {
 #[cfg(target_os="linux")]
             glXMakeCurrent(graphics.system.connection.get_raw_dpy(),self.id,graphics.system.context);
 #[cfg(target_os="windows")]
-            wglMakeCurrent(self.hdc,self.system.hglrc);
+            wglMakeCurrent(self.hdc,self.anchor.hglrc);
             gl::BindFramebuffer(gl::FRAMEBUFFER,0);
             gl::Viewport(0,0,size.x,size.y);
             gl::Scissor(0,0,size.x,size.y);
@@ -383,6 +383,33 @@ impl Graphics {
             let res = gl::GetUniformBlockIndex(self.sp.get(),cname.as_ptr() as *const GLchar);
             gl::UniformBlockBinding(self.sp.get(),res,bp);
             gl::BindBufferBase(gl::UNIFORM_BUFFER,bp,uniformbuffer.ubo);
+        }
+    }
+
+    /// (temporary) Enable/Disable VSync
+    /// ## Arguments
+    /// * window - Window to set VSync for.
+    /// * state - Whether or not VSync should be enabled.
+    #[allow(unused_variables)]
+    pub fn set_vsync(&self,window: &Window,state: bool) {
+        unsafe {
+    #[cfg(target_os="linux")]
+            (self.system.glx_swap_interval)(self.system.raw_dpy(),window.id,if state { 1 } else { 0 });
+    #[cfg(target_os="windows")]
+            (self.system.wgl_swap_interval)(if state { 1 } else { 0 });
+        }
+    }
+
+    /// (temporary) Present target.
+    /// ## Arguments
+    /// * window - Window to swap buffers for.
+    #[allow(unused_variables)]
+    pub fn present(&self,window: &Window) {
+        unsafe {
+    #[cfg(target_os="linux")]
+            glXSwapBuffers(self.system.raw_dpy(),window.id);
+    #[cfg(target_os="windows")]
+            SwapBuffers(window.hdc);
         }
     }
 }

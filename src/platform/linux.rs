@@ -17,6 +17,7 @@ use {
         rc::Rc,
         os::unix::io::AsRawFd,
         ffi::CStr,
+        cell::Cell,
     },
     x11::{
         xlib::{
@@ -107,6 +108,25 @@ use {
             TIME_CURRENT_TIME,
             GRAB_MODE_ASYNC,
             ungrab_pointer,
+            CW_EVENT_MASK,
+            EVENT_MASK_EXPOSURE,
+            EVENT_MASK_KEY_PRESS,
+            EVENT_MASK_KEY_RELEASE,
+            EVENT_MASK_BUTTON_PRESS,
+            EVENT_MASK_BUTTON_RELEASE,
+            EVENT_MASK_POINTER_MOTION,
+            EVENT_MASK_STRUCTURE_NOTIFY,
+            CW_COLORMAP,
+            create_window,
+            WINDOW_CLASS_INPUT_OUTPUT,
+            map_window,
+            change_property,
+            PROP_MODE_REPLACE,
+            ATOM_WM_NAME,
+            ATOM_STRING,
+            ATOM_ATOM,
+            unmap_window,
+            destroy_window,
         },
         cast_event,
         GenericEvent,
@@ -120,6 +140,11 @@ use {
         epoll_wait,
     },
 };
+
+pub const KEY_UP: u8 = 111;
+pub const KEY_DOWN: u8 = 116;
+pub const KEY_LEFT: u8 = 113;
+pub const KEY_RIGHT: u8 = 114;
 
 #[doc(hidden)]
 type GlXCreateContextAttribsARBProc = unsafe extern "C" fn(
@@ -147,11 +172,15 @@ fn load_function(name: &str) -> *mut c_void {
     pointer
 }
 
-/// System context.
-pub struct System {
+pub(crate) struct SystemAnchor {
     pub(crate) connection: Connection,
     pub(crate) hidden_window: XID,
     pub(crate) context: GLXContext,
+}
+
+pub struct System {
+    pub(crate) anchor: Rc<SystemAnchor>,
+    pub(crate) windows: Vec<Rc<Window>>,
     pub(crate) wm_delete_window: u32,
     pub(crate) rootwindow: XID,
     pub(crate) visualid: VisualID,
@@ -166,6 +195,12 @@ pub struct System {
     pub(crate) wm_net_state_above: u32,
     epfd: c_int,
     pub(crate) glx_swap_interval: GlXSwapIntervalEXT,
+}
+
+pub struct Window {
+    anchor: Rc<SystemAnchor>,
+    pub r: Cell<Rect<i32>>,
+    pub(crate) id: XID,
 }
 
 impl System {
@@ -366,9 +401,12 @@ impl System {
         unsafe { epoll_ctl(epfd,EPOLL_CTL_ADD,fd,epe.as_mut_ptr()) };
 
         Ok(System {
-            connection: connection,
-            hidden_window: hidden_window,
-            context: context,
+            anchor: Rc::new(SystemAnchor {
+                connection: connection,
+                hidden_window: hidden_window,
+                context: context,
+            }),
+            windows: Vec::new(),
             wm_delete_window: wm_delete_window,
             rootwindow: rootwindow,
             visualid: visualid,
@@ -384,6 +422,22 @@ impl System {
             epfd: epfd,
             glx_swap_interval: glx_swap_interval,
         })
+    }
+
+    pub(crate) fn connection(&self) -> Connection {
+        self.anchor.connection
+    }
+
+    pub(crate) fn raw_dpy(&self) -> *mut Display {
+        self.anchor.connection.get_raw_dpy()
+    }
+
+    pub(crate) fn hidden_window_id(&self) -> XID {
+        self.anchor.hidden_window
+    }
+
+    pub(crate) fn context(&self) -> GLXContext {
+        self.anchor.context
     }
 
     fn parse_xevent(&self,xcb_event: GenericEvent) -> Option<(XID,Event)> {
@@ -459,37 +513,151 @@ impl System {
         None
     }
 
-    /// Poll for events on one or more OS windows.
-    /// 
-    /// All events that are available for the window(s) are placed in a vector.
-    /// If no events are available, the method returns immediately with an
-    /// empty vector.
-    /// ## Arguments
-    /// * `targets` - Either a single window (`&Rc<Window>`) or a vector of
-    /// windows (`&Vec<Rc<Window>>`).
-    /// ## Returns
-    /// Vector of events occurred on a single window (`Vec<Event>`) or on
-    /// multiple windows (`Vec<(Rc<Window>,Event)>`).
-    pub fn poll<T: Pollable>(&self,targets: &T) -> T::Result {
-        targets.do_poll(&self)
+    /// Flush all pending window events.
+    pub fn flush(&self) {
+        while let Some(xcb_event) = self.anchor.connection.poll_for_event() {
+            if let Some((xid,event)) = self.parse_xevent(xcb_event) {
+                for window in self.windows.iter() {
+                    if xid == window.id {
+                        // TODO: window handles event
+                        window.handle_event(event);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
-    /// Wait for events to arrive.
-    /// 
-    /// Blocks until an event arrives that can then be polled via the `poll`
-    /// method.
-    pub fn wait(&self) {
+    /// Wait until new window events appear.
+    pub fn yield(&self) {
         let mut epe = [epoll_event { events: EPOLLIN as u32,u64: 0, }];
         unsafe { epoll_wait(self.epfd,epe.as_mut_ptr(),1,-1) };
     }
 
-    /// Capture mouse pointer to specific window.
-    /// ## Arguments
-    /// * `window` - Window to capture to.
-    pub fn capture_mouse(&self,window: &Window) {
+    /// Release mouse pointer.
+    pub fn release_mouse(&self) {
+        println!("XUngrabPointer");
+        ungrab_pointer(&self.connection,TIME_CURRENT_TIME);
+    }
+
+    fn create_window(&self,r: Rect<i32>) -> Result<Rc<Window>,SystemError> {
+        let id = system.connection.generate_id() as XID;
+        let values = [
+            (CW_EVENT_MASK,
+                EVENT_MASK_EXPOSURE
+                | EVENT_MASK_KEY_PRESS
+                | EVENT_MASK_KEY_RELEASE
+                | EVENT_MASK_BUTTON_PRESS
+                | EVENT_MASK_BUTTON_RELEASE
+                | EVENT_MASK_POINTER_MOTION
+                | EVENT_MASK_STRUCTURE_NOTIFY
+            ),
+            (CW_COLORMAP,system.colormap as u32),
+        ];
+        create_window(
+            &self.anchor.connection,
+            system.depth as u8,
+            id as u32,
+            system.rootwindow as u32,
+            r.o.x as i16,r.o.y as i16,r.s.x as u16,r.s.y as u16,
+            0,
+            WINDOW_CLASS_INPUT_OUTPUT as u16,
+            system.visualid as u32,
+            &values
+        );
+        unsafe {
+            map_window(&self.anchor.connection,id as u32);
+            self.anchor.connection.flush();
+            XSync(self.anchor.connection.get_raw_dpy(),False);
+        }
+        let window = Rc::new(Window {
+            anchor: Rc::clone(&self.anchor),
+            id: id,
+            r: Cell::new(r),
+        });
+        self.windows.push(Rc::clone(&window));
+        window
+    }
+
+    /// create_frame
+    pub fn create_frame(&self,r: Rect<i32>,title: &str) -> Result<Rc<Window>,SystemError> {
+        let window = self.create_window(system,r)?;
+        let protocol_set = [system.wm_delete_window];
+        change_property(
+            &self.anchor.connection,
+            PROP_MODE_REPLACE as u8,
+            window.id as u32,
+            system.wm_protocols,
+            ATOM_ATOM,
+            32,
+            &protocol_set
+        );        
+        change_property(
+            &self.anchor.connection,
+            PROP_MODE_REPLACE as u8,
+            window.id as u32,
+            ATOM_WM_NAME,
+            ATOM_STRING,
+            8,
+            title.as_bytes()
+        );
+        self.anchor.connection.flush();
+        Ok(window)
+    }
+
+    /// create_popup
+    pub fn create_popup(&self,r: Rect<i32>) -> Result<Rc<Window>,SystemError> {
+        let window = self.create_window(system,r)?;
+        let net_type = [system.wm_net_type_utility];
+        change_property(
+            &self.anchor.connection,
+            PROP_MODE_REPLACE as u8,
+            window.id as u32,
+            system.wm_net_type,
+            ATOM_ATOM,
+            32,
+            &net_type
+        );
+        let net_state = [system.wm_net_state_above];
+        change_property(
+            &self.anchor.connection,
+            PROP_MODE_REPLACE as u8,
+            window.id as u32,
+            system.wm_net_state,
+            ATOM_ATOM,
+            32,
+            &net_state
+        );
+        let hints = [2u32,0,0,0,0];
+        change_property(
+            &self.anchor.connection,
+            PROP_MODE_REPLACE as u8,
+            window.id as u32,
+            system.wm_motif_hints,
+            ATOM_ATOM,
+            32,
+            &hints
+        );
+        self.anchor.connection.flush();
+        Ok(window)
+    }
+}
+
+impl Drop for System {
+    fn drop(&mut self) {
+        unsafe { glXMakeCurrent(self.anchor.connection.get_raw_dpy(),0,null_mut()); }
+        destroy_window(&self.anchor.connection,self.hidden_window as u32);
+        unsafe { glXDestroyContext(self.anchor.connection.get_raw_dpy(),self.context); }
+    }
+}
+
+impl Window {
+
+    /// Capture mouse pointer.
+    pub fn capture_mouse(&self) {
         println!("XGrabPointer");
-        let com = grab_pointer(
-            &self.connection,
+        grab_pointer(
+            &self.anchor.connection,
             false,
             window.id as u32,
             (EVENT_MASK_BUTTON_PRESS | EVENT_MASK_BUTTON_RELEASE| EVENT_MASK_POINTER_MOTION) as u16,
@@ -499,81 +667,32 @@ impl System {
             CURSOR_NONE,
             TIME_CURRENT_TIME
         );
-        match com.get_reply() {
-            Ok(_) => { },
-            Err(_) => {
-                println!("XGrabPointer error");
-            },
-        }
     }
-
-    /// Release mouse pointer.
-    pub fn release_mouse(&self) {
-        println!("XUngrabPointer");
-        ungrab_pointer(&self.connection,TIME_CURRENT_TIME);
-    }
-
 }
 
-impl Drop for System {
+impl Drop for Window {
     fn drop(&mut self) {
-        unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),0,null_mut()); }
-        destroy_window(&self.connection,self.hidden_window as u32);
-        unsafe { glXDestroyContext(self.connection.get_raw_dpy(),self.context); }
+        unsafe { glXMakeCurrent(self.anchor.connection.get_raw_dpy(),self.system.hidden_window,self.system.context); }
+        unmap_window(&self.anchor.connection,self.id as u32);
+        destroy_window(&self.anchor.connection,self.id as u32);
     }
 }
 
-#[doc(hidden)]
-pub trait Id {
-    type Result;
-    fn id(&self) -> <Self as Id>::Result;
-}
-
-#[doc(hidden)]
-impl Id for Window {
-    type Result = XID;
-    fn id(&self) -> <Self as Id>::Result {
-        self.id
-    }
-}
-
-#[doc(hidden)]
-pub trait Pollable {
-    type Result;
-    fn do_poll(&self,system: &System) -> <Self as Pollable>::Result;
-}
-
-#[doc(hidden)]
-impl Pollable for Rc<Window> {
-    type Result = Vec<Event>;
-    fn do_poll(&self,system: &System) -> <Self as Pollable>::Result {
-        let mut events: Vec<Event> = Vec::new();
-        while let Some(xcb_event) = system.connection.poll_for_event() {
-            if let Some((xid,event)) = system.parse_xevent(xcb_event) {
-                if xid == self.id {
-                    events.push(event);
-                }
-            }
+/*impl<'a> PopupWindow<'a> {
+    pub fn new(ui: &'a UI,r: &isize_r,owner: &AppWindow) -> PopupWindow<'a> {
+        let window = create_window_base(ui,r);
+        let net_type = [ui.wm_net_type_utility];
+        change_property(&ui.connection,PROP_MODE_REPLACE as u8,window as u32,ui.wm_net_type,ATOM_ATOM,32,&net_type);
+        let net_state = [ui.wm_net_state_above];
+        change_property(&ui.connection,PROP_MODE_REPLACE as u8,window as u32,ui.wm_net_state,ATOM_ATOM,32,&net_state);
+        let hints = [2u32,0,0,0,0];
+        change_property(&ui.connection,PROP_MODE_REPLACE as u8,window as u32,ui.wm_motif_hints,ATOM_ATOM,32,&hints);
+        let transient = [owner.window as u32];
+        change_property(&ui.connection,PROP_MODE_REPLACE as u8,window as u32,ui.wm_transient_for,ATOM_ATOM,32,&transient);
+        ui.connection.flush();
+        PopupWindow {
+            ui: ui,
+            window: window,
         }
-        events
     }
-}
-
-#[doc(hidden)]
-impl Pollable for Vec<Rc<Window>> {
-    type Result = Vec<(Rc<Window>,Event)>;
-    fn do_poll(&self,system: &System) -> <Self as Pollable>::Result {
-        let mut events: Vec<(Rc<Window>,Event)> = Vec::new();
-        while let Some(xcb_event) = system.connection.poll_for_event() {
-            if let Some((xid,event)) = system.parse_xevent(xcb_event) {
-                for window in self.iter() {
-                    if xid == window.id {
-                        events.push((Rc::clone(window),event));
-                        break;
-                    }
-                }
-            }
-        }
-        events
-    }
-}
+}*/

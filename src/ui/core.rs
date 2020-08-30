@@ -9,25 +9,25 @@ use std::{
 
 /// Widget core.
 pub struct Core {
-    pub(crate) ui: Rc<ui::UI>,
+    pub(crate) anchor: Rc<ui::UIAnchor>,
     pub r: Rect<i32>,
     pub children: Vec<Rc<RefCell<dyn ui::Widget>>>,
     pub capturing_child: Option<usize>,
 }
 
 impl Core {
-    pub fn new(ui: &Rc<ui::UI>) -> Core {
+    pub fn new(anchor: &Rc<ui::UIAnchor>) -> Core {
         Core {
-            ui: Rc::clone(ui),
+            anchor: Rc::clone(anchor),
             r: rect!(0,0,0,0),
             children: Vec::new(),
             capturing_child: None,
         }
     }
 
-    pub fn new_from_vec(ui: &Rc<ui::UI>,children: Vec<Rc<RefCell<dyn ui::Widget>>>) -> Core {
+    pub fn new_from_vec(anchor: &Rc<ui::UIAnchor>,children: Vec<Rc<RefCell<dyn ui::Widget>>>) -> Core {
         Core {
-            ui: Rc::clone(ui),
+            anchor: Rc::clone(anchor),
             r: rect!(0,0,0,0),
             children: children,
             capturing_child: None,
