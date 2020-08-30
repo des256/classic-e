@@ -5,7 +5,7 @@ use {
     crate::*,
     std::{
         cell::Cell,
-        rc::Rc
+        rc::Rc,
     },
     x11::{
         xlib::{
@@ -54,7 +54,7 @@ impl Window {
     /// ## Returns
     /// * `Ok(Window)` - The new window.
     /// * `Err(SystemError)` - The window could not be created.
-    pub fn new(system: &Rc<System>,r: Rect<i32>,title: &str) -> Result<Window,SystemError> {
+    fn new(system: &Rc<System>,r: Rect<i32>) -> Result<Window,SystemError> {
         let id = system.connection.generate_id() as XID;
         let values = [
             (CW_EVENT_MASK,
@@ -84,31 +84,72 @@ impl Window {
             system.connection.flush();
             XSync(system.connection.get_raw_dpy(),False);
         }
-        change_property(
-            &system.connection,
-            PROP_MODE_REPLACE as u8,
-            id as u32,
-            ATOM_WM_NAME,
-            ATOM_STRING,
-            8,
-            title.as_bytes()
-        );
-        let protocol_set = [system.wm_delete_window];
-        change_property(
-            &system.connection,
-            PROP_MODE_REPLACE as u8,
-            id as u32,
-            system.wm_protocols,
-            ATOM_ATOM,
-            32,
-            &protocol_set
-        );
-        system.connection.flush();
         Ok(Window {
             system: Rc::clone(system),
             id: id,
             r: Cell::new(r),
         })
+    }
+
+    pub fn new_framed(system: &Rc<System>,r: Rect<i32>,title: &str) -> Result<Window,SystemError> {
+        let window = Window::new(system,r)?;
+        let protocol_set = [system.wm_delete_window];
+        change_property(
+            &system.connection,
+            PROP_MODE_REPLACE as u8,
+            window.id as u32,
+            system.wm_protocols,
+            ATOM_ATOM,
+            32,
+            &protocol_set
+        );        
+        change_property(
+            &system.connection,
+            PROP_MODE_REPLACE as u8,
+            window.id as u32,
+            ATOM_WM_NAME,
+            ATOM_STRING,
+            8,
+            title.as_bytes()
+        );
+        system.connection.flush();
+        Ok(window)
+    }
+
+    pub fn new_floating(system: &Rc<System>,r: Rect<i32>) -> Result<Window,SystemError> {
+        let window = Window::new(system,r)?;
+        let net_type = [system.wm_net_type_utility];
+        change_property(
+            &system.connection,
+            PROP_MODE_REPLACE as u8,
+            window.id as u32,
+            system.wm_net_type,
+            ATOM_ATOM,
+            32,
+            &net_type
+        );
+        let net_state = [system.wm_net_state_above];
+        change_property(
+            &system.connection,
+            PROP_MODE_REPLACE as u8,
+            window.id as u32,
+            system.wm_net_state,
+            ATOM_ATOM,
+            32,
+            &net_state
+        );
+        let hints = [2u32,0,0,0,0];
+        change_property(
+            &system.connection,
+            PROP_MODE_REPLACE as u8,
+            window.id as u32,
+            system.wm_motif_hints,
+            ATOM_ATOM,
+            32,
+            &hints
+        );
+        system.connection.flush();
+        Ok(window)
     }
 }
 

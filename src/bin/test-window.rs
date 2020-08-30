@@ -13,7 +13,7 @@ fn main() {
     let graphics = Rc::new(gpu::Graphics::new(&system).expect("Cannot open graphics."));
 
     // create window
-    let window = Rc::new(Window::new(
+    let window = Rc::new(Window::new_framed(
         &system,
         rect!(50,50,640,360),
         "Test Window"

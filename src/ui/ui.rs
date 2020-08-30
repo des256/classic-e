@@ -7,10 +7,6 @@ use std::{
     cell::Cell,
     cell::RefCell,
 };
-use gl::types::{
-    GLuint,
-    GLvoid,
-};
 
 enum UIDelta {
     Skip,
@@ -18,38 +14,32 @@ enum UIDelta {
 }
 
 pub struct UIWindow {
-    window: Rc<Window>,          // window
-    widget: Rc<dyn ui::Widget>,  // widget in this window
-    delta: UIDelta,              // what to do in order to validate
+    window: Rc<Window>,
+    widget: Rc<RefCell<dyn ui::Widget>>,
+    delta: UIDelta,
 }
 
 // TODO: the more tightly packed UIRect will come later
 #[derive(Copy,Clone)]
 #[repr(C)]
 pub struct UIRect {
-    pub(crate) r: Vec4<f32>,  // x, y, w, h
-    pub(crate) t: Vec4<f32>,  // x, y, w, h
+    pub(crate) r: Vec4<f32>,  // rectangle: x, y, w, h
+    pub(crate) t: Vec4<f32>,  // texture coordinates: x, y, w, h
 }
 
-// TODO: this means that specifically only OpenGL is supported for now; solve this later
-impl gpu::GLVertex for UIRect {
-    fn bind() -> Vec<GLuint> {
-        unsafe {
-            gl::EnableVertexAttribArray(0);
-            gl::VertexAttribPointer(0,4,gl::FLOAT,gl::FALSE,32,0 as *const GLvoid);
-            gl::EnableVertexAttribArray(1);
-            gl::VertexAttribPointer(1,4,gl::FLOAT,gl::FALSE,32,16 as *const GLvoid);
-        }
-        vec![0,1]
-    }
-
+// this is locks the system into OpenGL, fix later
+impl gpu::GLUniform for UIRect {
     fn len() -> isize {
         32
     }
 }
 
+pub struct DrawContext {
+    pub r: Rect<i32>,
+}
+
 /// UI subsystem.
-pub struct UI {
+pub struct UI {  // all system and graphics references live at least as long as UI
     pub system: Rc<System>,
     pub graphics: Rc<gpu::Graphics>,
     pub flat_shader: gpu::Shader,
@@ -62,6 +52,8 @@ pub struct UI {
     pub windows: RefCell<Vec<UIWindow>>,
     current_window_size: Cell<Vec2<i32>>,
     capturing_index: Cell<Option<i32>>,
+    rect_vb: gpu::VertexBuffer<Vec2<f32>>,
+    draw_ub: gpu::UniformBuffer<UIRect>,
 }
 
 impl UI {
@@ -75,65 +67,35 @@ impl UI {
         let vs = r#"
             #version 420 core
             
-            layout(location = 0) in vec4 ir;
-            layout(location = 1) in vec4 it;
+            layout(location = 0) in vec2 i_p;
             
-            out Rect {
+            struct UIRect {
+                vec4 r;
                 vec4 t;
-            } vs_out;
-            
-            void main() {
-                gl_Position = ir;
-                vs_out.t = it;
-            }
-        "#;
+            };
 
-        // generic geometry shader
-        let gs = r#"
-            #version 420 core
-
-            uniform vec2 window_size;
-            
-            layout(points) in;
-            layout(triangle_strip,max_vertices = 4) out;
-
-            in Rect {
-                vec4 t;
-            } gs_in[];
+            layout(std140) uniform rect_block {
+                UIRect rects[256];
+            };
+            uniform vec2 tows;
 
             out Vertex {
                 vec2 t;
-            } gs_out;
-
+            } vs_out;
+            
             void main() {
-
-                vec4 r = gl_in[0].gl_Position;
-                vec4 t = gs_in[0].t;
-
-                vec4 pn = vec4(
-                    -1.0 + 2.0 * r.x / window_size.x,
-                    1.0 - 2.0 * r.y / window_size.y,
-                    2.0 * r.z / window_size.x,
-                    -2.0 * r.w / window_size.y
+                vec4 r = rects[gl_InstanceID].r;
+                vec4 t = rects[gl_InstanceID].t;
+                gl_Position = vec4(
+                    -1.0 + tows.x * (r.x + i_p.x * r.z),
+                    1.0 - tows.y * (r.y + i_p.y * r.w),
+                    0.0,
+                    1.0
                 );
-
-                gl_Position = vec4(pn.x,pn.y,0.0,1.0);
-                gs_out.t = vec2(t.x,t.y);
-                EmitVertex();
-
-                gl_Position = vec4(pn.x + pn.z,pn.y,0.0,1.0);
-                gs_out.t = vec2(t.x + t.z,t.y);
-                EmitVertex();
-
-                gl_Position = vec4(pn.x,pn.y + pn.w,0.0,1.0);
-                gs_out.t = vec2(t.x,t.y + t.w);
-                EmitVertex();
-
-                gl_Position = vec4(pn.x + pn.z,pn.y + pn.w,0.0,1.0);
-                gs_out.t = vec2(t.x + t.z,t.y + t.w);
-                EmitVertex();
-
-                EndPrimitive();
+                vs_out.t = vec2(
+                    t.x + i_p.x * t.z,
+                    t.y + i_p.y * t.w
+                );
             }
         "#;
 
@@ -192,31 +154,42 @@ impl UI {
             }
         "#;
 
-        let flat_shader = gpu::Shader::new(&graphics,vs,Some(gs),flat_fs).expect("Unable to create flat shader.");
-        let alpha_shader = gpu::Shader::new(&graphics,vs,Some(gs),alpha_fs).expect("Unable to create alpha shader.");
-        let color_shader = gpu::Shader::new(&graphics,vs,Some(gs),color_fs).expect("Unable to create color shader.");
+        let flat_shader = gpu::Shader::new(graphics,vs,None,flat_fs).expect("Unable to create flat shader.");
+        let alpha_shader = gpu::Shader::new(graphics,vs,None,alpha_fs).expect("Unable to create alpha shader.");
+        let color_shader = gpu::Shader::new(graphics,vs,None,color_fs).expect("Unable to create color shader.");
 
         let proto_sans = Rc::new(
             ui::FontProto::new(
-                &graphics,
+                graphics,
                 &format!("{}/sans.fnt",font_dir)
             ).expect("Unable to load font")
         );
         let proto_serif = Rc::new(
             ui::FontProto::new(
-                &graphics,
+                graphics,
                 &format!("{}/serif.fnt",font_dir)
             ).expect("Unable to load font")
         );
         let proto_mono = Rc::new(
             ui::FontProto::new(
-                &graphics,
+                graphics,
                 &format!("{}/mono.fnt",font_dir)
             ).expect("Unable to load font")
         );
 
         // create default font
         let font = Rc::new(ui::Font::new(&proto_sans,16).expect("unable to load font"));
+
+        // create vertex buffer for one rectangle
+        let rect_vb = gpu::VertexBuffer::<Vec2<f32>>::new_from_vec(graphics,vec![
+            vec2!(0.0,0.0),
+            vec2!(1.0,0.0),
+            vec2!(1.0,1.0),
+            vec2!(0.0,1.0)
+        ]).expect("unable to create vertex buffer");
+
+        // create draw uniform buffer
+        let draw_ub = gpu::UniformBuffer::<UIRect>::new(graphics).expect("unable to create uniform buffer");
 
         Ok(UI {
             system: Rc::clone(system),
@@ -231,6 +204,8 @@ impl UI {
             windows: RefCell::new(Vec::new()),
             current_window_size: Cell::new(vec2!(0,0)),
             capturing_index: Cell::new(None),
+            rect_vb: rect_vb,
+            draw_ub: draw_ub,
         })
     }
 
@@ -242,8 +217,8 @@ impl UI {
     /// ## Returns
     /// * `false` - Window could not be created.
     /// * `true` - Window was created.
-    pub fn open(&self,widget: &Rc<dyn ui::Widget>,r: Rect<i32>,title: &str) -> bool {
-        let window = Rc::new(Window::new(&self.system,r,title).expect("unable to create window"));
+    pub fn open(&self,widget: &Rc<RefCell<dyn ui::Widget>>,r: Rect<i32>,title: &str) -> bool {
+        let window = Rc::new(Window::new_framed(&self.system,r,title).expect("unable to create window"));
         self.graphics.bind_target(&window);
         unsafe { (self.system.glx_swap_interval)(self.system.connection.get_raw_dpy(),window.id,0) };
         self.windows.borrow_mut().push(UIWindow {
@@ -257,7 +232,7 @@ impl UI {
     /// Close window.
     /// ## Arguments
     /// * `widget` - Widget that is hosted there.
-    pub fn close(&self,widget: &Rc<dyn ui::Widget>) {
+    pub fn close(&self,widget: &Rc<RefCell<dyn ui::Widget>>) {
         let len = self.windows.borrow().len();
         for i in 0..len {
             if Rc::ptr_eq(widget,&self.windows.borrow()[i].widget) {
@@ -272,60 +247,21 @@ impl UI {
     //    Vec::new()
     //}
 
-    /// (temporary) Draw rectangle.
-    /// ## Arguments
-    /// * `canvas_size` - Size of target canvas.
-    /// * `r` - Rectangle to draw.
-    /// * `color` - Color to draw rectangle in.
-    /// * `blend_mode` - Blend mode for the rectangle.
     pub fn draw_rectangle<C: ColorParameter>(&self,r: Rect<i32>,color: C,blend_mode: gpu::BlendMode) {
-        let mut buffer: Vec<UIRect> = Vec::new();
-        buffer.push(UIRect {
+        self.draw_ub.load(0,&vec![UIRect {
             r: vec4!(r.o.x as f32,r.o.y as f32,r.s.x as f32,r.s.y as f32),
             t: vec4!(0.0,0.0,0.0,0.0),
-        });
-        let vertexbuffer = gpu::VertexBuffer::<ui::UIRect>::new_from_vec(&self.graphics,buffer).expect("Unable to create vertexbuffer.");
+        }]);
         self.graphics.set_blend(blend_mode);
         self.graphics.bind_shader(&self.flat_shader);
-        self.graphics.bind_vertexbuffer(&vertexbuffer);
+        self.graphics.bind_vertexbuffer(&self.rect_vb);
+        self.graphics.bind_uniformbuffer(1,"rect_block",&self.draw_ub);
         let window_size = self.current_window_size.get();
-        self.graphics.set_uniform("window_size",vec2!(window_size.x as f32,window_size.y as f32));
+        self.graphics.set_uniform("tows",vec2!(2.0 / (window_size.x as f32),2.0 / (window_size.y as f32)));
         self.graphics.set_uniform("color",color.into_vec4());
-        self.graphics.draw_points(1);
+        self.graphics.draw_instanced_triangle_fan(4,1);
     }
 
-    /// Draw image.
-    /// ## Arguments
-    /// * `canvas_size` - Size of target canvas.
-    /// * `r` - Rectangle to draw image in.
-    /// * `texture` - Image to draw.
-    /// * `color` - Color to multiply with the image.
-    /// * `blend_mode` - Blend mode for the rectangle.
-    pub fn draw_image<C: ColorParameter,T: gpu::GLFormat>(&self,r: Rect<i32>,texture: &gpu::Texture2D<T>,color: C,blend_mode: gpu::BlendMode) {
-        let mut buffer: Vec<UIRect> = Vec::new();
-        buffer.push(UIRect {
-            r: vec4!(r.o.x as f32,r.o.y as f32,r.s.x as f32,r.s.y as f32),
-            t: vec4!(0.0,0.0,1.0,1.0),
-        });
-        let vertexbuffer = gpu::VertexBuffer::<ui::UIRect>::new_from_vec(&self.graphics,buffer).expect("Unable to create vertexbuffer.");
-        self.graphics.set_blend(blend_mode);
-        self.graphics.bind_shader(&self.flat_shader);
-        self.graphics.bind_vertexbuffer(&vertexbuffer);
-        self.graphics.bind_texture(0,texture);
-        let window_size = self.current_window_size.get();
-        self.graphics.set_uniform("window_size",vec2!(window_size.x as f32,window_size.y as f32));
-        self.graphics.set_uniform("color_texture",0);
-        self.graphics.set_uniform("color",color.into_vec4());
-        self.graphics.draw_points(1);
-    }
-
-    /// Draw text.
-    /// ## Arguments
-    /// * `canvas_size` - Size of target canvas.
-    /// * `p` - Position to draw the text at.
-    /// * `text` - Text to draw.
-    /// * `color` - Color to multiply with the image.
-    /// * `font` - font to use.
     pub fn draw_text<C: ColorParameter>(&self,p: Vec2<i32>,text: &str,color: C,font: &ui::Font) {
         let mut buffer: Vec<UIRect> = Vec::new();
         for s in font.proto.sets.iter() {
@@ -357,17 +293,17 @@ impl UI {
                 break;
             }
         }
-        let points = buffer.len();
-        let vertexbuffer = gpu::VertexBuffer::<ui::UIRect>::new_from_vec(&self.graphics,buffer).expect("Unable to create vertexbuffer.");
+        self.draw_ub.load(0,&buffer);
         self.graphics.set_blend(gpu::BlendMode::Over);
         self.graphics.bind_shader(&self.alpha_shader);
-        self.graphics.bind_vertexbuffer(&vertexbuffer);
+        self.graphics.bind_vertexbuffer(&self.rect_vb);
+        self.graphics.bind_uniformbuffer(1,"rect_block",&self.draw_ub);
         self.graphics.bind_texture(0,&font.proto.texture);
-        let window_size = self.current_window_size.get();
-        self.graphics.set_uniform("window_size",vec2!(window_size.x as f32,window_size.y as f32));
         self.graphics.set_uniform("alpha_texture",0);
+        let window_size = self.current_window_size.get();
+        self.graphics.set_uniform("tows",vec2!(2.0 / (window_size.x as f32),2.0 / (window_size.y as f32)));
         self.graphics.set_uniform("color",color.into_vec4());
-        self.graphics.draw_points(points as i32);
+        self.graphics.draw_instanced_triangle_fan(4,buffer.len() as i32);
     }
 
     /// Run UI.
@@ -396,6 +332,7 @@ impl UI {
                 let event = winev.1;
                 let len = self.windows.borrow().len();
                 for i in 0..len {
+
                     // borrow window for this event
                     let window = &mut self.windows.borrow_mut()[i];
                     if Rc::ptr_eq(&win,&window.window) {
@@ -410,7 +347,7 @@ impl UI {
                             // system notifies that this window moved/changed size
                             Event::Reconfigure(r) => {
                                 window.window.r.set(r);
-                                window.widget.set_rect(rect!(vec2!(0,0),r.s));
+                                window.widget.borrow_mut().set_rect(rect!(vec2!(0,0),r.s));
                             },
 
                             // user wants to close this window
@@ -419,16 +356,14 @@ impl UI {
                             },
 
                             // anything else should be handled by the hosted widget
-                            Event::KeyPress(key) => {
-                                window.widget.key_press(key);
+                            Event::KeyPress(_k) => {
                             },
 
-                            Event::KeyRelease(key) => {
-                                window.widget.key_release(key);
+                            Event::KeyRelease(_k) => {
                             },
 
-                            Event::MousePress(pos,button) => {
-                                if window.widget.mouse_press(pos,button) {
+                            Event::MousePress(_p,b) => {
+                                if let ui::MouseResult::ProcessedCapture = window.widget.borrow_mut().handle_mouse_press(b) {
                                     match self.capturing_index.get() {
                                         Some(index) => {
                                             if index != i as i32 {
@@ -450,8 +385,8 @@ impl UI {
                                 }
                             },
 
-                            Event::MouseRelease(pos,button) => {
-                                if window.widget.mouse_release(pos,button) {
+                            Event::MouseRelease(_,b) => {
+                                if let ui::MouseResult::ProcessedCapture = window.widget.borrow_mut().handle_mouse_release(b) {
                                     match self.capturing_index.get() {
                                         Some(index) => {
                                             if index != i as i32 {
@@ -473,12 +408,11 @@ impl UI {
                                 }
                             },
 
-                            Event::MouseWheel(wheel) => {
-                                window.widget.mouse_wheel(wheel);
+                            Event::MouseWheel(_w) => {
                             },
 
-                            Event::MouseMove(pos) => {
-                                if window.widget.mouse_move(pos) {
+                            Event::MouseMove(p) => {
+                                if let ui::MouseResult::ProcessedCapture = window.widget.borrow_mut().handle_mouse_move(p) {
                                     match self.capturing_index.get() {
                                         Some(index) => {
                                             if index != i as i32 {
@@ -505,6 +439,14 @@ impl UI {
                 }
             }
 
+            /*{
+                let frames = self.frames.borrow();
+                println!("frames:");
+                for i in 0..9 {
+                    println!("    {}: rect {} scroll {} pf {}",i,frames[i].r,frames[i].s,frames[i].pf)
+                }
+            }*/
+
             for window in self.windows.borrow_mut().iter_mut() {
 
                 // bind to this window
@@ -515,7 +457,8 @@ impl UI {
                     let r = window.window.r.get();
                     self.current_window_size.set(r.s);  // so window_size in the shader corresponds to the actual window size
                     self.graphics.clear(0xFF001122);
-                    window.widget.draw();
+                    let context = vec2!(0i32,0i32);
+                    window.widget.borrow_mut().draw(context);
                     self.graphics.flush();
                 }
             }

@@ -3,6 +3,7 @@
 
 use crate::*;
 use std::{
+    rc::Rc,
     ffi::{
         CString,
         CStr,
@@ -11,7 +12,6 @@ use std::{
         null,
         null_mut,
     },
-    rc::Rc,
 };
 use gl::types::{
     GLint,

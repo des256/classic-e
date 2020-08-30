@@ -5,7 +5,7 @@ use crate::*;
 
 /// Mouse button.
 #[derive(Copy,Clone,Debug)]
-pub enum Mouse {
+pub enum MouseButton {
     Left,
     Middle,
     Right,
@@ -13,7 +13,7 @@ pub enum Mouse {
 
 /// Mouse wheel direction.
 #[derive(Copy,Clone,Debug)]
-pub enum Wheel {
+pub enum MouseWheel {
     Up,
     Down,
     Left,
@@ -23,22 +23,22 @@ pub enum Wheel {
 /// User interaction event.
 #[derive(Copy,Clone,Debug)]
 pub enum Event {
-    /// The window requires redrawing.
-    Render,
     /// Key was pressed.
     KeyPress(u8),
     /// Key was released.
     KeyRelease(u8),
     /// Mouse button was pressed.
-    MousePress(Vec2<i32>,Mouse),
+    MousePress(Vec2<i32>,MouseButton),
     /// Mouse button was released.
-    MouseRelease(Vec2<i32>,Mouse),
+    MouseRelease(Vec2<i32>,MouseButton),
     /// Mouse wheel was moved.
-    MouseWheel(Wheel),
+    MouseWheel(MouseWheel),
     /// Mouse was moved.
     MouseMove(Vec2<i32>),
     /// Window was resized/moved.
     Reconfigure(Rect<i32>),
+    /// The window requires redrawing.
+    Render,
     /// Window close button was pressed.
     Close,
 }

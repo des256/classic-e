@@ -4,9 +4,6 @@
 //! UI Widgets.
 
 use crate::*;
-use std::{
-    rc::Rc,
-};
 
 pub const FONT_TEXTURE_SIZE: u32 = 1024;
 
@@ -28,63 +25,21 @@ pub enum VAlignment {
     Fill,
 }
 
+pub enum MouseResult {
+    Unprocessed,
+    Processed,
+    ProcessedCapture,
+}
+
 /// Widget abstraction trait.
 pub trait Widget {
-
-    /// Measure the widget.
-    /// ## Returns
-    /// Minimum dimensions for this widget.
-    fn measure(&self) -> Vec2<i32> { vec2!(0,0) }
-
-    /// Get the widget rect.
-    fn get_rect(&self) -> Rect<i32> { rect!(0,0,0,0) }
-
-    /// The widget rect changed.
-    fn set_rect(&self,_r: Rect<i32>) { }
-
-    /// Draw the widget.
-    fn draw(&self) { }
-    
-    /// A key was pressed.
-    /// ## Arguments
-    /// * `key` - The key value.
-    fn key_press(&self,key: u8) { }
-
-    /// A key was released.
-    /// ## Arguments
-    /// * `key` - The key value.
-    fn key_release(&self,key: u8) { }
-
-    /// A mouse button was pressed.
-    /// ## Arguments
-    /// * `pos` - The mouse cursor position.
-    /// * `button` - The mouse button.
-    /// ## Returns
-    /// * `true` - If mouse should be captured.
-    /// * `false` - If not.
-    fn mouse_press(&self,pos: Vec2<i32>,button: Mouse) -> bool { false }
-
-    /// A mouse button was released.
-    /// ## Arguments
-    /// * `pos` - The mouse cursor position.
-    /// * `button` - The mouse button.
-    /// ## Returns
-    /// * `true` - If mouse should be captured.
-    /// * `false` - If not.
-    fn mouse_release(&self,pos: Vec2<i32>,button: Mouse) -> bool { false }
-
-    /// The mouse wheel was moved.
-    /// ## Arguments
-    /// * `wheel` - The wheel direction.
-    fn mouse_wheel(&self,wheel: Wheel) { }
-
-    /// The mouse was moved.
-    /// ## Arguments
-    /// * `pos` - The mouse cursor position.
-    /// ## Returns
-    /// * `true` - If mouse should be captured.
-    /// * `false` - If not.
-    fn mouse_move(&self,pos: Vec2<i32>) -> bool { false }
+    fn get_rect(&self) -> Rect<i32>;
+    fn set_rect(&mut self,r: Rect<i32>);
+    fn calc_min_size(&self) -> Vec2<i32>;
+    fn draw(&self,context: Vec2<i32>);
+    fn handle_mouse_press(&mut self,b: MouseButton) -> MouseResult;
+    fn handle_mouse_release(&mut self,b: MouseButton) -> MouseResult;
+    fn handle_mouse_move(&mut self,p: Vec2<i32>) -> MouseResult;
 }
 
 mod font;
@@ -92,6 +47,9 @@ pub use font::*;
 
 mod ui;
 pub use ui::*;
+
+mod core;
+pub use self::core::*;
 
 mod text;
 pub use text::*;
@@ -108,23 +66,11 @@ pub use image::*;
 mod button;
 pub use button::*;
 
-mod toggle;
-pub use toggle::*;
-
-mod stepper;
-pub use stepper::*;
-
-mod slider;
-pub use slider::*;
-
-mod progress;
-pub use progress::*;
-
-mod field;
-pub use field::*;
-
-mod list;
-pub use list::*;
-
 mod book;
 pub use book::*;
+
+mod menubar;
+pub use menubar::*;
+
+mod menu;
+pub use menu::*;

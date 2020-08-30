@@ -2,9 +2,6 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use std::{
-    rc::Rc,
-};
 use gl::types::{
     GLuint,
     GLenum,
@@ -238,7 +235,7 @@ impl GLFormat for pixel::ARGB8 {
 /// (temporary) Enable/Disable VSync
 /// ## Arguments
 /// * state - Whether or not VSync should be enabled.
-pub fn set_vsync(system: &Rc<System>,window: &Rc<Window>,state: bool) {
+pub fn set_vsync(system: &System,window: &Window,state: bool) {
     unsafe {
 #[cfg(target_os="linux")]
         (system.glx_swap_interval)(system.connection.get_raw_dpy(),window.id,if state { 1 } else { 0 });
@@ -251,7 +248,7 @@ pub fn set_vsync(system: &Rc<System>,window: &Rc<Window>,state: bool) {
 /// ## Arguments
 /// * system - System reference.
 /// * window - Window to swap buffers for.
-pub fn present(system: &Rc<System>,window: &Rc<Window>) {
+pub fn present(system: &System,window: &Window) {
     unsafe {
 #[cfg(target_os="linux")]
         glXSwapBuffers(system.connection.get_raw_dpy(),window.id);
@@ -292,3 +289,6 @@ pub use vertexbuffer::*;
 
 mod indexbuffer;
 pub use indexbuffer::*;
+
+mod uniformbuffer;
+pub use uniformbuffer::*;

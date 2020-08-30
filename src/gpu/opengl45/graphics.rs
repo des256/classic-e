@@ -42,95 +42,95 @@ pub struct Graphics {
 }
 
 #[doc(hidden)]
-pub trait GLUniform {
+pub trait GLSetUniform {
     fn set_uniform(location: i32,value: Self);
 }
 
-impl GLUniform for f32 {
+impl GLSetUniform for f32 {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform1f(location,value) };
     }
 }
 
-impl GLUniform for Vec2<f32> {
+impl GLSetUniform for Vec2<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
-impl GLUniform for Vec3<f32> {
+impl GLSetUniform for Vec3<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform3fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
-impl GLUniform for Vec4<f32> {
+impl GLSetUniform for Vec4<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
-impl GLUniform for u32 {
+impl GLSetUniform for u32 {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform1ui(location,value) };
     }
 }
 
-impl GLUniform for Vec2<u32> {
+impl GLSetUniform for Vec2<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2uiv(location,1,&value as *const Self as *const GLuint) };
     }
 }
 
-impl GLUniform for Vec3<u32> {
+impl GLSetUniform for Vec3<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform3uiv(location,1,&value as *const Self as *const GLuint) };
     }
 }
 
-impl GLUniform for Vec4<u32> {
+impl GLSetUniform for Vec4<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4uiv(location,1,&value as *const Self as *const GLuint) };
     }
 }
 
-impl GLUniform for i32 {
+impl GLSetUniform for i32 {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform1i(location,value) };
     }
 }
 
-impl GLUniform for Vec2<i32> {
+impl GLSetUniform for Vec2<i32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2iv(location,1,&value as *const Self as *const GLint) };
     }
 }
 
-impl GLUniform for Vec3<i32> {
+impl GLSetUniform for Vec3<i32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform3iv(location,1,&value as *const Self as *const GLint) };
     }
 }
 
-impl GLUniform for Vec4<i32> {
+impl GLSetUniform for Vec4<i32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4iv(location,1,&value as *const Self as *const GLint) };
     }
 }
 
-impl GLUniform for Rect<f32> {
+impl GLSetUniform for Rect<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
-impl GLUniform for Rect<u32> {
+impl GLSetUniform for Rect<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4uiv(location,1,&value as *const Self as *const GLuint) };
     }
 }
 
-impl GLUniform for Rect<i32> {
+impl GLSetUniform for Rect<i32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4iv(location,1,&value as *const Self as *const GLint) };
     }
@@ -200,7 +200,7 @@ pub trait BindTarget {
     fn do_bind(&self,graphics: &Graphics);
 }
 
-impl BindTarget for Rc<gpu::Framebuffer> {
+impl BindTarget for gpu::Framebuffer {
     fn do_bind(&self,graphics: &Graphics) {
         unsafe {
 #[cfg(target_os="linux")]
@@ -309,6 +309,18 @@ impl Graphics {
         unsafe { gl::DrawElements(gl::TRIANGLES,n,self.index_type.get(),null_mut()) };
     }
 
+    pub fn draw_instanced_points(&self,nv: i32, ni: i32) {
+        unsafe { gl::DrawArraysInstanced(gl::POINTS,0,nv,ni) };
+    }
+
+    pub fn draw_instanced_triangles(&self,nv: i32, ni: i32) {
+        unsafe { gl::DrawArraysInstanced(gl::TRIANGLES,0,nv,ni) };
+    }
+
+    pub fn draw_instanced_triangle_fan(&self,nv: i32, ni: i32) {
+        unsafe { gl::DrawArraysInstanced(gl::TRIANGLE_FAN,0,nv,ni) };
+    }
+
     /// (temporary) Set blending mode.
     /// ## Arguments
     /// * `mode` - Blending mode.
@@ -343,7 +355,7 @@ impl Graphics {
     /// ## Arguments
     /// * `name` - Variable name referenced in the shader program.
     /// * `value` - Value of the uniform.
-    pub fn set_uniform<T: GLUniform>(&self,name: &str,value: T) {
+    pub fn set_uniform<T: GLSetUniform>(&self,name: &str,value: T) {
         let cname = CString::new(name).unwrap();
         let res = unsafe { gl::GetUniformLocation(self.sp.get(),cname.as_ptr() as *const GLchar) };
         T::set_uniform(res,value);
@@ -362,5 +374,15 @@ impl Graphics {
     pub fn bind_indexbuffer<T: gpu::GLIndex>(&self,indexbuffer: &gpu::IndexBuffer<T>) {
         self.index_type.set(T::gl_type());
         unsafe { gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER,indexbuffer.ibo) };
+    }
+
+    /// (temporary) Bind uniform buffer.
+    pub fn bind_uniformbuffer<T: gpu::GLUniform>(&self,bp: u32,name: &str,uniformbuffer: &gpu::UniformBuffer<T>) {
+        let cname = CString::new(name).unwrap();
+        unsafe {
+            let res = gl::GetUniformBlockIndex(self.sp.get(),cname.as_ptr() as *const GLchar);
+            gl::UniformBlockBinding(self.sp.get(),res,bp);
+            gl::BindBufferBase(gl::UNIFORM_BUFFER,bp,uniformbuffer.ubo);
+        }
     }
 }

@@ -1,7 +1,7 @@
 // E - UI - Book
 // Desmond Germans, 2020
 
-use crate::*;
+/*use crate::*;
 use std::rc::Rc;
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -25,9 +25,6 @@ pub struct Book {
 
     /// Reference to UI context.
     ui: Rc<ui::UI>,
-
-    /// Rectangle.
-    r: Cell<Rect<i32>>,
 
     /// Hit state.
     hit: Cell<BookHit>,
@@ -59,9 +56,6 @@ pub struct Book {
     /// Background color in empty part next to tabs.
     pub tab_back_color: Cell<u32>,
 
-    /// Current page rectangle.
-    page_rect: Cell<Rect<i32>>,
-
     /// Page is capturing the mouse.
     page_is_capturing: Cell<bool>,
 }
@@ -75,7 +69,6 @@ impl Book {
         }
         Ok(Book {
             ui: Rc::clone(ui),
-            r: Cell::new(rect!(0,0,1,1)),
             hit: Cell::new(BookHit::Outside),
             pages: RefCell::new(new_pages),
             current_index: Cell::new(0),
@@ -86,35 +79,41 @@ impl Book {
             tab_color: Cell::new(0xFF001133),
             hover_tab_color: Cell::new(0xFF002266),
             tab_back_color: Cell::new(0xFF000000),
-            page_rect: Cell::new(rect!(0,0,1,1)),
             page_is_capturing: Cell::new(false),
         })
     }
 
-    fn test_hit(&self,pos: Vec2<i32>) -> BookHit {
+    fn test_hit(&self,r: Rect<i32>,pos: Vec2<i32>) -> BookHit {
 
         let pages = self.pages.borrow();
         let padding = self.padding.get();
         let inner_padding = self.inner_padding.get();
         let font = self.font.borrow();
-        let page_rect = self.page_rect.get();
 
-        let r = rect!(padding,self.r.get().s - 2 * padding);
+        if pages.len() == 0 {
+            return BookHit::Outside;
+        }
+        let tab_bar_height = (font.measure(&pages[0].0) + 2 * inner_padding).y;
+
+        r.o += padding;
+        r.s -= 2 * padding;
+
         if r.contains(&pos) {
-            if page_rect.contains(&pos) {
+            let mut pr = r;
+            pr.o.y += tab_bar_height;
+            pr.s.y -= tab_bar_height;
+            if pr.contains(&pos) {
                 return BookHit::Page;
             }
-            let mut tab_rect = rect!(0i32,0i32,0i32,0i32);
-            tab_rect.o = r.o + padding;
-            let mut i = 0usize;
-            for page in pages.iter() {
+            let mut tab_rect = rect!(r.o,vec2!(0,0));
+            for i in 0..pages.len() {
+                let page = &pages[i];
                 let title = &page.0;
                 tab_rect.s = font.measure(&title) + 2 * inner_padding;
                 if tab_rect.contains(&pos) {
                     return BookHit::Tab(i);
                 }
                 tab_rect.o.x += tab_rect.s.x;
-                i += 1;
             }
         }
 
@@ -128,24 +127,23 @@ impl ui::Widget for Book {
         // PROBLEM LATER: When the tab bar becomes too long, there should
         // be more lines below each other, or some sort of scrolling
         // mechanism to reach the tabs that don't fit.
+        let pages = self.pages.borrow();
         let font = self.font.borrow();
         let padding = self.padding.get();
         let inner_padding = self.inner_padding.get();
 
-        let mut tabbar_size = vec2!(0i32,0i32);
-        let pages = self.pages.borrow();
+        let mut tab_bar_size = vec2!(0i32,0i32);
         for page in pages.iter() {
             let title = &page.0;
             let tab_size = font.measure(&title) + 2 * inner_padding;
-            if tab_size.y > tabbar_size.y {
-                tabbar_size.y = tab_size.y;
+            if tab_size.y > tab_bar_size.y {
+                tab_bar_size.y = tab_size.y;
             }
-            tabbar_size.x += tab_size.x;
+            tab_bar_size.x += tab_size.x;
         }
 
         // measure largest page
         let mut page_size = vec2!(0i32,0i32);
-        let pages = self.pages.borrow();
         for page in pages.iter() {
             let size = page.1.measure();
             if size.x > page_size.x {
@@ -157,7 +155,7 @@ impl ui::Widget for Book {
         }
 
         // combine both
-        let mut book_size = tabbar_size;
+        let mut book_size = tab_bar_size;
         if page_size.x > book_size.x {
             book_size.x = page_size.x;
         }
@@ -166,32 +164,8 @@ impl ui::Widget for Book {
         book_size + 2 * padding
     }
 
-    fn get_rect(&self) -> Rect<i32> {
-        self.r.get()
-    }
+    fn draw(&self,r: Rect<i32>) {
 
-    fn set_rect(&self,r: Rect<i32>) {
-
-        self.r.set(r);
-
-        let pages = self.pages.borrow();
-        let inner_padding = self.inner_padding.get();
-        let font = self.font.borrow();
-
-        let mut tab_size = vec2!(0i32,0i32);
-        if pages.len() > 0 {
-            tab_size = font.measure(&pages[0].0) + 2 * inner_padding;
-        }
-        let page_rect = rect!(0,tab_size.y,r.s.x,r.s.y - tab_size.y);
-        self.page_rect.set(page_rect);
-        for page in pages.iter() {
-            page.1.set_rect(page_rect);
-        }
-    }
-
-    fn draw(&self) {
-
-        let r = self.r.get();
         let pages = self.pages.borrow();
         let font = self.font.borrow();
         let hit = self.hit.get();
@@ -206,8 +180,8 @@ impl ui::Widget for Book {
         // draw tab bar
         let mut tab_rect = rect!(0i32,0i32,0i32,0i32);
         tab_rect.o = r.o + padding;
-        let mut i = 0usize;
-        for page in pages.iter() {
+        for i in 0..pages.len() {
+            let page = &pages[i];
             let title = &page.0;
             tab_rect.s = font.measure(&title) + 2 * inner_padding;
             let mut tc = tab_color;
@@ -219,28 +193,34 @@ impl ui::Widget for Book {
             self.ui.draw_rectangle(tab_rect,tc,gpu::BlendMode::Replace);
             self.ui.draw_text(tab_rect.o + inner_padding,&title,color,&font);
             tab_rect.o.x += tab_rect.s.x;
-            i += 1;
         }
         self.ui.draw_rectangle(rect!(tab_rect.o,vec2!(r.s.x - tab_rect.o.x,tab_rect.s.y)),tab_back_color,gpu::BlendMode::Replace);
 
         // draw current page
-        if pages.len() > 0 {
-            if current_index < pages.len() {
-                pages[current_index].1.draw();
-            }
+        if (pages.len() > 0) && (current_index < pages.len()) {
+            let mut pr = r;
+            pr.o.y += tab_rect.s.y;
+            pr.s.y -= tab_rect.s.y;
+            pages[current_index].1.draw(pr);
         }
     }
 
     fn mouse_press(&self,pos: Vec2<i32>,button: Mouse) -> bool {
         let pages = self.pages.borrow();
+        if pages.len() == 0 {
+            return false;
+        }
+        let font = self.font.borrow();
         let current_index = self.current_index.get();
-        let page_rect = self.page_rect.get();
+        let inner_padding = self.inner_padding.get();
+        let tab_bar_height = (font.measure(&pages[0].0) + 2 * inner_padding).y;
+        let mut pr = r;
+        pr.o.y += tab_bar_height;
+        pr.s.y -= tab_bar_height;
         if self.page_is_capturing.get() {
-            if pages.len() > 0 {
-                if current_index < pages.len() {
-                    if pages[current_index].1.mouse_press(pos - page_rect.o,button) {
-                        return true;
-                    }
+            if current_index < pages.len() {
+                if pages[current_index].1.mouse_press(pos - pr.o,button) {
+                    return true;
                 }
             }
         }
@@ -253,14 +233,12 @@ impl ui::Widget for Book {
                 }    
             },
             BookHit::Page => {
-                if pages.len() > 0 {
-                    if current_index < pages.len() {
-                        if pages[current_index].1.mouse_press(pos - page_rect.o,button) {
-                            self.page_is_capturing.set(true);
-                            return true;
-                        }
+                if current_index < pages.len() {
+                    if pages[current_index].1.mouse_press(pos - pr.o,button) {
+                        self.page_is_capturing.set(true);
+                        return true;
                     }
-                }        
+                }
             },
             _ => { },
         }
@@ -334,3 +312,4 @@ impl ui::Widget for Book {
         false
     }
 }
+*/

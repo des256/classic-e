@@ -1,14 +1,14 @@
 // E - Image test
 // Desmond Germans, 2020
 
-use e::*;
-use std::rc::Rc;
-use std::fs::File;
-use std::io::prelude::*;
+//use e::*;
+//use std::rc::Rc;
+//use std::fs::File;
+//use std::io::prelude::*;
 
 fn main() {
 
-    // initialize system
+    /*// initialize system
     let system = Rc::new(System::new().expect("Cannot open system."));
 
     // initialize graphics context
@@ -31,5 +31,5 @@ fn main() {
     ui.open(&(widget as Rc<dyn ui::Widget>),rect!(50,50,640,360),"Test Window");
 
     // run UI loop
-    ui.run();
+    ui.run();*/
 }

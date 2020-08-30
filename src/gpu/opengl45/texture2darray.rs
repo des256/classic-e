@@ -3,9 +3,9 @@
 
 use crate::*;
 use std::{
+    rc::Rc,
     ffi::c_void,
     marker::PhantomData,
-    rc::Rc,
 };
 use gl::types::GLuint;
 

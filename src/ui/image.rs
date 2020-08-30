@@ -1,7 +1,7 @@
 // E - UI - Image
 // Desmond Germans, 2020
 
-use crate::*;
+/*use crate::*;
 use std::rc::Rc;
 use std::cell::Cell;
 use std::cell::RefCell;
@@ -11,9 +11,6 @@ pub struct Image<T: gpu::GLFormat> {  // GLFormat should not be referred to here
 
     /// Reference to UI context.
     _ui: Rc<ui::UI>,
-
-    /// Rectangle.
-    _r: Cell<Rect<i32>>,
 
     /// Padding around the image.
     _padding: Cell<Vec2<i32>>,
@@ -79,5 +76,4 @@ impl<T: gpu::GLFormat> ui::Widget for Image<T> {
         self.ui.end_drawing(canvas_size,buffer,gpu::BlendMode::Replace);*/
     }
 }
-
-
+*/

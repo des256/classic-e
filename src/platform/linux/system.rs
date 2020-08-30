@@ -106,7 +106,7 @@ use {
             CURSOR_NONE,
             TIME_CURRENT_TIME,
             GRAB_MODE_ASYNC,
-            ungrab_pointer_checked,
+            ungrab_pointer,
         },
         cast_event,
         GenericEvent,
@@ -158,12 +158,12 @@ pub struct System {
     pub(crate) depth: u8,
     pub(crate) wm_protocols: u32,
     pub(crate) colormap: XID,
-    _wm_motif_hints: u32,
-    _wm_transient_for: u32,
-    _wm_net_type: u32,
-    _wm_net_type_utility: u32,
-    _wm_net_state: u32,
-    _wm_net_state_above: u32,
+    pub(crate) wm_motif_hints: u32,
+    pub(crate) _wm_transient_for: u32,
+    pub(crate) wm_net_type: u32,
+    pub(crate) wm_net_type_utility: u32,
+    pub(crate) wm_net_state: u32,
+    pub(crate) wm_net_state_above: u32,
     epfd: c_int,
     pub(crate) glx_swap_interval: GlXSwapIntervalEXT,
 }
@@ -375,12 +375,12 @@ impl System {
             depth: depth,
             wm_protocols: wm_protocols,
             colormap: colormap,
-            _wm_motif_hints: wm_motif_hints,
+            wm_motif_hints: wm_motif_hints,
             _wm_transient_for: wm_transient_for,
-            _wm_net_type: wm_net_type,
-            _wm_net_type_utility: wm_net_type_utility,
-            _wm_net_state: wm_net_state,
-            _wm_net_state_above: wm_net_state_above,
+            wm_net_type: wm_net_type,
+            wm_net_type_utility: wm_net_type_utility,
+            wm_net_state: wm_net_state,
+            wm_net_state_above: wm_net_state_above,
             epfd: epfd,
             glx_swap_interval: glx_swap_interval,
         })
@@ -412,13 +412,13 @@ impl System {
                 let p = vec2!(button_press.event_x() as i32,button_press.event_y() as i32);
                 let id = button_press.event() as XID;
                 match button_press.detail() {
-                    1 => { return Some((id,Event::MousePress(p,Mouse::Left))); },
-                    2 => { return Some((id,Event::MousePress(p,Mouse::Middle))); },
-                    3 => { return Some((id,Event::MousePress(p,Mouse::Right))); },
-                    4 => { return Some((id,Event::MouseWheel(Wheel::Up))); },
-                    5 => { return Some((id,Event::MouseWheel(Wheel::Down))); },
-                    6 => { return Some((id,Event::MouseWheel(Wheel::Left))); },
-                    7 => { return Some((id,Event::MouseWheel(Wheel::Right))); },
+                    1 => { return Some((id,Event::MousePress(p,MouseButton::Left))); },
+                    2 => { return Some((id,Event::MousePress(p,MouseButton::Middle))); },
+                    3 => { return Some((id,Event::MousePress(p,MouseButton::Right))); },
+                    4 => { return Some((id,Event::MouseWheel(MouseWheel::Up))); },
+                    5 => { return Some((id,Event::MouseWheel(MouseWheel::Down))); },
+                    6 => { return Some((id,Event::MouseWheel(MouseWheel::Left))); },
+                    7 => { return Some((id,Event::MouseWheel(MouseWheel::Right))); },
                     _ => { },
                 }        
             },
@@ -427,9 +427,9 @@ impl System {
                 let p = vec2!(button_release.event_x() as i32,button_release.event_y() as i32);
                 let id = button_release.event() as XID;
                 match button_release.detail() {
-                    1 => { return Some((id,Event::MouseRelease(p,Mouse::Left))); },
-                    2 => { return Some((id,Event::MouseRelease(p,Mouse::Middle))); },
-                    3 => { return Some((id,Event::MouseRelease(p,Mouse::Right))); },
+                    1 => { return Some((id,Event::MouseRelease(p,MouseButton::Left))); },
+                    2 => { return Some((id,Event::MouseRelease(p,MouseButton::Middle))); },
+                    3 => { return Some((id,Event::MouseRelease(p,MouseButton::Right))); },
                     _ => { },
                 }        
             },
@@ -490,7 +490,7 @@ impl System {
         println!("XGrabPointer");
         let com = grab_pointer(
             &self.connection,
-            true,
+            false,
             window.id as u32,
             (EVENT_MASK_BUTTON_PRESS | EVENT_MASK_BUTTON_RELEASE| EVENT_MASK_POINTER_MOTION) as u16,
             GRAB_MODE_ASYNC as u8,
@@ -510,7 +510,7 @@ impl System {
     /// Release mouse pointer.
     pub fn release_mouse(&self) {
         println!("XUngrabPointer");
-        ungrab_pointer_checked(&self.connection,TIME_CURRENT_TIME);
+        ungrab_pointer(&self.connection,TIME_CURRENT_TIME);
     }
 
 }

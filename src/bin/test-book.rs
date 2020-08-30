@@ -1,12 +1,12 @@
 // E - Book test
 // Desmond Germans, 2020
 
-use e::*;
-use std::rc::Rc;
+//use e::*;
+//use std::rc::Rc;
 
 fn main() {
 
-    // initialize system
+    /*// initialize system
     let system = Rc::new(System::new().expect("Cannot open system."));
 
     // initialize graphics context
@@ -42,9 +42,16 @@ fn main() {
         ("World".to_string(),vstack)
     ]).expect("Cannot create book."));
 
+    // create menu bar
+    let menubar = Rc::new(ui::MenuBar::new(&ui).expect("Cannot create menu bar."));
+
+    // put menu bar and book together
+    let vstack = Rc::new(ui::VStack::new_from_vec(&ui,vec![menubar,book]).expect("Cannot create VStack."));
+    vstack.halign.set(ui::HAlignment::Fill);
+
     // open window to host the book
-    ui.open(&(book as Rc<dyn ui::Widget>),rect!(50,50,640,360),"Test Window");
+    ui.open(&(vstack as Rc<dyn ui::Widget>),rect!(50,50,640,360),"Test Window");
 
     // run UI loop
-    ui.run();
+    ui.run();*/
 }

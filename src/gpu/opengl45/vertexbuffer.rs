@@ -3,8 +3,8 @@
 
 use crate::*;
 use std::{
-    ffi::c_void,
     rc::Rc,
+    ffi::c_void,
     marker::PhantomData,
     ptr::null,
 };
@@ -15,17 +15,16 @@ use gl::types::{
 
 #[doc(hidden)]
 pub trait GLVertex {
-    fn bind() -> Vec<GLuint>;
+    fn bind();
     fn len() -> isize;
 }
 
 impl GLVertex for Vec2<f32> {
-    fn bind() -> Vec<GLuint> {
+    fn bind() {
         unsafe {
             gl::EnableVertexAttribArray(0);
             gl::VertexAttribPointer(0,2,gl::FLOAT,gl::FALSE,0,0 as *const GLvoid);
         }
-        vec![0]
     }
 
     fn len() -> isize {
@@ -34,12 +33,11 @@ impl GLVertex for Vec2<f32> {
 }
 
 impl GLVertex for Vec4<f32> {
-    fn bind() -> Vec<GLuint> {
+    fn bind() {
         unsafe {
             gl::EnableVertexAttribArray(0);
             gl::VertexAttribPointer(0,4,gl::FLOAT,gl::FALSE,0,0 as *const GLvoid);
         }
-        vec![0]
     }
 
     fn len() -> isize {
