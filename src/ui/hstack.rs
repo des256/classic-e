@@ -2,10 +2,7 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use std::{
-    rc::Rc,
-    cell::RefCell,
-};
+use std::rc::Rc;
 
 /// Horizontal stack widget.
 pub struct HStack {
@@ -15,7 +12,7 @@ pub struct HStack {
 }
 
 impl HStack {
-    pub fn new_from_vec(anchor: &Rc<ui::UIAnchor>,widgets: Vec<Rc<RefCell<dyn ui::Widget>>>) -> HStack {
+    pub fn new_from_vec(anchor: &Rc<ui::UIAnchor>,widgets: Vec<Box<dyn ui::Widget>>) -> HStack {
         HStack {
             core: ui::Core::new_from_vec(anchor,widgets),
             padding: vec2!(0,0),
@@ -32,15 +29,15 @@ impl ui::Widget for HStack {
     fn set_rect(&mut self,r: Rect<i32>) {
         self.core.r = r;
         let mut ox = 0;
-        for child in self.core.children.iter() {
-            let size = child.borrow().calc_min_size();
+        for child in self.core.children.iter_mut() {
+            let size = child.calc_min_size();
             let (oy,sy) = match self.valign {
                 ui::VAlignment::Top => { (r.o.y,size.y) },
                 ui::VAlignment::Bottom => { (r.o.y + r.s.y - size.y,size.y) },
                 ui::VAlignment::Center => { (r.o.y + (r.s.y - size.y) / 2,size.y / 2) },
                 ui::VAlignment::Fill => { (r.o.y,r.s.y) },
             };
-            child.borrow_mut().set_rect(rect!(
+            child.set_rect(rect!(
                 ox + self.padding.x,
                 oy + self.padding.y,
                 size.x - 2 * self.padding.x,
@@ -53,7 +50,7 @@ impl ui::Widget for HStack {
     fn calc_min_size(&self) -> Vec2<i32> {
         let mut total_size = vec2!(0i32,0i32);
         for child in self.core.children.iter() {
-            let size = child.borrow().calc_min_size();
+            let size = child.calc_min_size();
             total_size.x += size.x;
             if size.y > total_size.y {
                 total_size.y = size.y;
@@ -65,7 +62,7 @@ impl ui::Widget for HStack {
     fn draw(&self,context: Vec2<i32>) {
         let local_context = context + self.core.r.o;
         for child in self.core.children.iter() {
-            child.borrow().draw(local_context);
+            child.draw(local_context);
         }
     }
 

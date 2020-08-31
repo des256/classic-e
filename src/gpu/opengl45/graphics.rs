@@ -17,7 +17,6 @@ use gl::types::{
 };
 #[cfg(target_os="linux")]
 use x11::{
-    xlib::XID,
     glx::{
         glXMakeCurrent,
         glXSwapBuffers,
@@ -203,7 +202,7 @@ impl BindTarget for gpu::Framebuffer {
     fn do_bind(&self,graphics: &Graphics) {
         unsafe {
 #[cfg(target_os="linux")]
-            glXMakeCurrent(graphics.system.raw_dpy(),graphics.system.hidden_window_id(),graphics.system.context());
+            glXMakeCurrent(graphics.system.anchor.connection.get_raw_dpy(),graphics.system.anchor.hidden_window,graphics.system.anchor.context);
 #[cfg(target_os="windows")]
             wglMakeCurrent(graphics.system.hidden_hdc(),graphics.system.hglrc());
             gl::BindFramebuffer(gl::FRAMEBUFFER,self.fbo);
@@ -213,27 +212,30 @@ impl BindTarget for gpu::Framebuffer {
     }
 }
 
-impl BindTarget for Rc<Window> {
+impl BindTarget for WindowContext {
 #[allow(unused_variables)]
     fn do_bind(&self,graphics: &Graphics) {
-        let size = self.r.get().s;
         unsafe {
 #[cfg(target_os="linux")]
-            glXMakeCurrent(graphics.system.connection.get_raw_dpy(),self.id,graphics.system.context);
+            glXMakeCurrent(graphics.system.anchor.connection.get_raw_dpy(),self.id,graphics.system.anchor.context);
 #[cfg(target_os="windows")]
             wglMakeCurrent(self.hdc,self.anchor.hglrc);
             gl::BindFramebuffer(gl::FRAMEBUFFER,0);
-            gl::Viewport(0,0,size.x,size.y);
-            gl::Scissor(0,0,size.x,size.y);
+            gl::Viewport(0,0,self.r.s.x,self.r.s.y);
+            gl::Scissor(0,0,self.r.s.x,self.r.s.y);
         }
     }
 }
 
 impl Graphics {
     /// Create new graphics context.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `system` - System to create the graphics context for.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(GPU)` - The created graphics context.
     /// * `Err(SystemError)` - The graphics context could not be created.
     pub fn new(system: &Rc<System>) -> Result<Graphics,SystemError> {
@@ -245,19 +247,23 @@ impl Graphics {
     }
 
     /// (temporary) Bind current target.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `target` - Framebuffer or window to draw to.
     pub fn bind_target<T: BindTarget>(&self,target: &T) {
         target.do_bind(&self);
     }
 
-    /// (temporary) Flush current situation.
+    /// (temporary) Flush currently pending graphics.
     pub fn flush(&self) {
         unsafe { gl::Flush(); }
     }
 
     /// (temporary) Clear current target.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `color` - Color to clear with.
     pub fn clear<T: ColorParameter>(&self,color: T) {
         let color = color.into_vec4();
@@ -268,61 +274,93 @@ impl Graphics {
     }
 
     /// (temporary) Draw points.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `n` - Number of vertices.
     pub fn draw_points(&self,n: i32) {
         unsafe { gl::DrawArrays(gl::POINTS,0,n) };
     }
 
     /// (temporary) Draw triangle fan.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `n` - Number of vertices.
     pub fn draw_triangle_fan(&self,n: i32) {
         unsafe { gl::DrawArrays(gl::TRIANGLE_FAN,0,n) };
     }
 
     /// (temporary) Draw triangles.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `n` - Number of vertices.
     pub fn draw_triangles(&self,n: i32) {
         unsafe { gl::DrawArrays(gl::TRIANGLES,0,n) };
     }
 
     /// (temporary) Draw points.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `n` - Number of vertices.
     pub fn draw_indexed_points(&self,n: i32) {
         unsafe { gl::DrawElements(gl::POINTS,n,self.index_type.get(),null_mut()) };
     }
 
     /// (temporary) Draw indexed triangle fan.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `n` - Number of vertices.
     pub fn draw_indexed_triangle_fan(&self,n: i32) {
         unsafe { gl::DrawElements(gl::TRIANGLE_FAN,n,self.index_type.get(),null_mut()) };
     }
 
     /// (temporary) Draw triangles.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `n` - Number of vertices.
     pub fn draw_indexed_triangles(&self,n: i32) {
         unsafe { gl::DrawElements(gl::TRIANGLES,n,self.index_type.get(),null_mut()) };
     }
 
+    /// (temporary) Draw instanced points.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `nv` - Number of vertices per instance.
+    /// * `ni` - Number of instances.
     pub fn draw_instanced_points(&self,nv: i32, ni: i32) {
         unsafe { gl::DrawArraysInstanced(gl::POINTS,0,nv,ni) };
     }
 
+    /// (temporary) Draw instanced triangles.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `nv` - Number of vertices per instance.
+    /// * `ni` - Number of instances.
     pub fn draw_instanced_triangles(&self,nv: i32, ni: i32) {
         unsafe { gl::DrawArraysInstanced(gl::TRIANGLES,0,nv,ni) };
     }
 
+    /// (temporary) Draw instanced triangle fan.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `nv` - Number of vertices per instance.
+    /// * `ni` - Number of instances.
     pub fn draw_instanced_triangle_fan(&self,nv: i32, ni: i32) {
         unsafe { gl::DrawArraysInstanced(gl::TRIANGLE_FAN,0,nv,ni) };
     }
 
     /// (temporary) Set blending mode.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `mode` - Blending mode.
     pub fn set_blend(&self,mode: gpu::BlendMode) {
         match mode {
@@ -336,7 +374,9 @@ impl Graphics {
     }
 
     /// (temporary) Bind texture or framebuffer to a texture stage.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `stage` - Texture stage to bind to.
     /// * `texture` - Texture or framebuffer to bind.
     pub fn bind_texture<T: GLBindTexture>(&self,stage: usize,texture: &T) {
@@ -344,7 +384,9 @@ impl Graphics {
     }
 
     /// (temporary) Bind current shader program.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `shader` - Shader program.
     pub fn bind_shader(&self,shader: &gpu::Shader) {
         unsafe { gl::UseProgram(shader.sp); }
@@ -352,7 +394,9 @@ impl Graphics {
     }
 
     /// (temporary) Set uniform value for current shader program.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `name` - Variable name referenced in the shader program.
     /// * `value` - Value of the uniform.
     pub fn set_uniform<T: GLSetUniform>(&self,name: &str,value: T) {
@@ -362,14 +406,18 @@ impl Graphics {
     }
 
     /// (temporary) Bind current vertex buffer.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `vertexbuffer` - Vertexbuffer to bind.
     pub fn bind_vertexbuffer<T: gpu::GLVertex>(&self,vertexbuffer: &gpu::VertexBuffer<T>) {
         unsafe { gl::BindVertexArray(vertexbuffer.vao) };
     }
 
     /// (temporary) Bind current index buffer.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `indexbuffer` - Indexbuffer to bind.
     pub fn bind_indexbuffer<T: gpu::GLIndex>(&self,indexbuffer: &gpu::IndexBuffer<T>) {
         self.index_type.set(T::gl_type());
@@ -377,6 +425,12 @@ impl Graphics {
     }
 
     /// (temporary) Bind uniform buffer.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `bp` - Uniform buffer binding point.
+    /// * `name` - Name of the uniform block in the shader.
+    /// * `uniformbuffer` - Uniform buffer.
     pub fn bind_uniformbuffer<T: gpu::GLUniform>(&self,bp: u32,name: &str,uniformbuffer: &gpu::UniformBuffer<T>) {
         let cname = CString::new(name).unwrap();
         unsafe {
@@ -386,28 +440,32 @@ impl Graphics {
         }
     }
 
-    /// (temporary) Enable/Disable VSync
-    /// ## Arguments
-    /// * window - Window to set VSync for.
-    /// * state - Whether or not VSync should be enabled.
+    /// (temporary) Enable/Disable VSync.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `window` - Window to set VSync for.
+    /// * `state` - Whether or not VSync should be enabled.
     #[allow(unused_variables)]
     pub fn set_vsync(&self,window: &Window,state: bool) {
         unsafe {
     #[cfg(target_os="linux")]
-            (self.system.glx_swap_interval)(self.system.raw_dpy(),window.id,if state { 1 } else { 0 });
+            (self.system.glx_swap_interval)(self.system.anchor.connection.get_raw_dpy(),window.context.id,if state { 1 } else { 0 });
     #[cfg(target_os="windows")]
             (self.system.wgl_swap_interval)(if state { 1 } else { 0 });
         }
     }
 
     /// (temporary) Present target.
-    /// ## Arguments
-    /// * window - Window to swap buffers for.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `id` - Unique window ID to present to.
     #[allow(unused_variables)]
-    pub fn present(&self,window: &Window) {
+    pub fn present(&self,id: &u64) {
         unsafe {
     #[cfg(target_os="linux")]
-            glXSwapBuffers(self.system.raw_dpy(),window.id);
+            glXSwapBuffers(self.system.anchor.connection.get_raw_dpy(),*id);
     #[cfg(target_os="windows")]
             SwapBuffers(window.hdc);
         }

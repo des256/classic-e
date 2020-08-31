@@ -2,20 +2,18 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use std::{
-    rc::Rc,
-    cell::RefCell,
-};
+use std::rc::Rc;
 
 /// Widget core.
 pub struct Core {
     pub(crate) anchor: Rc<ui::UIAnchor>,
     pub r: Rect<i32>,
-    pub children: Vec<Rc<RefCell<dyn ui::Widget>>>,
+    pub children: Vec<Box<dyn ui::Widget>>,
     pub capturing_child: Option<usize>,
 }
 
 impl Core {
+
     pub fn new(anchor: &Rc<ui::UIAnchor>) -> Core {
         Core {
             anchor: Rc::clone(anchor),
@@ -25,7 +23,7 @@ impl Core {
         }
     }
 
-    pub fn new_from_vec(anchor: &Rc<ui::UIAnchor>,children: Vec<Rc<RefCell<dyn ui::Widget>>>) -> Core {
+    pub fn new_from_vec(anchor: &Rc<ui::UIAnchor>,children: Vec<Box<dyn ui::Widget>>) -> Core {
         Core {
             anchor: Rc::clone(anchor),
             r: rect!(0,0,0,0),
@@ -45,7 +43,7 @@ impl Core {
     pub fn handle_mouse_press(&mut self,b: MouseButton) -> ui::MouseResult {
         // if any of the children captures the mouse, handle the press there
         if let Some(i) = self.capturing_child {
-            let result = self.children[i].borrow_mut().handle_mouse_press(b);
+            let result = self.children[i].handle_mouse_press(b);
             if let ui::MouseResult::ProcessedCapture = result {
                 return result;
             }
@@ -58,7 +56,7 @@ impl Core {
     pub fn handle_mouse_release(&mut self,b: MouseButton) -> ui::MouseResult {
         // if any of the children captures the mouse, handle the release there
         if let Some(i) = self.capturing_child {
-            let result = self.children[i].borrow_mut().handle_mouse_release(b);
+            let result = self.children[i].handle_mouse_release(b);
             if let ui::MouseResult::ProcessedCapture = result {
                 return result;
             }
@@ -72,8 +70,8 @@ impl Core {
         // if any of the children captures the mouse, handle the move
         if let Some(i) = self.capturing_child {
             let child = &mut self.children[i];
-            let r = child.borrow().get_rect();
-            let result = child.borrow_mut().handle_mouse_move(p - r.o);
+            let r = child.get_rect();
+            let result = child.handle_mouse_move(p - r.o);
             if let ui::MouseResult::ProcessedCapture = result {
                 return result;
             }
@@ -83,9 +81,9 @@ impl Core {
         // otherwise, handle the move in any of the children containing the mouse
         for i in 0..self.children.len() {
             let child = &mut self.children[i];
-            let r = child.borrow().get_rect();
+            let r = child.get_rect();
             if r.contains(&p) {
-                let result = child.borrow_mut().handle_mouse_move(p - r.o);
+                let result = child.handle_mouse_move(p - r.o);
                 if let ui::MouseResult::ProcessedCapture = result {
                     self.capturing_child = Some(i);
                 }

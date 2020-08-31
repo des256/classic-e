@@ -17,11 +17,15 @@ pub struct Texture1D<T: gpu::GLFormat> {
 }
 
 impl<T: gpu::GLFormat> Texture1D<T> {
-    /// (temporary) Create new 1D texture.
-    /// ## Arguments
+    /// (temporary) Create new empty 1D texture.
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create texture for.
     /// * `size` - Size of the texture.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(Texture1D)` - The new 1D texture.
     /// * `Err(SystemError)` - The 1D texture could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>,size: usize) -> Result<Texture1D<T>,SystemError> {
@@ -42,10 +46,14 @@ impl<T: gpu::GLFormat> Texture1D<T> {
     }
 
     /// (temporary) Create new 1D texture from Vec.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create texture for.
     /// * `src` - Vec containing source data.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(Texture1D)` - The new 1D texture.
     /// * `Err(SystemError)` - The 1D texture could not be created.
     pub fn new_from_vec(graphics: &Rc<gpu::Graphics>,src: Vec<T>) -> Result<Texture1D<T>,SystemError> {
@@ -55,7 +63,9 @@ impl<T: gpu::GLFormat> Texture1D<T> {
     }
 
     /// (temporary) Load data into 1D texture.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `o` - offset.
     /// * `src` - Vec containing source data.
     pub fn load(&self,o: usize,src: &Vec<T>) {
@@ -66,7 +76,11 @@ impl<T: gpu::GLFormat> Texture1D<T> {
 
     }
 
-
+    /// (temporary) Set texture filter mode.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `filter` - New filter mode (one of `TextureFilter::*`).
     pub fn set_filter(&self,filter: gpu::TextureFilter) {
         unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
         match filter {
@@ -81,6 +95,11 @@ impl<T: gpu::GLFormat> Texture1D<T> {
         }
     }
 
+    /// (temporary) Set texture wrapping mode along X direction.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `wrap` - New wrapping mode (one of `TextureWrap::*`).
     pub fn set_wrap_x(&self,wrap: gpu::TextureWrap) {
         unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
         match wrap {

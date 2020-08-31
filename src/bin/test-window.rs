@@ -7,11 +7,19 @@ use std::{
     cell::Cell,
 };
 
-fn handler(event: Event) -> bool {
-    if let Event::Close = event {
-        return false;
+struct MyHandler {
+    running: Cell<bool>,
+}
+
+impl Handler for MyHandler {
+    fn handle(&self,_wc: &WindowContext,event: Event) {
+        match event {
+            Event::Close => {
+                self.running.set(false);
+            },
+            _ => { },
+        }
     }
-    true
 }
 
 fn main() {
@@ -22,18 +30,23 @@ fn main() {
     // initialize graphics
     let _graphics = Rc::new(gpu::Graphics::new(&system).expect("Cannot open graphics."));
 
-    // create window
-    let window = Rc::new(system.open_frame_window(
+    // create handler object
+    let handler = Rc::new(MyHandler { running: Cell::new(true), });
+
+    // open window
+    let handler_clone = Rc::clone(&handler);
+    let window_id = system.open_frame_window(
         rect!(50,50,640,360),
-        "Test Window"
-    ).expect("Cannot create window."));
+        "Test Window",
+        &(handler_clone as Rc<dyn Handler>)
+    );
 
-    let running = Rc::new(Cell::new(true));
-    let closure_running = Rc::clone(&running);
-    window.set_handler(move |event| closure_running.set(handler(event)) );
-
-    while running.get() {
+    // run the show
+    while handler.running.get() {
         system.wait();
         system.flush();
     }
+
+    // and close the window again
+    system.close_window(window_id);
 }

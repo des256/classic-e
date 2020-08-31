@@ -54,9 +54,13 @@ pub struct VertexBuffer<T: GLVertex> {
 
 impl<T: GLVertex> VertexBuffer<T> {
     /// (temporary) Create new vertex buffer.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create vertexbuffer for.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(VertexBuffer)` - The new vertex buffer.
     /// * `Err(SystemError)` - The vertex buffer could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>) -> Result<VertexBuffer<T>,SystemError> {
@@ -78,10 +82,14 @@ impl<T: GLVertex> VertexBuffer<T> {
     }
 
     /// (temporary) Create new vertex buffer from Vec.
-    /// /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create texture for.
     /// * `src` - Vec containing source data.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(VertexBuffer)` - The new vertex buffer.
     /// * `Err(SystemError)` - The vertex buffer could not be created.
     pub fn new_from_vec(_graphics: &Rc<gpu::Graphics>,src: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
@@ -91,7 +99,9 @@ impl<T: GLVertex> VertexBuffer<T> {
     }
 
     /// (temporary) Load data into vertex buffer
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `o` - offset.
     /// * `src` - Vec containing source data.
     pub fn load(&self,o: usize,src: &Vec<T>) {

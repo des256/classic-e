@@ -42,14 +42,15 @@ fn get_i32(buffer: &[u8]) -> i32 {
 }
 
 /// Text font prototype.
+#[doc(hidden)]
 pub struct FontProto {
     pub(crate) _filename: String,
     pub(crate) sets: Vec<CharacterSet>,
     pub(crate) texture: gpu::Texture2D<pixel::R8>,
 }
 
+#[doc(hidden)]
 impl FontProto {
-    #[doc(hidden)]
     pub fn new(graphics: &Rc<gpu::Graphics>,filename: &str) -> Result<FontProto,SystemError> {
         let mut file = match File::open(filename) {
             Ok(file) => file,

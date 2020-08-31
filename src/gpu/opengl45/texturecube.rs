@@ -27,10 +27,14 @@ pub struct TextureCube<T: gpu::GLFormat> {
 
 impl<T: gpu::GLFormat> TextureCube<T> {    
     /// (temporary) Create new cube texture.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create texture for.
     /// * `size` - Size of the texture.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(TextureCube)` - The new cube texture.
     /// * `Err(SystemError)` - The cube texture could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>,size: usize) -> Result<TextureCube<T>,SystemError> {
@@ -53,7 +57,9 @@ impl<T: gpu::GLFormat> TextureCube<T> {
     }
 
     /// (temporary) Create new cube texture from 6 Mats.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create texture for.
     /// * `src_xp` - Mat for the positive-X texture.
     /// * `src_xn` - Mat for the negative-X texture.
@@ -61,7 +67,9 @@ impl<T: gpu::GLFormat> TextureCube<T> {
     /// * `src_yn` - Mat for the negative-Y texture.
     /// * `src_zp` - Mat for the positive-Z texture.
     /// * `src_zn` - Mat for the negative-Z texture.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(TextureCube)` - The new cube texture.
     /// * `Err(SystemError)` - The cube texture could not be created.
     pub fn new_from_mats(graphics: &Rc<gpu::Graphics>,src_xp: Mat<T>,src_xn: Mat<T>,src_yp: Mat<T>,src_yn: Mat<T>,src_zp: Mat<T>,src_zn: Mat<T>) -> Result<TextureCube<T>,SystemError> {
@@ -76,7 +84,10 @@ impl<T: gpu::GLFormat> TextureCube<T> {
     }
 
     /// (temporary) Load data into up-facing texture.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `cf` - Cube face identifier (one of `CubeFace::*`).
     /// * `o` - offset.
     /// * `src` - Mat containing source data.
     pub fn load(&self,cf: CubeFace,o: Vec2<usize>,src: &Mat<T>) {
@@ -94,6 +105,11 @@ impl<T: gpu::GLFormat> TextureCube<T> {
         }
     }
 
+    /// (temporary) Set texture filter mode.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `filter` - New filter mode (one of `TextureFilter::*`).
     pub fn set_filter(&self,filter: gpu::TextureFilter) {
         unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
         match filter {
@@ -108,6 +124,11 @@ impl<T: gpu::GLFormat> TextureCube<T> {
         }
     }
 
+    /// (temporary) Set texture wrapping mode along X direction.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `wrap` - New wrapping mode (one of `TextureWrap::*`).
     pub fn set_wrap_x(&self,wrap: gpu::TextureWrap) {
         unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
         match wrap {
@@ -118,6 +139,11 @@ impl<T: gpu::GLFormat> TextureCube<T> {
         }
     }
 
+    /// (temporary) Set texture wrapping mode along Y direction.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `wrap` - New wrapping mode (one of `TextureWrap::*`).
     pub fn set_wrap_y(&self,wrap: gpu::TextureWrap) {
         unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
         match wrap {
@@ -128,6 +154,11 @@ impl<T: gpu::GLFormat> TextureCube<T> {
         }
     }
 
+    /// (temporary) Set texture wrapping mode along Z direction.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `wrap` - New wrapping mode (one of `TextureWrap::*`).
     pub fn set_wrap_z(&self,wrap: gpu::TextureWrap) {
         unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
         match wrap {

@@ -14,10 +14,14 @@ pub struct Framebuffer {
 
 impl Framebuffer {
     /// Create new framebuffer for a graphics context.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create the framebuffer for.
     /// * `size` - Dimensions of the framebuffer.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(Framebuffer)` - The new framebuffer.
     /// * `Err(SystemError)` - The framebuffer could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {

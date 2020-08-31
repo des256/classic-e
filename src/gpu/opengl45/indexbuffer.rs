@@ -37,9 +37,13 @@ pub struct IndexBuffer<T: GLIndex> {
 
 impl<T: GLIndex> IndexBuffer<T> {
     /// (temporary) Create new index buffer.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create indexbuffer for.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(IndexBuffer)` - The new index buffer.
     /// * `Err(SystemError)` - The index buffer could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>) -> Result<IndexBuffer<T>,SystemError> {
@@ -55,11 +59,15 @@ impl<T: GLIndex> IndexBuffer<T> {
         })
     }
 
-    /// (temporary) Create new index buffer.
-    /// ## Arguments
+    /// (temporary) Create new index buffer from vec.
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create indexbuffer for.
     /// * `indices` - Vector of indices to upload.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(IndexBuffer)` - The new index buffer.
     /// * `Err(SystemError)` - The index buffer could not be created.
     pub fn new_from_vec(_graphics: &Rc<gpu::Graphics>,indices: &Vec<T>) -> Result<IndexBuffer<T>,SystemError> {
@@ -68,6 +76,11 @@ impl<T: GLIndex> IndexBuffer<T> {
         Ok(indexbuffer)
     }
 
+    /// (temporary) Load all or part of the indices from vec.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `indices` - The replacement indices vec.
     pub fn load(&self,indices: &Vec<T>) {
         unsafe {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER,self.ibo);

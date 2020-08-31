@@ -33,12 +33,28 @@ pub enum MouseResult {
 
 /// Widget abstraction trait.
 pub trait Widget {
+
+    /// Get rectangle for this widget.
     fn get_rect(&self) -> Rect<i32>;
+
+    /// Set rectangle for this widget.
+    /// 
+    /// If the widget has children, the rectangles for the children are also updated accordingly.
     fn set_rect(&mut self,r: Rect<i32>);
+
+    /// Calculate minimum size this widget needs.
     fn calc_min_size(&self) -> Vec2<i32>;
+
+    /// Draw the widget.
     fn draw(&self,context: Vec2<i32>);
+
+    /// Handle mouse button press.
     fn handle_mouse_press(&mut self,b: MouseButton) -> MouseResult;
+
+    /// Handle mouse button release.
     fn handle_mouse_release(&mut self,b: MouseButton) -> MouseResult;
+
+    /// Handle mouse pointer move.
     fn handle_mouse_move(&mut self,p: Vec2<i32>) -> MouseResult;
 }
 

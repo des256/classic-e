@@ -18,10 +18,14 @@ pub struct Texture2D<T: gpu::GLFormat> {
 
 impl<T: gpu::GLFormat> Texture2D<T> {
     /// (temporary) Create new empty 2D texture.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create texture for.
     /// * `size` - Size of the texture.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(Texture2D)` - The new 2D texture.
     /// * `Err(SystemError)` - The 2D texture could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>,size: Vec2<usize>) -> Result<Texture2D<T>,SystemError> {
@@ -43,10 +47,14 @@ impl<T: gpu::GLFormat> Texture2D<T> {
     }
 
     /// (temporary) Create new 2D texture from Mat.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create texture for.
     /// * `src` - Mat containing source data.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(Texture2D)` - The new 2D texture.
     /// * `Err(SystemError)` - The 2D texture could not be created.
     pub fn new_from_mat(graphics: &Rc<gpu::Graphics>,src: Mat<T>) -> Result<Texture2D<T>,SystemError> {
@@ -56,7 +64,9 @@ impl<T: gpu::GLFormat> Texture2D<T> {
     }
 
     /// (temporary) Load data into 2D texture.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `o` - offset.
     /// * `src` - Mat containing source data.
     pub fn load(&self,o: Vec2<usize>,src: &Mat<T>) {
@@ -65,6 +75,11 @@ impl<T: gpu::GLFormat> Texture2D<T> {
             gl::TexSubImage2D(gl::TEXTURE_2D,0,o.x as i32,o.y as i32,src.size.x as i32,src.size.y as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void) };
     }
 
+    /// (temporary) Set texture filter mode.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `filter` - New filter mode (one of `TextureFilter::*`).
     pub fn set_filter(&self,filter: gpu::TextureFilter) {
         unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
         match filter {
@@ -79,6 +94,11 @@ impl<T: gpu::GLFormat> Texture2D<T> {
         }
     }
 
+    /// (temporary) Set texture wrapping mode along X direction.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `wrap` - New wrapping mode (one of `TextureWrap::*`).
     pub fn set_wrap_x(&self,wrap: gpu::TextureWrap) {
         unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
         match wrap {
@@ -89,6 +109,11 @@ impl<T: gpu::GLFormat> Texture2D<T> {
         }
     }
 
+    /// (temporary) Set texture wrapping mode along Y direction.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `wrap` - New wrapping mode (one of `TextureWrap::*`).
     pub fn set_wrap_y(&self,wrap: gpu::TextureWrap) {
         unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
         match wrap {

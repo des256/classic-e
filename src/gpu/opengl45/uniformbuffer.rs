@@ -29,7 +29,6 @@ impl GLUniform for Vec4<f32> {
     }
 }
 
-
 /// Uniform buffer GPU resource.
 pub struct UniformBuffer<T: GLUniform> {
     pub(crate) ubo: GLuint,
@@ -38,9 +37,13 @@ pub struct UniformBuffer<T: GLUniform> {
 
 impl<T: GLUniform> UniformBuffer<T> {
     /// (temporary) Create new uniform buffer.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create uniform buffer for.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(UniformBuffer)` - The new uniform buffer.
     /// * `Err(SystemError)` - The uniform buffer could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>) -> Result<UniformBuffer<T>,SystemError> {
@@ -57,10 +60,14 @@ impl<T: GLUniform> UniformBuffer<T> {
     }
 
     /// (temporary) Create new uniform buffer from Vec.
-    /// /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create uniform buffer for.
     /// * `src` - Vec containing source data.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(UniformBuffer)` - The new uniform buffer.
     /// * `Err(SystemError)` - The uniform buffer could not be created.
     pub fn new_from_vec(_graphics: &Rc<gpu::Graphics>,src: Vec<T>) -> Result<UniformBuffer<T>,SystemError> {
@@ -70,7 +77,9 @@ impl<T: GLUniform> UniformBuffer<T> {
     }
 
     /// (temporary) Load data into uniform buffer
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `o` - offset.
     /// * `src` - Vec containing source data.
     pub fn load(&self,o: usize,src: &Vec<T>) {

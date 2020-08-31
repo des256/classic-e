@@ -18,10 +18,14 @@ pub struct Texture2DArray<T: gpu::GLFormat> {  // start with one layer, rebuild 
 
 impl<T: gpu::GLFormat> Texture2DArray<T> {
     /// (temporary) Create new empty 2D texture array.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create texture for.
     /// * `size` - Size of the texture.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(Texture2DArray)` - The new 2D texture.
     /// * `Err(SystemError)` - The 2D texture array could not be created.
     pub fn new(_graphics: &Rc<gpu::Graphics>,size: Vec3<usize>) -> Result<Texture2DArray<T>,SystemError> {
@@ -43,10 +47,14 @@ impl<T: gpu::GLFormat> Texture2DArray<T> {
     }
 
     /// (temporary) Create new 2D texture array from Ten.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `graphics` - Graphics context to create texture array for.
     /// * `src` - Ten containing source data.
-    /// ## Returns
+    /// 
+    /// **Returns**
+    /// 
     /// * `Ok(Texture2DArray)` - The new 2D texture array.
     /// * `Err(SystemError)` - The 2D texture array could not be created.
     pub fn new_from_ten(graphics: &Rc<gpu::Graphics>,src: Ten<T>) -> Result<Texture2DArray<T>,SystemError> {
@@ -56,7 +64,9 @@ impl<T: gpu::GLFormat> Texture2DArray<T> {
     }
 
     /// (temporary) Load data into 2D texture array.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `o` - offset.
     /// * `src` - Ten containing source data.
     pub fn load(&self,o: Vec3<usize>,src: &Ten<T>) {
@@ -67,7 +77,9 @@ impl<T: gpu::GLFormat> Texture2DArray<T> {
     }
 
     /// (temporary) Load data into layer of 2D texture array.
-    /// ## Arguments
+    /// 
+    /// **Arguments**
+    /// 
     /// * `layer` - layer.
     /// * `o` - offset.
     /// * `src` - Mat containing source data.
@@ -78,6 +90,11 @@ impl<T: gpu::GLFormat> Texture2DArray<T> {
         }
     }
     
+    /// (temporary) Set texture filter mode.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `filter` - New filter mode (one of `TextureFilter::*`).
     pub fn set_filter(&self,filter: gpu::TextureFilter) {
         unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
         match filter {
@@ -92,6 +109,11 @@ impl<T: gpu::GLFormat> Texture2DArray<T> {
         }
     }
 
+    /// (temporary) Set texture wrapping mode along X direction.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `wrap` - New wrapping mode (one of `TextureWrap::*`).
     pub fn set_wrap_x(&self,wrap: gpu::TextureWrap) {
         unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
         match wrap {
@@ -102,6 +124,11 @@ impl<T: gpu::GLFormat> Texture2DArray<T> {
         }
     }
 
+    /// (temporary) Set texture wrapping mode along Y direction.
+    /// 
+    /// **Arguments**
+    /// 
+    /// * `wrap` - New wrapping mode (one of `TextureWrap::*`).
     pub fn set_wrap_y(&self,wrap: gpu::TextureWrap) {
         unsafe { gl::BindTexture(gl::TEXTURE_2D,self.tex); }
         match wrap {
