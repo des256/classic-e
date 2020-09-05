@@ -52,24 +52,12 @@ pub enum SystemError {
     Generic,
 }
 
-/// Window context.
-pub struct WindowContext {
-    pub id: u64,
-    pub r: Rect<i32>,
-}
-
-/// Event handler trait.
-pub trait Handler {
-
-    /// Handle event for this window.
-    /// 
-    /// **Arguments**
-    /// 
-    /// * `event` - Event to handle (one of `Event::*`).
-    fn handle(&self,wc: &WindowContext,event: Event);
-
-    #[doc(hidden)]
-    fn inform_id(&self,_id: u64) { }
+/// Window trait.
+pub trait Window {
+    fn handle(&self,event: Event);
+    fn rect(&self) -> Rect<i32>;
+    fn set_rect(&self,r: Rect<i32>);
+    fn id(&self) -> u64;
 }
 
 #[cfg(target_os="linux")]

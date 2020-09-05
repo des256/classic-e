@@ -11,13 +11,15 @@ use {
                 c_int,
             },
         },
-        ffi::CString,
+        ffi::{
+            CString,
+            CStr,
+        },
         mem::transmute,
         ptr::null_mut,
         rc::Rc,
         os::unix::io::AsRawFd,
-        ffi::CStr,
-        cell::RefCell,
+        cell::Cell,
     },
     x11::{
         xlib::{
@@ -156,17 +158,11 @@ fn load_function(name: &str) -> *mut c_void {
     pointer
 }
 
-#[doc(hidden)]
-pub(crate) struct SystemAnchor {
+/// Main system context.
+pub struct System {
     pub(crate) connection: Connection,
     pub(crate) hidden_window: XID,
     pub(crate) context: GLXContext,
-}
-
-/// Main system context.
-pub struct System {
-    pub(crate) anchor: Rc<SystemAnchor>,
-    pub(crate) windows: RefCell<Vec<Window>>,
     pub(crate) wm_delete_window: u32,
     pub(crate) rootwindow: XID,
     pub(crate) visualid: VisualID,
@@ -181,13 +177,6 @@ pub struct System {
     pub(crate) wm_net_state_above: u32,
     epfd: c_int,
     pub(crate) glx_swap_interval: GlXSwapIntervalEXT,
-}
-
-#[doc(hidden)]
-pub struct Window {
-    anchor: Rc<SystemAnchor>,
-    pub context: WindowContext,
-    pub(crate) handler: Rc<dyn Handler>,
 }
 
 impl System {
@@ -390,12 +379,9 @@ impl System {
         unsafe { epoll_ctl(epfd,EPOLL_CTL_ADD,fd,epe.as_mut_ptr()) };
 
         Ok(System {
-            anchor: Rc::new(SystemAnchor {
-                connection: connection,
-                hidden_window: hidden_window,
-                context: context,
-            }),
-            windows: RefCell::new(Vec::new()),
+            connection: connection,
+            hidden_window: hidden_window,
+            context: context,
             wm_delete_window: wm_delete_window,
             rootwindow: rootwindow,
             visualid: visualid,
@@ -413,10 +399,10 @@ impl System {
         })
     }
 
-    fn send_event(&self,xid: XID,event: Event) {
-        for window in self.windows.borrow_mut().iter_mut() {
-            if xid == window.context.id {
-                window.handler.handle(&window.context,event);
+    fn send_event<T: Window>(&self,windows: &Vec<&T>,xid: XID,event: Event) {
+        for window in windows.iter() {
+            if xid == window.id() {
+                window.handle(event);
                 break;
             }
         }
@@ -425,41 +411,41 @@ impl System {
     /// Flush all pending window events.
     /// 
     /// This processes each pending event from the system's event queue by
-    /// calling `Handler::handle` on the associated handlers.
-    pub fn flush(&self) {
-        while let Some(xcb_event) = self.anchor.connection.poll_for_event() {
+    /// calling `handle` on the associated handlers.
+    pub fn flush<T: Window>(&self,windows: &Vec<&T>) {
+        while let Some(xcb_event) = self.connection.poll_for_event() {
             let r = xcb_event.response_type() & !0x80;
             match r {
                 EXPOSE => {
                     let expose: &ExposeEvent = unsafe { cast_event(&xcb_event) };
                     //let r = rect!(expose.x() as isize,expose.y() as isize,expose.width() as isize,expose.height() as isize);
                     let xid = expose.window() as XID;
-                    self.send_event(xid,Event::Render);
+                    self.send_event(windows,xid,Event::Render);
                 },
                 KEY_PRESS => {
                     let key_press: &KeyPressEvent = unsafe { cast_event(&xcb_event) };
                     let k = key_press.detail() as u8;
                     let xid = key_press.event() as XID;
-                    self.send_event(xid,Event::KeyPress(k));
+                    self.send_event(windows,xid,Event::KeyPress(k));
                 },
                 KEY_RELEASE => {
                     let key_release: &KeyReleaseEvent = unsafe { cast_event(&xcb_event) };
                     let k = key_release.detail() as u8;
                     let xid = key_release.event() as XID;
-                    self.send_event(xid,Event::KeyRelease(k));
+                    self.send_event(windows,xid,Event::KeyRelease(k));
                 },
                 BUTTON_PRESS => {
                     let button_press: &ButtonPressEvent = unsafe { cast_event(&xcb_event) };
                     let p = vec2!(button_press.event_x() as i32,button_press.event_y() as i32);
                     let xid = button_press.event() as XID;
                     match button_press.detail() {
-                        1 => { self.send_event(xid,Event::MousePress(p,MouseButton::Left)); },
-                        2 => { self.send_event(xid,Event::MousePress(p,MouseButton::Middle)); },
-                        3 => { self.send_event(xid,Event::MousePress(p,MouseButton::Right)); },
-                        4 => { self.send_event(xid,Event::MouseWheel(MouseWheel::Up)); },
-                        5 => { self.send_event(xid,Event::MouseWheel(MouseWheel::Down)); },
-                        6 => { self.send_event(xid,Event::MouseWheel(MouseWheel::Left)); },
-                        7 => { self.send_event(xid,Event::MouseWheel(MouseWheel::Right)); },
+                        1 => { self.send_event(windows,xid,Event::MousePress(p,MouseButton::Left)); },
+                        2 => { self.send_event(windows,xid,Event::MousePress(p,MouseButton::Middle)); },
+                        3 => { self.send_event(windows,xid,Event::MousePress(p,MouseButton::Right)); },
+                        4 => { self.send_event(windows,xid,Event::MouseWheel(MouseWheel::Up)); },
+                        5 => { self.send_event(windows,xid,Event::MouseWheel(MouseWheel::Down)); },
+                        6 => { self.send_event(windows,xid,Event::MouseWheel(MouseWheel::Left)); },
+                        7 => { self.send_event(windows,xid,Event::MouseWheel(MouseWheel::Right)); },
                         _ => { },
                     }        
                 },
@@ -468,9 +454,9 @@ impl System {
                     let p = vec2!(button_release.event_x() as i32,button_release.event_y() as i32);
                     let xid = button_release.event() as XID;
                     match button_release.detail() {
-                        1 => { self.send_event(xid,Event::MouseRelease(p,MouseButton::Left)); },
-                        2 => { self.send_event(xid,Event::MouseRelease(p,MouseButton::Middle)); },
-                        3 => { self.send_event(xid,Event::MouseRelease(p,MouseButton::Right)); },
+                        1 => { self.send_event(windows,xid,Event::MouseRelease(p,MouseButton::Left)); },
+                        2 => { self.send_event(windows,xid,Event::MouseRelease(p,MouseButton::Middle)); },
+                        3 => { self.send_event(windows,xid,Event::MouseRelease(p,MouseButton::Right)); },
                         _ => { },
                     }        
                 },
@@ -478,24 +464,24 @@ impl System {
                     let motion_notify: &MotionNotifyEvent = unsafe { cast_event(&xcb_event) };
                     let p = vec2!(motion_notify.event_x() as i32,motion_notify.event_y() as i32);
                     let xid = motion_notify.event() as XID;
-                    self.send_event(xid,Event::MouseMove(p));
+                    self.send_event(windows,xid,Event::MouseMove(p));
                 },
                 CONFIGURE_NOTIFY => {
                     let configure_notify: &ConfigureNotifyEvent = unsafe { cast_event(&xcb_event) };
                     let r = rect!(configure_notify.x() as i32,configure_notify.y() as i32,configure_notify.width() as i32,configure_notify.height() as i32);
                     let xid = configure_notify.event() as XID;
-                    for window in self.windows.borrow_mut().iter_mut() {
-                        if xid == window.context.id {
-                            let mut window_r = window.context.r;
+                    for window in windows.iter() {
+                        if xid == window.id() {
+                            let mut window_r = window.rect();
                             if r.o != window_r.o {
                                 window_r.o = r.o;
-                                window.context.r = window_r;
-                                window.handler.handle(&window.context,Event::Move(r.o));
+                                window.set_rect(window_r);
+                                window.handle(Event::Move(r.o));
                             }
                             if r.s != window_r.s {
                                 window_r.s = r.s;
-                                window.context.r = window_r;
-                                window.handler.handle(&window.context,Event::Size(r.s));
+                                window.set_rect(window_r);
+                                window.handle(Event::Size(r.s));
                             }
                             break;
                         }
@@ -507,7 +493,7 @@ impl System {
                     let atom = (data[0] as u32) | ((data[1] as u32) << 8) | ((data[2] as u32) << 16) | ((data[3] as u32) << 24);
                     if atom == self.wm_delete_window {
                         let xid = client_message.window() as XID;
-                        self.send_event(xid,Event::Close);
+                        self.send_event(windows,xid,Event::Close);
                     }
                 },
                 _ => { },
@@ -521,151 +507,6 @@ impl System {
         unsafe { epoll_wait(self.epfd,epe.as_mut_ptr(),1,-1) };
     }
 
-    fn open_window(&self,r: Rect<i32>,handler: &Rc<dyn Handler>) -> u64 {
-        let id = self.anchor.connection.generate_id() as XID;
-        let values = [
-            (CW_EVENT_MASK,
-                EVENT_MASK_EXPOSURE
-                | EVENT_MASK_KEY_PRESS
-                | EVENT_MASK_KEY_RELEASE
-                | EVENT_MASK_BUTTON_PRESS
-                | EVENT_MASK_BUTTON_RELEASE
-                | EVENT_MASK_POINTER_MOTION
-                | EVENT_MASK_STRUCTURE_NOTIFY
-            ),
-            (CW_COLORMAP,self.colormap as u32),
-        ];
-        create_window(
-            &self.anchor.connection,
-            self.depth as u8,
-            id as u32,
-            self.rootwindow as u32,
-            r.o.x as i16,r.o.y as i16,r.s.x as u16,r.s.y as u16,
-            0,
-            WINDOW_CLASS_INPUT_OUTPUT as u16,
-            self.visualid as u32,
-            &values
-        );
-        unsafe {
-            map_window(&self.anchor.connection,id as u32);
-            self.anchor.connection.flush();
-            XSync(self.anchor.connection.get_raw_dpy(),False);
-        }
-        handler.inform_id(id);
-        let window = Window {
-            anchor: Rc::clone(&self.anchor),
-            context: WindowContext { id: id, r: r, },
-            handler: Rc::clone(handler),
-        };
-        self.windows.borrow_mut().push(window);
-        id
-    }
-
-    /// Open a frame window.
-    /// 
-    /// Open a window on the screen that has a frame with a title, and connect a handler.
-    /// 
-    /// **Arguments**
-    /// 
-    /// * `r` - Rectangle of the new window.
-    /// * `title` - Title for the window.
-    /// * `handler` - Object to process the events.
-    /// 
-    /// **Returns**
-    /// 
-    /// A unique ID for this window.
-    pub fn open_frame_window(&self,r: Rect<i32>,title: &str,handler: &Rc<dyn Handler>) -> u64 {
-        let id = self.open_window(r,handler);
-        let protocol_set = [self.wm_delete_window];
-        change_property(
-            &self.anchor.connection,
-            PROP_MODE_REPLACE as u8,
-            id as u32,
-            self.wm_protocols,
-            ATOM_ATOM,
-            32,
-            &protocol_set
-        );        
-        change_property(
-            &self.anchor.connection,
-            PROP_MODE_REPLACE as u8,
-            id as u32,
-            ATOM_WM_NAME,
-            ATOM_STRING,
-            8,
-            title.as_bytes()
-        );
-        self.anchor.connection.flush();
-        id
-    }
-
-    /// Open a popup window.
-    /// 
-    /// Open a window on the screen without a frame or title, and connect a handler.
-    /// 
-    /// **Arguments**
-    /// 
-    /// * `r` - Rectangle of the new window.
-    /// * `handler` - Object to process the events.
-    /// 
-    /// **Returns**
-    /// 
-    /// Returns a unique ID for this window.
-    pub fn open_popup_window(&self,r: Rect<i32>,handler: &Rc<dyn Handler>) -> u64 {
-        let id = self.open_window(r,handler);
-        let net_type = [self.wm_net_type_utility];
-        change_property(
-            &self.anchor.connection,
-            PROP_MODE_REPLACE as u8,
-            id as u32,
-            self.wm_net_type,
-            ATOM_ATOM,
-            32,
-            &net_type
-        );
-        let net_state = [self.wm_net_state_above];
-        change_property(
-            &self.anchor.connection,
-            PROP_MODE_REPLACE as u8,
-            id as u32,
-            self.wm_net_state,
-            ATOM_ATOM,
-            32,
-            &net_state
-        );
-        let hints = [2u32,0,0,0,0];
-        change_property(
-            &self.anchor.connection,
-            PROP_MODE_REPLACE as u8,
-            id as u32,
-            self.wm_motif_hints,
-            ATOM_ATOM,
-            32,
-            &hints
-        );
-        self.anchor.connection.flush();
-        id
-    }
-
-    /// Close a window.
-    /// 
-    /// Close a frame or popup window. After the window is closed, it does
-    /// not send events to the handler any longer.
-    /// 
-    /// **Arguments**
-    /// 
-    /// * `id` - Unique ID for the window to close.
-    pub fn close_window(&self,id: u64) {
-        let len = self.windows.borrow().len();
-        for i in 0..len {
-            if self.windows.borrow()[i].context.id == id {
-                unmap_window(&self.anchor.connection,id as u32);
-                self.windows.borrow_mut().remove(i);
-                break;
-            }
-        }
-    }
-
     /// Capture mouse pointer.
     /// 
     /// All mouse events are sent to the indicated window, even if they occur outside the window's range.
@@ -676,7 +517,7 @@ impl System {
     pub fn capture_mouse(&self,id: u64) {
         println!("XGrabPointer");
         grab_pointer(
-            &self.anchor.connection,
+            &self.connection,
             false,
             id as u32,
             (EVENT_MASK_BUTTON_PRESS | EVENT_MASK_BUTTON_RELEASE| EVENT_MASK_POINTER_MOTION) as u16,
@@ -693,22 +534,128 @@ impl System {
     /// Events are sent to all windows again.
     pub fn release_mouse(&self) {
         println!("XUngrabPointer");
-        ungrab_pointer(&self.anchor.connection,TIME_CURRENT_TIME);
+        ungrab_pointer(&self.connection,TIME_CURRENT_TIME);
     }
 }
 
 impl Drop for System {
     fn drop(&mut self) {
-        unsafe { glXMakeCurrent(self.anchor.connection.get_raw_dpy(),0,null_mut()); }
-        destroy_window(&self.anchor.connection,self.anchor.hidden_window as u32);
-        unsafe { glXDestroyContext(self.anchor.connection.get_raw_dpy(),self.anchor.context); }
+        unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),0,null_mut()); }
+        destroy_window(&self.connection,self.hidden_window as u32);
+        unsafe { glXDestroyContext(self.connection.get_raw_dpy(),self.context); }
     }
 }
 
-impl Drop for Window {
+pub struct WindowCore {
+    pub system: Rc<System>,
+    pub id: u64,
+    pub r: Cell<Rect<i32>>,
+}
+
+impl WindowCore {
+    fn new(system: &Rc<System>,r: Rect<i32>) -> WindowCore {
+        let id = system.connection.generate_id() as XID;
+        let values = [
+            (CW_EVENT_MASK,
+                EVENT_MASK_EXPOSURE
+                | EVENT_MASK_KEY_PRESS
+                | EVENT_MASK_KEY_RELEASE
+                | EVENT_MASK_BUTTON_PRESS
+                | EVENT_MASK_BUTTON_RELEASE
+                | EVENT_MASK_POINTER_MOTION
+                | EVENT_MASK_STRUCTURE_NOTIFY
+            ),
+            (CW_COLORMAP,system.colormap as u32),
+        ];
+        create_window(
+            &system.connection,
+            system.depth as u8,
+            id as u32,
+            system.rootwindow as u32,
+            r.o.x as i16,r.o.y as i16,r.s.x as u16,r.s.y as u16,
+            0,
+            WINDOW_CLASS_INPUT_OUTPUT as u16,
+            system.visualid as u32,
+            &values
+        );
+        unsafe {
+            map_window(&system.connection,id as u32);
+            system.connection.flush();
+            XSync(system.connection.get_raw_dpy(),False);
+        }
+        WindowCore {
+            system: Rc::clone(system),
+            id: id,
+            r: Cell::new(rect!(0,0,0,0)),
+        }
+    }
+
+    pub fn new_frame(system: &Rc<System>,r: Rect<i32>,title: &str) -> WindowCore {
+        let core = WindowCore::new(system,r);
+        let protocol_set = [system.wm_delete_window];
+        change_property(
+            &system.connection,
+            PROP_MODE_REPLACE as u8,
+            core.id as u32,
+            system.wm_protocols,
+            ATOM_ATOM,
+            32,
+            &protocol_set
+        );        
+        change_property(
+            &system.connection,
+            PROP_MODE_REPLACE as u8,
+            core.id as u32,
+            ATOM_WM_NAME,
+            ATOM_STRING,
+            8,
+            title.as_bytes()
+        );
+        system.connection.flush();
+        core
+    }
+
+    pub fn new_popup(system: &Rc<System>,r: Rect<i32>) -> WindowCore {
+        let core = WindowCore::new(system,r);
+        let net_type = [system.wm_net_type_utility];
+        change_property(
+            &system.connection,
+            PROP_MODE_REPLACE as u8,
+            core.id as u32,
+            system.wm_net_type,
+            ATOM_ATOM,
+            32,
+            &net_type
+        );
+        let net_state = [system.wm_net_state_above];
+        change_property(
+            &system.connection,
+            PROP_MODE_REPLACE as u8,
+            core.id as u32,
+            system.wm_net_state,
+            ATOM_ATOM,
+            32,
+            &net_state
+        );
+        let hints = [2u32,0,0,0,0];
+        change_property(
+            &system.connection,
+            PROP_MODE_REPLACE as u8,
+            core.id as u32,
+            system.wm_motif_hints,
+            ATOM_ATOM,
+            32,
+            &hints
+        );
+        system.connection.flush();
+        core
+    }
+}
+
+impl Drop for WindowCore {
     fn drop(&mut self) {
-        unsafe { glXMakeCurrent(self.anchor.connection.get_raw_dpy(),self.anchor.hidden_window,self.anchor.context); }
-        unmap_window(&self.anchor.connection,self.context.id as u32);
-        destroy_window(&self.anchor.connection,self.context.id as u32);
+        unsafe { glXMakeCurrent(self.system.connection.get_raw_dpy(),self.system.hidden_window,self.system.context); }
+        unmap_window(&self.system.connection,self.id as u32);
+        destroy_window(&self.system.connection,self.id as u32);    
     }
 }

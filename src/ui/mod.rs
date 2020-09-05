@@ -40,7 +40,7 @@ pub trait Widget {
     /// Set rectangle for this widget.
     /// 
     /// If the widget has children, the rectangles for the children are also updated accordingly.
-    fn set_rect(&mut self,r: Rect<i32>);
+    fn set_rect(&self,r: Rect<i32>);
 
     /// Calculate minimum size this widget needs.
     fn calc_min_size(&self) -> Vec2<i32>;
@@ -49,13 +49,13 @@ pub trait Widget {
     fn draw(&self,context: Vec2<i32>);
 
     /// Handle mouse button press.
-    fn handle_mouse_press(&mut self,b: MouseButton) -> MouseResult;
+    fn handle_mouse_press(&self,b: MouseButton) -> MouseResult;
 
     /// Handle mouse button release.
-    fn handle_mouse_release(&mut self,b: MouseButton) -> MouseResult;
+    fn handle_mouse_release(&self,b: MouseButton) -> MouseResult;
 
     /// Handle mouse pointer move.
-    fn handle_mouse_move(&mut self,p: Vec2<i32>) -> MouseResult;
+    fn handle_mouse_move(&self,p: Vec2<i32>) -> MouseResult;
 }
 
 mod font;

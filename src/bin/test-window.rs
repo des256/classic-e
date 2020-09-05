@@ -7,18 +7,31 @@ use std::{
     cell::Cell,
 };
 
-struct MyHandler {
+struct AppWindow {
+    pub core: WindowCore,
     running: Cell<bool>,
 }
 
-impl Handler for MyHandler {
-    fn handle(&self,_wc: &WindowContext,event: Event) {
+impl Window for AppWindow {
+    fn handle(&self,event: Event) {
         match event {
             Event::Close => {
                 self.running.set(false);
             },
             _ => { },
         }
+    }
+
+    fn rect(&self) -> Rect<i32> {
+        self.core.r.get()
+    }
+
+    fn set_rect(&self,r: Rect<i32>) {
+        self.core.r.set(r);
+    }
+
+    fn id(&self) -> u64 {
+        self.core.id
     }
 }
 
@@ -30,23 +43,16 @@ fn main() {
     // initialize graphics
     let _graphics = Rc::new(gpu::Graphics::new(&system).expect("Cannot open graphics."));
 
-    // create handler object
-    let handler = Rc::new(MyHandler { running: Cell::new(true), });
-
-    // open window
-    let handler_clone = Rc::clone(&handler);
-    let window_id = system.open_frame_window(
-        rect!(50,50,640,360),
-        "Test Window",
-        &(handler_clone as Rc<dyn Handler>)
-    );
+    // create application window
+    let appwindow = AppWindow {
+        core: WindowCore::new_frame(&system,rect!(50,50,640,350),"Test Window"),
+        running: Cell::new(true),
+    };
 
     // run the show
-    while handler.running.get() {
+    let windows = vec![appwindow];
+    while windows[0].running.get() {
         system.wait();
-        system.flush();
+        system.flush(&windows);
     }
-
-    // and close the window again
-    system.close_window(window_id);
 }

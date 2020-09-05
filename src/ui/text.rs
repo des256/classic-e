@@ -16,9 +16,9 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn new(anchor: &Rc<ui::UIAnchor>,text: &str,font: &Rc<ui::Font>) -> Text {
+    pub fn new(state: &Rc<ui::UIState>,text: &str,font: &Rc<ui::Font>) -> Text {
         Text {
-            core: ui::Core::new(anchor),
+            core: ui::Core::new(state),
             padding: vec2!(0,0),
             text: String::from(text),
             font: Rc::clone(font),
@@ -29,11 +29,11 @@ impl Text {
 
 impl ui::Widget for Text {
     fn get_rect(&self) -> Rect<i32> {
-        self.core.r
+        self.core.r.get()
     }
 
-    fn set_rect(&mut self,r: Rect<i32>) {
-        self.core.r = r;
+    fn set_rect(&self,r: Rect<i32>) {
+        self.core.r.set(r);
     }
 
     fn calc_min_size(&self) -> Vec2<i32> {
@@ -41,19 +41,19 @@ impl ui::Widget for Text {
     }
 
     fn draw(&self,context: Vec2<i32>) {
-        let local_context = context + self.core.r.o;
-        self.core.anchor.draw_text(local_context + self.padding,&self.text,self.color,&self.font);
+        let local_context = context + self.core.r.get().o;
+        self.core.state.draw_text(local_context + self.padding,&self.text,self.color,&self.font);
     }
 
-    fn handle_mouse_press(&mut self,_b: MouseButton) -> ui::MouseResult {
+    fn handle_mouse_press(&self,_b: MouseButton) -> ui::MouseResult {
         ui::MouseResult::Unprocessed
     }
 
-    fn handle_mouse_release(&mut self,_b: MouseButton) -> ui::MouseResult {
+    fn handle_mouse_release(&self,_b: MouseButton) -> ui::MouseResult {
         ui::MouseResult::Unprocessed
     }
 
-    fn handle_mouse_move(&mut self,_p: Vec2<i32>) -> ui::MouseResult {
+    fn handle_mouse_move(&self,_p: Vec2<i32>) -> ui::MouseResult {
         ui::MouseResult::Unprocessed
     }
 }

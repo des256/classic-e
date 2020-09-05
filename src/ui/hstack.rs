@@ -12,9 +12,9 @@ pub struct HStack {
 }
 
 impl HStack {
-    pub fn new_from_vec(anchor: &Rc<ui::UIAnchor>,widgets: Vec<Box<dyn ui::Widget>>) -> HStack {
+    pub fn new_from_vec(state: &Rc<ui::UIState>,widgets: Vec<Box<dyn ui::Widget>>) -> HStack {
         HStack {
-            core: ui::Core::new_from_vec(anchor,widgets),
+            core: ui::Core::new_from_vec(state,widgets),
             padding: vec2!(0,0),
             valign: ui::VAlignment::Top,
         }
@@ -23,13 +23,13 @@ impl HStack {
 
 impl ui::Widget for HStack {
     fn get_rect(&self) -> Rect<i32> {
-        self.core.r
+        self.core.r.get()
     }
 
-    fn set_rect(&mut self,r: Rect<i32>) {
-        self.core.r = r;
+    fn set_rect(&self,r: Rect<i32>) {
+        self.core.r.set(r);
         let mut ox = 0;
-        for child in self.core.children.iter_mut() {
+        for child in self.core.children.iter() {
             let size = child.calc_min_size();
             let (oy,sy) = match self.valign {
                 ui::VAlignment::Top => { (r.o.y,size.y) },
@@ -60,21 +60,21 @@ impl ui::Widget for HStack {
     }
 
     fn draw(&self,context: Vec2<i32>) {
-        let local_context = context + self.core.r.o;
+        let local_context = context + self.core.r.get().o;
         for child in self.core.children.iter() {
             child.draw(local_context);
         }
     }
 
-    fn handle_mouse_press(&mut self,_b: MouseButton) -> ui::MouseResult {
+    fn handle_mouse_press(&self,_b: MouseButton) -> ui::MouseResult {
         ui::MouseResult::Unprocessed
     }
 
-    fn handle_mouse_release(&mut self,_b: MouseButton) -> ui::MouseResult {
+    fn handle_mouse_release(&self,_b: MouseButton) -> ui::MouseResult {
         ui::MouseResult::Unprocessed
     }
 
-    fn handle_mouse_move(&mut self,_p: Vec2<i32>) -> ui::MouseResult {
+    fn handle_mouse_move(&self,_p: Vec2<i32>) -> ui::MouseResult {
         ui::MouseResult::Unprocessed
     }
 }

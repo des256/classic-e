@@ -202,7 +202,7 @@ impl BindTarget for gpu::Framebuffer {
     fn do_bind(&self,graphics: &Graphics) {
         unsafe {
 #[cfg(target_os="linux")]
-            glXMakeCurrent(graphics.system.anchor.connection.get_raw_dpy(),graphics.system.anchor.hidden_window,graphics.system.anchor.context);
+            glXMakeCurrent(graphics.system.connection.get_raw_dpy(),graphics.system.hidden_window,graphics.system.context);
 #[cfg(target_os="windows")]
             wglMakeCurrent(graphics.system.hidden_hdc(),graphics.system.hglrc());
             gl::BindFramebuffer(gl::FRAMEBUFFER,self.fbo);
@@ -212,17 +212,18 @@ impl BindTarget for gpu::Framebuffer {
     }
 }
 
-impl BindTarget for WindowContext {
+impl<T: Window> BindTarget for T {
 #[allow(unused_variables)]
     fn do_bind(&self,graphics: &Graphics) {
         unsafe {
 #[cfg(target_os="linux")]
-            glXMakeCurrent(graphics.system.anchor.connection.get_raw_dpy(),self.id,graphics.system.anchor.context);
+            glXMakeCurrent(graphics.system.connection.get_raw_dpy(),self.id(),graphics.system.context);
 #[cfg(target_os="windows")]
             wglMakeCurrent(self.hdc,self.anchor.hglrc);
             gl::BindFramebuffer(gl::FRAMEBUFFER,0);
-            gl::Viewport(0,0,self.r.s.x,self.r.s.y);
-            gl::Scissor(0,0,self.r.s.x,self.r.s.y);
+            let r = self.rect();
+            gl::Viewport(0,0,r.s.x,r.s.y);
+            gl::Scissor(0,0,r.s.x,r.s.y);
         }
     }
 }
@@ -447,10 +448,10 @@ impl Graphics {
     /// * `window` - Window to set VSync for.
     /// * `state` - Whether or not VSync should be enabled.
     #[allow(unused_variables)]
-    pub fn set_vsync(&self,window: &Window,state: bool) {
+    pub fn set_vsync(&self,window: &dyn Window,state: bool) {
         unsafe {
     #[cfg(target_os="linux")]
-            (self.system.glx_swap_interval)(self.system.anchor.connection.get_raw_dpy(),window.context.id,if state { 1 } else { 0 });
+            (self.system.glx_swap_interval)(self.system.connection.get_raw_dpy(),window.id(),if state { 1 } else { 0 });
     #[cfg(target_os="windows")]
             (self.system.wgl_swap_interval)(if state { 1 } else { 0 });
         }
@@ -462,10 +463,10 @@ impl Graphics {
     /// 
     /// * `id` - Unique window ID to present to.
     #[allow(unused_variables)]
-    pub fn present(&self,id: &u64) {
+    pub fn present(&self,id: u64) {
         unsafe {
     #[cfg(target_os="linux")]
-            glXSwapBuffers(self.system.anchor.connection.get_raw_dpy(),*id);
+            glXSwapBuffers(self.system.connection.get_raw_dpy(),id);
     #[cfg(target_os="windows")]
             SwapBuffers(window.hdc);
         }
