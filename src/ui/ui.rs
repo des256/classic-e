@@ -33,6 +33,7 @@ pub struct DrawContext {
 
 /// Anchor object for UI resources.
 pub struct UIAnchor {
+    pub system: Rc<System>,
     pub graphics: Rc<gpu::Graphics>,
     pub flat_shader: gpu::Shader,
     pub alpha_shader: gpu::Shader,
@@ -53,7 +54,7 @@ pub struct UIAnchor {
 
 impl UIAnchor {
     #[doc(hidden)]
-    pub fn new(_system: &Rc<System>,graphics: &Rc<gpu::Graphics>,font_dir: &str) -> Result<UIAnchor,SystemError> {
+    pub fn new(system: &Rc<System>,graphics: &Rc<gpu::Graphics>,font_dir: &str) -> Result<UIAnchor,SystemError> {
 
         // generic vertex shader
         let vs = r#"
@@ -184,6 +185,7 @@ impl UIAnchor {
         let draw_ub = gpu::UniformBuffer::<UIRect>::new(graphics).expect("unable to create uniform buffer");
 
         Ok(UIAnchor {
+            system: Rc::clone(system),
             graphics: Rc::clone(graphics),
             flat_shader: flat_shader,
             alpha_shader: alpha_shader,
@@ -269,7 +271,6 @@ impl UIAnchor {
 
 /// UI subsystem.
 pub struct UI {
-    pub system: Rc<System>,
     pub anchor: Rc<UIAnchor>,
     pub current_capturing_index: Cell<Option<usize>>,
 }
@@ -282,7 +283,6 @@ impl UI {
     /// * `graphics` - GPU graphics context to use.
     pub fn new(system: &Rc<System>,graphics: &Rc<gpu::Graphics>,font_dir: &str) -> Result<UI,SystemError> {
         Ok(UI {
-            system: Rc::clone(system),
             anchor: Rc::new(UIAnchor::new(system,graphics,font_dir)?),
             current_capturing_index: Cell::new(None),  
         })
@@ -299,8 +299,8 @@ impl UI {
     /// Unique ID for this frame.
     pub fn open_frame(&self,r: Rect<i32>,title: &str,mut widget: Box<dyn ui::Widget>) -> u64 {
         widget.set_rect(rect!(vec2!(0,0),r.s));
-        let bt = Rc::new(UIWindow::new(&self.anchor,widget,0));
-        let id = self.system.open_frame_window(r,title,&(bt as Rc<dyn Handler>));
+        let bt = Rc::new(UIWindow::new(self,widget,0));
+        let id = self.anchor.system.open_frame_window(r,title,&(bt as Rc<dyn Handler>));
         id
     }
 
@@ -309,7 +309,7 @@ impl UI {
     /// **Arguments**
     /// * `id` - Unique ID for this frame.
     pub fn close_frame(&self,id: u64) {
-        self.system.close_window(id);
+        self.anchor.system.close_window(id);
     }
 
     /// Run UI.
@@ -319,8 +319,8 @@ impl UI {
     pub fn run(&self) {
         self.anchor.running.set(true);
         while self.anchor.running.get() {
-            self.system.wait();
-            self.system.flush();
+            self.anchor.system.wait();
+            self.anchor.system.flush();
         }
     }
 }
@@ -334,9 +334,9 @@ pub(crate) struct UIWindow {
 
 #[doc(hidden)]
 impl UIWindow {
-    pub(crate) fn new(anchor: &Rc<UIAnchor>,widget: Box<dyn ui::Widget>,id: u64) -> UIWindow {
+    pub(crate) fn new(ui: &ui::UI,widget: Box<dyn ui::Widget>,id: u64) -> UIWindow {
         UIWindow {
-            anchor: Rc::clone(anchor),
+            anchor: Rc::clone(&ui.anchor),
             widget: RefCell::new(widget),
             id: Cell::new(id),
         }
@@ -380,18 +380,18 @@ impl Handler for UIWindow {
                 if let ui::MouseResult::ProcessedCapture = self.widget.borrow_mut().handle_mouse_press(b) {
                     if let Some(id) = self.anchor.current_capturing_id.get() {
                         if id != self.id.get() {
-                            // TODO: capture mouse
+                            self.anchor.system.capture_mouse(id);
                             self.anchor.current_capturing_id.set(Some(self.id.get()));
                         }
                     }
                     else {
-                        // TODO: capture mouse
+                        self.anchor.system.capture_mouse(self.id.get());
                         self.anchor.current_capturing_id.set(Some(self.id.get()));
                     }
                 }
                 else {
                     if let Some(_id) = self.anchor.current_capturing_id.get() {
-                        // TODO: release mouse
+                        self.anchor.system.release_mouse();
                         self.anchor.current_capturing_id.set(None);
                     }
                 }
@@ -401,18 +401,18 @@ impl Handler for UIWindow {
                 if let ui::MouseResult::ProcessedCapture = self.widget.borrow_mut().handle_mouse_release(b) {
                     if let Some(id) = self.anchor.current_capturing_id.get() {
                         if id != self.id.get() {
-                            // TODO: capture mouse
+                            self.anchor.system.capture_mouse(id);
                             self.anchor.current_capturing_id.set(Some(self.id.get()));
                         }
                     }
                     else {
-                        // TODO: capture mouse
+                        self.anchor.system.capture_mouse(self.id.get());
                         self.anchor.current_capturing_id.set(Some(self.id.get()));
                     }
                 }
                 else {
                     if let Some(_id) = self.anchor.current_capturing_id.get() {
-                        // TODO: release mouse
+                        self.anchor.system.release_mouse();
                         self.anchor.current_capturing_id.set(None);
                     }
                 }
@@ -425,18 +425,18 @@ impl Handler for UIWindow {
                 if let ui::MouseResult::ProcessedCapture = self.widget.borrow_mut().handle_mouse_move(p) {
                     if let Some(id) = self.anchor.current_capturing_id.get() {
                         if id != self.id.get() {
-                            // TODO: capture mouse
+                            self.anchor.system.capture_mouse(id);
                             self.anchor.current_capturing_id.set(Some(self.id.get()));
                         }
                     }
                     else {
-                        // TODO: capture mouse
+                        self.anchor.system.capture_mouse(self.id.get());
                         self.anchor.current_capturing_id.set(Some(self.id.get()));
                     }
                 }
                 else {
                     if let Some(_id) = self.anchor.current_capturing_id.get() {
-                        // TODO: release mouse
+                        self.anchor.system.release_mouse();
                         self.anchor.current_capturing_id.set(None);
                     }
                 }
