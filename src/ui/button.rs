@@ -16,14 +16,14 @@ pub enum ButtonHit {
 
 /// Button widget.
 pub struct Button {
-    core: ui::Core,
+    core: ui::Core<Box<dyn ui::Widget>>,
     hit: Cell<ButtonHit>,
     pub text: String,
     pub font: Rc<ui::Font>,
     pub color: u32,
     pub button_color: u32,
     pub hover_button_color: u32,
-    pub padding: Cell<Vec2<i32>>,  // everything cell again?
+    pub padding: Vec2<i32>,
     pub inner_padding: Vec2<i32>,
 }
 
@@ -37,7 +37,7 @@ impl Button {
             color: 0xFFFFFFFF,
             button_color: 0xFF000000,
             hover_button_color: 0xFF333300,
-            padding: Cell::new(vec2!(0,0)),
+            padding: vec2!(0,0),
             inner_padding: vec2!(4,2),
         }
     }
@@ -53,7 +53,7 @@ impl ui::Widget for Button {
     }
 
     fn calc_min_size(&self) -> Vec2<i32> {
-        self.font.measure(&self.text) + 2 * (self.padding.get() + self.inner_padding)
+        self.font.measure(&self.text) + 2 * (self.padding + self.inner_padding)
     }
 
     fn draw(&self,context: Vec2<i32>) {
@@ -64,39 +64,29 @@ impl ui::Widget for Button {
         else {
             self.button_color
         };
-        self.core.state.draw_rectangle(rect!(local_context + self.padding.get(),self.core.r.get().s - 2 * self.padding.get()),bc,gpu::BlendMode::Replace);
-        self.core.state.draw_text(local_context + self.padding.get() + self.inner_padding,&self.text,self.color,&self.font);
+        self.core.state.draw_rectangle(rect!(local_context + self.padding,self.core.r.get().s - 2 * self.padding),bc,gpu::BlendMode::Replace);
+        self.core.state.draw_text(local_context + self.padding + self.inner_padding,&self.text,self.color,&self.font);
     }
 
-    fn handle_mouse_press(&self,b: MouseButton) -> ui::MouseResult {
+    fn handle_mouse_press(&self,_p: Vec2<i32>,b: MouseButton) {
         if let ButtonHit::Button = self.hit.get() {
             if let MouseButton::Left = b {
                 println!("Click!");
             }
-            ui::MouseResult::ProcessedCapture
-        }
-        else {
-            ui::MouseResult::Processed
         }
     }
 
-    fn handle_mouse_release(&self,_b: MouseButton) -> ui::MouseResult {
-        if let ButtonHit::Button = self.hit.get() {
-            ui::MouseResult::ProcessedCapture
-        }
-        else {
-            ui::MouseResult::Processed
-        }
+    fn handle_mouse_release(&self,_p: Vec2<i32>,_b: MouseButton) {
     }
 
-    fn handle_mouse_move(&self,p: Vec2<i32>) -> ui::MouseResult {
-        if rect!(self.padding.get(),self.core.r.get().s - 2 * self.padding.get()).contains(&p) {
+    fn handle_mouse_move(&self,p: Vec2<i32>) -> bool {
+        if rect!(self.padding,self.core.r.get().s - 2 * self.padding).contains(&p) {
             self.hit.set(ButtonHit::Button);
-            ui::MouseResult::ProcessedCapture
+            true
         }
         else {
             self.hit.set(ButtonHit::Outside);
-            ui::MouseResult::Processed
+            false
         }
     }
 }

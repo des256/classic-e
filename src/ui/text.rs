@@ -8,7 +8,7 @@ use std::{
 
 /// Text widget.
 pub struct Text {
-    core: ui::Core,
+    core: ui::Core<Box<dyn ui::Widget>>,
     pub padding: Vec2<i32>,
     pub text: String,
     pub font: Rc<ui::Font>,
@@ -45,15 +45,13 @@ impl ui::Widget for Text {
         self.core.state.draw_text(local_context + self.padding,&self.text,self.color,&self.font);
     }
 
-    fn handle_mouse_press(&self,_b: MouseButton) -> ui::MouseResult {
-        ui::MouseResult::Unprocessed
+    fn handle_mouse_press(&self,_p: Vec2<i32>,_b: MouseButton) {
     }
 
-    fn handle_mouse_release(&self,_b: MouseButton) -> ui::MouseResult {
-        ui::MouseResult::Unprocessed
+    fn handle_mouse_release(&self,_p: Vec2<i32>,_b: MouseButton) {
     }
 
-    fn handle_mouse_move(&self,_p: Vec2<i32>) -> ui::MouseResult {
-        ui::MouseResult::Unprocessed
+    fn handle_mouse_move(&self,_p: Vec2<i32>) -> bool {
+        false
     }
 }

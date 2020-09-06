@@ -25,12 +25,6 @@ pub enum VAlignment {
     Fill,
 }
 
-pub enum MouseResult {
-    Unprocessed,
-    Processed,
-    ProcessedCapture,
-}
-
 /// Widget abstraction trait.
 pub trait Widget {
 
@@ -49,13 +43,13 @@ pub trait Widget {
     fn draw(&self,context: Vec2<i32>);
 
     /// Handle mouse button press.
-    fn handle_mouse_press(&self,b: MouseButton) -> MouseResult;
+    fn handle_mouse_press(&self,p: Vec2<i32>,b: MouseButton);
 
     /// Handle mouse button release.
-    fn handle_mouse_release(&self,b: MouseButton) -> MouseResult;
+    fn handle_mouse_release(&self,p: Vec2<i32>,b: MouseButton);
 
-    /// Handle mouse pointer move.
-    fn handle_mouse_move(&self,p: Vec2<i32>) -> MouseResult;
+    /// Handle mouse pointer move. Returns whether or not widget captures the mouse.
+    fn handle_mouse_move(&self,p: Vec2<i32>) -> bool;
 }
 
 mod font;

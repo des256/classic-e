@@ -6,7 +6,7 @@ use std::rc::Rc;
 
 /// Horizontal stack widget.
 pub struct HStack {
-    core: ui::Core,
+    core: ui::Core<Box<dyn ui::Widget>>,
     pub padding: Vec2<i32>,
     pub valign: ui::VAlignment,
 }
@@ -66,15 +66,24 @@ impl ui::Widget for HStack {
         }
     }
 
-    fn handle_mouse_press(&self,_b: MouseButton) -> ui::MouseResult {
-        ui::MouseResult::Unprocessed
+    fn handle_mouse_press(&self,p: Vec2<i32>,b: MouseButton) {
+        if !self.core.capturing_mouse_press(p,b) {
+            self.core.other_mouse_press(p,b);
+        }
     }
 
-    fn handle_mouse_release(&self,_b: MouseButton) -> ui::MouseResult {
-        ui::MouseResult::Unprocessed
+    fn handle_mouse_release(&self,p: Vec2<i32>,b: MouseButton) {
+        if !self.core.capturing_mouse_release(p,b) {
+            self.core.other_mouse_release(p,b);
+        }
     }
 
-    fn handle_mouse_move(&self,_p: Vec2<i32>) -> ui::MouseResult {
-        ui::MouseResult::Unprocessed
+    fn handle_mouse_move(&self,p: Vec2<i32>) -> bool {
+        if !self.core.capturing_mouse_move(p) {
+            self.core.other_mouse_move(p)
+        }
+        else {
+            true
+        }
     }
 }

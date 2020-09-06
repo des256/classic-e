@@ -356,53 +356,19 @@ impl Window for WidgetWindow {
             Event::KeyRelease(_k) => {
             },
 
-            Event::MousePress(_p,b) => {
-                if let ui::MouseResult::ProcessedCapture = self.widget.handle_mouse_press(b) {
-                    if let Some(id) = self.state.current_capturing_id.get() {
-                        if id != self.core.id {
-                            self.state.system.capture_mouse(id);
-                            self.state.current_capturing_id.set(Some(self.core.id));
-                        }
-                    }
-                    else {
-                        self.state.system.capture_mouse(self.core.id);
-                        self.state.current_capturing_id.set(Some(self.core.id));
-                    }
-                }
-                else {
-                    if let Some(_id) = self.state.current_capturing_id.get() {
-                        self.state.system.release_mouse();
-                        self.state.current_capturing_id.set(None);
-                    }
-                }
+            Event::MousePress(p,b) => {
+                self.widget.handle_mouse_press(p,b);
             },
 
-            Event::MouseRelease(_,b) => {
-                if let ui::MouseResult::ProcessedCapture = self.widget.handle_mouse_release(b) {
-                    if let Some(id) = self.state.current_capturing_id.get() {
-                        if id != self.core.id {
-                            self.state.system.capture_mouse(id);
-                            self.state.current_capturing_id.set(Some(self.core.id));
-                        }
-                    }
-                    else {
-                        self.state.system.capture_mouse(self.core.id);
-                        self.state.current_capturing_id.set(Some(self.core.id));
-                    }
-                }
-                else {
-                    if let Some(_id) = self.state.current_capturing_id.get() {
-                        self.state.system.release_mouse();
-                        self.state.current_capturing_id.set(None);
-                    }
-                }
+            Event::MouseRelease(p,b) => {
+                self.widget.handle_mouse_release(p,b);
             },
 
             Event::MouseWheel(_w) => {
             },
 
             Event::MouseMove(p) => {
-                if let ui::MouseResult::ProcessedCapture = self.widget.handle_mouse_move(p) {
+                if self.widget.handle_mouse_move(p) {
                     if let Some(id) = self.state.current_capturing_id.get() {
                         if id != self.core.id {
                             self.state.system.capture_mouse(id);

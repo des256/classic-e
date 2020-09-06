@@ -57,6 +57,10 @@ mod matrix;
 pub use matrix::*;
 
 #[macro_use]
+mod multivector;
+pub use multivector::*;
+
+#[macro_use]
 mod rect;
 pub use rect::*;
 

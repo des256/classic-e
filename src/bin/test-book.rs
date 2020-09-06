@@ -1,57 +1,42 @@
 // E - Book test
 // Desmond Germans, 2020
 
-//use e::*;
-//use std::rc::Rc;
+use e::*;
+use std::rc::Rc;
 
 fn main() {
-
-    /*// initialize system
     let system = Rc::new(System::new().expect("Cannot open system."));
-
-    // initialize graphics context
     let graphics = Rc::new(gpu::Graphics::new(&system).expect("Cannot open GPU."));
+    let mut ui = ui::UI::new(&system,&graphics,"static/fonts").expect("Cannot open UI.");
 
-    // initialize UI
-    let ui = Rc::new(ui::UI::new(&system,&graphics,"static/fonts").expect("Cannot open UI."));
+    let mut button = ui::Button::new(&ui.state,"Page Button",&ui.state.font);
+    button.padding = vec2!(40,20);
 
-    // create widgets for the pages
-    let button = Rc::new(ui::Button::new(&ui,"Page Button",&ui.font).expect("Cannot create button."));
-    button.padding.set(vec2!(40,20));
+    let mut text1 = ui::Text::new(&ui.state,"This",&ui.state.font);
+    let mut text2 = ui::Text::new(&ui.state,"is a vertical",&ui.state.font);
+    let mut text3 = ui::Text::new(&ui.state,"stack with",&ui.state.font);
+    let mut text4 = ui::Text::new(&ui.state,"a bunch of",&ui.state.font);
+    let mut text5 = ui::Text::new(&ui.state,"texts that just align",&ui.state.font);
+    let mut text6 = ui::Text::new(&ui.state,"nicely.",&ui.state.font);
+    let mut text7 = ui::Text::new(&ui.state,"Almost before we knew it, we had left the ground.",&ui.state.font);
+    text1.color = 0xFFFF7700;
+    text2.color = 0xFF77FF00;
+    text3.color = 0xFF00FF77;
+    text4.color = 0xFF0077FF;
+    text5.color = 0xFF7700FF;
+    text6.color = 0xFFFF0077;
+    text7.color = 0xFFFF7700;
+    let mut vstack = ui::VStack::new_from_vec(&ui.state,widgets![text1,text2,text3,text4,text5,text6,text7]);
+    vstack.halign = ui::HAlignment::Center;
 
-    let text1 = Rc::new(ui::Text::new(&ui,"This",&ui.font).expect("Cannot create text."));
-    let text2 = Rc::new(ui::Text::new(&ui,"is a vertical",&ui.font).expect("Cannot create text."));
-    let text3 = Rc::new(ui::Text::new(&ui,"stack with",&ui.font).expect("Cannot create text."));
-    let text4 = Rc::new(ui::Text::new(&ui,"a bunch of",&ui.font).expect("Cannot create text."));
-    let text5 = Rc::new(ui::Text::new(&ui,"texts that just align",&ui.font).expect("Cannot create text."));
-    let text6 = Rc::new(ui::Text::new(&ui,"nicely.",&ui.font).expect("Cannot create text."));
-    let text7 = Rc::new(ui::Text::new(&ui,"Almost before we knew it, we had left the ground.",&ui.font).expect("Cannot create text."));
-    text1.color.set(0xFFFF7700);
-    text2.color.set(0xFF77FF00);
-    text3.color.set(0xFF00FF77);
-    text4.color.set(0xFF0077FF);
-    text5.color.set(0xFF7700FF);
-    text6.color.set(0xFFFF0077);
-    text7.color.set(0xFFFF7700);
-    let vstack = Rc::new(ui::VStack::new_from_vec(&ui,vec![text1,text2,text3,text4,text5,text6,text7]).expect("Cannot create VStack."));
-    vstack.halign.set(ui::HAlignment::Center);
+    let book = Rc::new(ui::Book::new_from_vec(&ui.state,named_widgets![
+        "Hello".to_string(),button,
+        "World".to_string(),vstack
+    ]));
 
-    // create book
-    let book = Rc::new(ui::Book::new_from_vec(&ui,vec![
-        ("Hello".to_string(),button),
-        ("World".to_string(),vstack)
-    ]).expect("Cannot create book."));
+    ui.open_frame(rect!(50,50,640,350),"Book Test",&book);
 
-    // create menu bar
-    let menubar = Rc::new(ui::MenuBar::new(&ui).expect("Cannot create menu bar."));
+    ui.run();
 
-    // put menu bar and book together
-    let vstack = Rc::new(ui::VStack::new_from_vec(&ui,vec![menubar,book]).expect("Cannot create VStack."));
-    vstack.halign.set(ui::HAlignment::Fill);
-
-    // open window to host the book
-    ui.open(&(vstack as Rc<dyn ui::Widget>),rect!(50,50,640,360),"Test Window");
-
-    // run UI loop
-    ui.run();*/
+    ui.close(&book);
 }

@@ -50,9 +50,8 @@ fn main() {
     };
 
     // run the show
-    let windows = vec![appwindow];
-    while windows[0].running.get() {
+    while appwindow.running.get() {
         system.wait();
-        system.flush(&windows);
+        system.flush(&vec![&appwindow]);
     }
 }
