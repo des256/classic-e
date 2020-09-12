@@ -50,6 +50,9 @@ pub trait Widget {
 
     /// Handle mouse pointer move. Returns whether or not widget captures the mouse.
     fn handle_mouse_move(&self,p: Vec2<i32>) -> bool;
+
+    /// Handle mouse wheel.
+    fn handle_mouse_wheel(&self,w: MouseWheel);
 }
 
 mod font;

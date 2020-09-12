@@ -266,4 +266,7 @@ impl ui::Widget for Book {
         }
         false
     }
+
+    fn handle_mouse_wheel(&self,_w: MouseWheel) {
+    }
 }

@@ -85,7 +85,7 @@ impl Component {
     }
 }
 
-fn decode_pixels<T: Copy + Clone + Zero>(dst: &mut [T],src: &[u8],width: usize,height: usize,bottom_up: bool,itype: Type,palette: &[T; 256],redmask: u32,greenmask: u32,bluemask: u32,alphamask: u32) where T: From<Vec4<u8>>,Vec4<u8>: From<T> {
+fn decode_pixels<T: pixel::Pixel>(dst: &mut [T],src: &[u8],width: usize,height: usize,bottom_up: bool,itype: Type,palette: &[T; 256],redmask: u32,greenmask: u32,bluemask: u32,alphamask: u32) {
     let red = Component::new(redmask);
     let green = Component::new(greenmask);
     let blue = Component::new(bluemask);
@@ -328,7 +328,7 @@ fn decode_pixels<T: Copy + Clone + Zero>(dst: &mut [T],src: &[u8],width: usize,h
                     g = (g << 3) | (g >> 2);
                     b = (b << 3) | (b >> 2);
                     //println!("{},{}: {:04X} - a{} r{} g{} b{}",x,line,d,a,r,g,b);
-                    dst[dp] = T::from(vec4!(r as u8,g as u8,b as u8,255));
+                    dst[dp] = T::from_vec4u8(vec4!(r as u8,g as u8,b as u8,255));
                     dp += 1;
                 }
                 let rest = (width * 2) & 3;
@@ -348,7 +348,7 @@ fn decode_pixels<T: Copy + Clone + Zero>(dst: &mut [T],src: &[u8],width: usize,h
                     let g = green.get(d,0);
                     let b = blue.get(d,0);
                     let a = if alphamask == 0 { 255 } else { alpha.get(d,255) };
-                    dst[dp] = T::from(vec4!(r as u8,g as u8,b as u8,a as u8));
+                    dst[dp] = T::from_vec4u8(vec4!(r as u8,g as u8,b as u8,a as u8));
                     dp += 1;
                 }
                 let rest = (width * 2) & 3;
@@ -366,7 +366,7 @@ fn decode_pixels<T: Copy + Clone + Zero>(dst: &mut [T],src: &[u8],width: usize,h
                     let g = src[sp + 1];
                     let r = src[sp + 2];
                     sp += 3;
-                    dst[dp] = T::from(vec4!(r as u8,g as u8,b as u8,255));
+                    dst[dp] = T::from_vec4u8(vec4!(r as u8,g as u8,b as u8,255));
                     dp += 1;
                 }
                 let rest = (width * 3) & 3;
@@ -386,7 +386,7 @@ fn decode_pixels<T: Copy + Clone + Zero>(dst: &mut [T],src: &[u8],width: usize,h
                     let g = (d >> 8) & 255;
                     let b = d & 255;
                     let a = if alphamask == 0 { 255 } else { d >> 24 };
-                    dst[dp] = T::from(vec4!(r as u8,g as u8,b as u8,a as u8));
+                    dst[dp] = T::from_vec4u8(vec4!(r as u8,g as u8,b as u8,a as u8));
                     dp += 1;
                 }
                 line = (line as isize + dline) as usize;
@@ -402,7 +402,7 @@ fn decode_pixels<T: Copy + Clone + Zero>(dst: &mut [T],src: &[u8],width: usize,h
                     let g = green.get(d,0);
                     let b = blue.get(d,0);
                     let a = if alphamask == 0 { 255 } else { alpha.get(d,255) };
-                    dst[dp] = T::from(vec4!(r as u8,g as u8,b as u8,a as u8));
+                    dst[dp] = T::from_vec4u8(vec4!(r as u8,g as u8,b as u8,a as u8));
                     dp += 1;
                 }
                 line = (line as isize + dline) as usize;
@@ -522,7 +522,7 @@ pub fn test(src: &[u8]) -> Option<(u32,u32)> {
     None
 }
 
-pub fn decode<T: Copy + Clone + Zero>(src: &[u8]) -> Option<Mat<T>> where T: From<Vec4<u8>>,Vec4<u8>: From<T> {
+pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
     let tag = from_le16(&src[0..2]);
     if (tag != 0x4D42) &&
         (tag != 0x4142) &&
@@ -654,7 +654,7 @@ pub fn decode<T: Copy + Clone + Zero>(src: &[u8]) -> Option<Mat<T>> where T: Fro
                     let b = src[sp];
                     let g = src[sp + 1];
                     let r = src[sp + 2];
-                    palette[i as usize] = T::from(vec4!(r,g,b,255));
+                    palette[i as usize] = T::from_vec4u8(vec4!(r,g,b,255));
                 }
             },
             Type::B16 | Type::B32 => {

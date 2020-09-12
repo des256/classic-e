@@ -86,4 +86,7 @@ impl ui::Widget for HStack {
             true
         }
     }
+
+    fn handle_mouse_wheel(&self,_w: MouseWheel) {
+    }
 }

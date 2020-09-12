@@ -39,7 +39,7 @@ impl ChildType for NamedWidget {
 
 /// Widget core.
 pub struct Core<T> {
-    pub(crate) state: Rc<ui::UIState>,
+    pub state: Rc<ui::UIState>,
     pub r: Cell<Rect<i32>>,
     pub children: Vec<T>,
     pub capturing_child: Cell<Option<usize>>,

@@ -40,11 +40,12 @@ pub struct UIState {
     pub proto_serif: Rc<ui::FontProto>,
     pub proto_mono: Rc<ui::FontProto>,
     pub font: Rc<ui::Font>,
-    rect_vb: gpu::VertexBuffer<Vec2<f32>>,
-    draw_ub: gpu::UniformBuffer<UIRect>,
+    pub rect_vb: gpu::VertexBuffer<Vec2<f32>>,
+    pub draw_ub: gpu::UniformBuffer<UIRect>,
     pub running: Cell<bool>,
     pub two_over_current_window_size: Cell<Vec2<f32>>,
     pub current_capturing_id: Cell<Option<u64>>,
+    pub follow_with_render: Cell<bool>,
 }
 
 impl UIState {
@@ -193,11 +194,16 @@ impl UIState {
             running: Cell::new(true),
             two_over_current_window_size: Cell::new(vec2!(0.0,0.0)),
             current_capturing_id: Cell::new(None),
+            follow_with_render: Cell::new(false),
         })
     }
 
     pub fn set_current_window_size(&self,size: Vec2<i32>) {
         self.two_over_current_window_size.set(vec2!(2.0 / (size.x as f32),2.0 / (size.y as f32)));
+    }
+
+    pub fn invalidate(&self) {
+        self.follow_with_render.set(true);
     }
 
     /// Draw rectangle.
@@ -320,7 +326,13 @@ impl UI {
             for w in self.windows.iter() {
                 windows.push(w);
             }
+            self.state.follow_with_render.set(false);
             self.state.system.flush(&windows);
+            if self.state.follow_with_render.get() {
+                for w in windows {
+                    w.handle(Event::Render);
+                }
+            }
         }
     }
 }
@@ -364,7 +376,8 @@ impl Window for WidgetWindow {
                 self.widget.handle_mouse_release(p,b);
             },
 
-            Event::MouseWheel(_w) => {
+            Event::MouseWheel(w) => {
+                self.widget.handle_mouse_wheel(w);
             },
 
             Event::MouseMove(p) => {

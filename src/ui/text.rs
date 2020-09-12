@@ -54,4 +54,7 @@ impl ui::Widget for Text {
     fn handle_mouse_move(&self,_p: Vec2<i32>) -> bool {
         false
     }
+
+    fn handle_mouse_wheel(&self,_w: MouseWheel) {
+    }
 }

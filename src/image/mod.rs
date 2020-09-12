@@ -5,6 +5,11 @@
 
 use crate::*;
 
+use std::{
+    fs::File,
+    io::prelude::*,
+};
+
 pub mod bmp;
 pub mod png;
 pub mod jpeg;
@@ -64,7 +69,7 @@ pub fn test(src: &[u8]) -> Option<(u32,u32)> {
 /// * `None` - Slice could not be decoded.
 /// * `Some(mat)` - Slice is decoded into `mat`.
 #[allow(dead_code)]
-pub fn decode<T: Copy + Clone + Zero>(src: &[u8]) -> Option<Mat<T>> where T: From<Vec4<u8>>,Vec4<u8>: From<T> {
+pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
     if let Some(image) = bmp::decode::<T>(src) {
         Some(image)
     }
@@ -91,6 +96,21 @@ pub fn decode<T: Copy + Clone + Zero>(src: &[u8]) -> Option<Mat<T>> where T: Fro
     }
     else if let Some(image) = webp::decode::<T>(src) {
         Some(image)
+    }
+    else {
+        None
+    }
+}
+
+/// Load and decode
+pub fn load<T: pixel::Pixel>(filename: &str) -> Option<Mat<T>> {
+    let mut file = match File::open(filename) {
+        Ok(file) => file,
+        Err(_) => { return None; },
+    };
+    let mut buffer: Vec<u8> = Vec::new();
+    if let Ok(_) = file.read_to_end(&mut buffer) {
+        image::decode::<T>(&buffer)
     }
     else {
         None

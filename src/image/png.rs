@@ -454,21 +454,21 @@ fn clampf(v: f32,min: f32,max: f32) -> f32 {
     }
 }
 
-fn make_lf<T>(l: f32,gamma: f32) -> T where T: From<Vec4<u8>> {
+fn make_lf<T: pixel::Pixel>(l: f32,gamma: f32) -> T {
     let ul = (clampf(l.powf(gamma),0.0,1.0) * 255.0) as u8;
-    T::from(vec4!(ul,ul,ul,255))
+    T::from_vec4u8(vec4!(ul,ul,ul,255))
 }
 
-fn make_rgbaf<T>(r: f32,g: f32,b: f32,a: f32,gamma: f32) -> T where T: From<Vec4<u8>> {
+fn make_rgbaf<T: pixel::Pixel>(r: f32,g: f32,b: f32,a: f32,gamma: f32) -> T {
     let ur = (clampf(r.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ug = (clampf(g.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ub = (clampf(b.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ua = (clampf(a.powf(gamma),0.0,1.0) * 255.0) as u8;
-    T::from(vec4!(ur,ug,ub,ua))
+    T::from_vec4u8(vec4!(ur,ug,ub,ua))
 }
 
-fn make_c<T>(c: T,gamma: f32) -> T where Vec4<u8>: From<T>,T: From<Vec4<u8>> {
-    let p = Vec4::<u8>::from(c);
+fn make_c<T: pixel::Pixel>(c: T,gamma: f32) -> T {
+    let p = c.as_vec4u8();
     let r = (p.x as f32) / 255.0;
     let g = (p.y as f32) / 255.0;
     let b = (p.z as f32) / 255.0;
@@ -477,10 +477,10 @@ fn make_c<T>(c: T,gamma: f32) -> T where Vec4<u8>: From<T>,T: From<Vec4<u8>> {
     let ug = (clampf(g.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ub = (clampf(b.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ua = (clampf(a.powf(gamma),0.0,1.0) * 255.0) as u8;
-    T::from(vec4!(ur,ug,ub,ua))
+    T::from_vec4u8(vec4!(ur,ug,ub,ua))
 }
 
-fn decode_pixels<T: Copy + Clone + Zero>(dst: &mut [T],src: &[u8],width: usize,height: usize,stride: usize,x0: usize,y0: usize,dx: usize,dy: usize,itype: Type,palette: &[T; 256],gamma: f32) where Vec4<u8>: From<T>,T: From<Vec4<u8>> {
+fn decode_pixels<T: pixel::Pixel>(dst: &mut [T],src: &[u8],width: usize,height: usize,stride: usize,x0: usize,y0: usize,dx: usize,dy: usize,itype: Type,palette: &[T; 256],gamma: f32) {
     let mut sp = 0;
     match itype {
         Type::L1 => {
@@ -724,7 +724,7 @@ pub fn test(src: &[u8]) -> Option<(u32,u32)> {
     None
 }
 
-pub fn decode<T: Copy + Clone + Zero>(src: &[u8]) -> Option<Mat<T>> where Vec4<u8>: From<T>,T: From<Vec4<u8>> {
+pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
     if (src[0] != 0x89) ||
         (src[1] != 0x50) ||
         (src[2] != 0x4E) ||
@@ -832,7 +832,7 @@ pub fn decode<T: Copy + Clone + Zero>(src: &[u8]) -> Option<Mat<T>> where Vec4<u
                     let g = src[sp + 1];
                     let b = src[sp + 2];
                     sp += 3;
-                    palette[i] = T::from(vec4!(r,g,b,255));
+                    palette[i] = T::from_vec4u8(vec4!(r,g,b,255));
                 }
             },
             0x624B4744 => { // bKGD
@@ -842,13 +842,13 @@ pub fn decode<T: Copy + Clone + Zero>(src: &[u8]) -> Option<Mat<T>> where Vec4<u
                     },
                     Type::L1 | Type::L2 | Type::L4 | Type::L8 | Type::LA8 | Type::L16 | Type::LA16 => {
                         let level = src[sp];
-                        _background = T::from(vec4!(level,level,level,255));
+                        _background = T::from_vec4u8(vec4!(level,level,level,255));
                     },
                     _ => {
                         let r = src[sp];
                         let g = src[sp + 2];
                         let b = src[sp + 4];
-                        _background = T::from(vec4!(r,g,b,255));
+                        _background = T::from_vec4u8(vec4!(r,g,b,255));
                     },
                 }
                 sp += chunk_length;
@@ -1024,6 +1024,6 @@ pub fn decode<T: Copy + Clone + Zero>(src: &[u8]) -> Option<Mat<T>> where Vec4<u
     }
 }
 
-pub fn encode<T: Copy + Clone + Zero>(_src: &Mat<T>) -> Option<Vec<u8>> {
+pub fn encode<T: pixel::Pixel>(_src: &Mat<T>) -> Option<Vec<u8>> {
     None
 }

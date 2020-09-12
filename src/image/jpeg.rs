@@ -701,21 +701,21 @@ fn convert_blocks(coeffs: &mut [i32],count: usize,itype: Type,qtable: &[[i32; 64
 	}
 }
 
-fn draw_rgb<T: Copy + Clone + Zero>(image: &mut Mat<T>,px: usize,py: usize,r: i32,g: i32,b: i32) where T: From<Vec4<u8>> {
+fn draw_rgb<T: pixel::Pixel>(image: &mut Mat<T>,px: usize,py: usize,r: i32,g: i32,b: i32) {
 	let r = if r < 0 { 0 } else { if r > 255 { 255 } else { r as u8 } };
 	let g = if g < 0 { 0 } else { if g > 255 { 255 } else { g as u8 } };
 	let b = if b < 0 { 0 } else { if b > 255 { 255 } else { b as u8 } };
-	image.set(vec2!(px,py),T::from(vec4!(r,g,b,255)));
+	image.set(vec2!(px,py),T::from_vec4u8(vec4!(r,g,b,255)));
 }
 
-fn draw_yuv<T: Copy + Clone + Zero>(image: &mut Mat<T>,px: usize,py: usize,y: i32,u: i32,v: i32) where T: From<Vec4<u8>> {
+fn draw_yuv<T: pixel::Pixel>(image: &mut Mat<T>,px: usize,py: usize,y: i32,u: i32,v: i32) {
 	let r = ((y << 8) + 359 * v) >> 8;
 	let g = ((y << 8) - 88 * u - 183 * v) >> 8;
 	let b = ((y << 8) + 454 * u) >> 8;
 	draw_rgb(image,px,py,r,g,b);
 }
 
-fn draw_macroblock_y<T: Copy + Clone + Zero>(image: &mut Mat<T>,x0: usize,y0: usize,width: usize,height: usize,coeffs: &[i32]) where T: From<Vec4<u8>> {
+fn draw_macroblock_y<T: pixel::Pixel>(image: &mut Mat<T>,x0: usize,y0: usize,width: usize,height: usize,coeffs: &[i32]) {
 	for i in 0..height {
 		for k in 0..width {
 			draw_yuv(image,x0 + k,y0 + i,(coeffs[i * 8 + k] + 128) as i32,0,0);
@@ -723,7 +723,7 @@ fn draw_macroblock_y<T: Copy + Clone + Zero>(image: &mut Mat<T>,x0: usize,y0: us
 	}
 }
 
-fn draw_macroblock_yuv420<T: Copy + Clone + Zero>(image: &mut Mat<T>,x0: usize,y0: usize,width: usize,height: usize,coeffs: &[i32]) where T: From<Vec4<u8>> {
+fn draw_macroblock_yuv420<T: pixel::Pixel>(image: &mut Mat<T>,x0: usize,y0: usize,width: usize,height: usize,coeffs: &[i32]) {
 	for i in 0..height {
 		for k in 0..width {
 			let by = (i >> 3) * 2 + (k >> 3);
@@ -739,7 +739,7 @@ fn draw_macroblock_yuv420<T: Copy + Clone + Zero>(image: &mut Mat<T>,x0: usize,y
 	}
 }
 
-fn draw_macroblock_yuv422<T: Copy + Clone + Zero>(image: &mut Mat<T>,x0: usize,y0: usize,width: usize,height: usize,coeffs: &[i32]) where T: From<Vec4<u8>> {
+fn draw_macroblock_yuv422<T: pixel::Pixel>(image: &mut Mat<T>,x0: usize,y0: usize,width: usize,height: usize,coeffs: &[i32]) {
 	for i in 0..height {
 		for k in 0..width {
 			let by = k >> 3;
@@ -753,7 +753,7 @@ fn draw_macroblock_yuv422<T: Copy + Clone + Zero>(image: &mut Mat<T>,x0: usize,y
 	}
 }
 
-fn draw_macroblock_yuv440<T: Copy + Clone + Zero>(image: &mut Mat<T>,x0: usize,y0: usize,width: usize,height: usize,coeffs: &[i32]) where T: From<Vec4<u8>> {
+fn draw_macroblock_yuv440<T: pixel::Pixel>(image: &mut Mat<T>,x0: usize,y0: usize,width: usize,height: usize,coeffs: &[i32]) {
 	for i in 0..height {
 		for k in 0..width {
 			let by = i >> 3;
@@ -767,7 +767,7 @@ fn draw_macroblock_yuv440<T: Copy + Clone + Zero>(image: &mut Mat<T>,x0: usize,y
 	}
 }
 
-fn draw_macroblock_yuv444<T: Copy + Clone + Zero>(image: &mut Mat<T>,x0: usize,y0: usize,width: usize,height: usize,coeffs: &[i32]) where T: From<Vec4<u8>> {
+fn draw_macroblock_yuv444<T: pixel::Pixel>(image: &mut Mat<T>,x0: usize,y0: usize,width: usize,height: usize,coeffs: &[i32]) {
 	for i in 0..height {
 		for k in 0..width {
 			let y = coeffs[i * 8 + k] + 128;
@@ -778,7 +778,7 @@ fn draw_macroblock_yuv444<T: Copy + Clone + Zero>(image: &mut Mat<T>,x0: usize,y
 	}
 }
 
-fn draw_macroblock_rgb444<T: Copy + Clone + Zero>(image: &mut Mat<T>,x0: usize,y0: usize,width: usize,height: usize,coeffs: &[i32]) where T: From<Vec4<u8>> {
+fn draw_macroblock_rgb444<T: pixel::Pixel>(image: &mut Mat<T>,x0: usize,y0: usize,width: usize,height: usize,coeffs: &[i32]) {
 	for i in 0..height {
 		for k in 0..width {
 			let r = coeffs[i * 8 + k] + 128;
@@ -815,7 +815,7 @@ pub fn test(src: &[u8]) -> Option<(u32,u32)> {
 	None
 }
 
-pub fn decode<T: Copy + Clone + Zero>(src: &[u8]) -> Option<Mat<T>> where T: From<Vec4<u8>>,Vec4<u8>: From<T> {
+pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
 	if from_be16(&src[0..2]) != 0xFFD8 {
 		return None;
 	}
@@ -1115,6 +1115,6 @@ pub fn decode<T: Copy + Clone + Zero>(src: &[u8]) -> Option<Mat<T>> where T: Fro
 	None
 }
 
-pub fn encode<T: Copy + Clone + Zero>(_image: &Mat<T>) -> Option<Vec<u8>> {
+pub fn encode<T: pixel::Pixel>(_image: &Mat<T>) -> Option<Vec<u8>> {
 	None
 }
