@@ -18,9 +18,16 @@ pub enum BookHit {
     Page,
 }
 
+pub struct Page {
+    pub name: String,
+    pub widget: Box<dyn ui::Widget>,
+}
+
 /// Tab book widget with pages.
 pub struct Book {
-    core: ui::Core<ui::NamedWidget>,
+    state: Rc<ui::UIState>,
+    pub r: Cell<Rect<i32>>,
+    pages: Vec<Page>,
     hit: Cell<BookHit>,
     pub current_index: Cell<usize>,
     pub padding: Cell<Vec2<i32>>,
@@ -34,9 +41,11 @@ pub struct Book {
 }
 
 impl Book {
-    pub fn new_from_vec(state: &Rc<ui::UIState>,children: Vec<ui::NamedWidget>) -> Book {
+    pub fn new_from_vec(state: &Rc<ui::UIState>,pages: Vec<ui::Page>) -> Book {
         Book {
-            core: ui::Core::new_from_vec(state,children),
+            state: Rc::clone(state),
+            r: Cell::new(rect!(0,0,0,0)),
+            pages: pages,
             hit: Cell::new(BookHit::Outside),
             current_index: Cell::new(0),
             padding: Cell::new(vec2!(0,0)),
@@ -53,11 +62,22 @@ impl Book {
 
 impl ui::Widget for Book {
     fn get_rect(&self) -> Rect<i32> {
-        self.core.r.get()
+        self.r.get()
     }
 
     fn set_rect(&self,r: Rect<i32>) {
-        self.core.r.set(r);
+        self.r.set(r);
+        if self.pages.len() > 0 {
+            let font = self.font.borrow();
+            let inner_padding = self.inner_padding.get();
+            let tab_bar_height = (font.measure(&self.pages[0].name) + 2 * inner_padding).y;
+            let mut page_rect = self.r.get();
+            page_rect.o.y += tab_bar_height;
+            page_rect.s.y -= tab_bar_height;
+            for page in self.pages.iter() {
+                page.widget.set_rect(page_rect);
+            }
+        }
     }
 
     fn calc_min_size(&self) -> Vec2<i32> {
@@ -70,8 +90,8 @@ impl ui::Widget for Book {
         let inner_padding = self.inner_padding.get();
 
         let mut tab_bar_size = vec2!(0i32,0i32);
-        for child in self.core.children.iter() {
-            let tab_size = font.measure(&child.name) + 2 * inner_padding;
+        for page in self.pages.iter() {
+            let tab_size = font.measure(&page.name) + 2 * inner_padding;
             if tab_size.y > tab_bar_size.y {
                 tab_bar_size.y = tab_size.y;
             }
@@ -80,8 +100,8 @@ impl ui::Widget for Book {
 
         // measure largest page
         let mut page_size = vec2!(0i32,0i32);
-        for child in self.core.children.iter() {
-            let size = child.widget.calc_min_size();
+        for page in self.pages.iter() {
+            let size = page.widget.calc_min_size();
             if size.x > page_size.x {
                 page_size.x = size.x;
             }
@@ -114,8 +134,8 @@ impl ui::Widget for Book {
         // draw tab bar
         let mut tab_rect = rect!(0i32,0i32,0i32,0i32);
         tab_rect.o = context + padding;
-        for i in 0..self.core.children.len() {
-            let child = &self.core.children[i];
+        for i in 0..self.pages.len() {
+            let child = &self.pages[i];
             tab_rect.s = font.measure(&child.name) + 2 * inner_padding;
             let mut tc = tab_color;
             if let BookHit::Tab(n) = hit {
@@ -123,27 +143,27 @@ impl ui::Widget for Book {
                     tc = hover_tab_color;
                 }
             }
-            self.core.state.draw_rectangle(tab_rect,tc,gpu::BlendMode::Replace);
-            self.core.state.draw_text(tab_rect.o + inner_padding,&child.name,color,&font);
+            self.state.draw_rectangle(tab_rect,tc,gpu::BlendMode::Replace);
+            self.state.draw_text(tab_rect.o + inner_padding,&child.name,color,&font);
             tab_rect.o.x += tab_rect.s.x;
         }
-        self.core.state.draw_rectangle(rect!(tab_rect.o,vec2!(self.core.r.get().s.x - tab_rect.o.x,tab_rect.s.y)),tab_back_color,gpu::BlendMode::Replace);
+        self.state.draw_rectangle(rect!(tab_rect.o,vec2!(self.r.get().s.x - tab_rect.o.x,tab_rect.s.y)),tab_back_color,gpu::BlendMode::Replace);
 
         // draw current page
-        if (self.core.children.len() > 0) && (current_index < self.core.children.len()) {
-            let mut pr = self.core.r.get();
+        if (self.pages.len() > 0) && (current_index < self.pages.len()) {
+            let mut pr = self.r.get();
             pr.o.y += tab_rect.s.y;
             pr.s.y -= tab_rect.s.y;
-            self.core.children[current_index].widget.draw(pr.o);
+            self.pages[current_index].widget.draw(context + pr.o);
         }
     }
 
     fn handle_mouse_press(&self,p: Vec2<i32>,b: MouseButton) {
         if self.page_capturing.get() {
             let i = self.current_index.get();
-            let child = &self.core.children[i];
-            let r = child.widget.get_rect();
-            child.widget.handle_mouse_press(p - r.o,b);
+            let page = &self.pages[i];
+            let r = page.widget.get_rect();
+            page.widget.handle_mouse_press(p - r.o,b);
         }
 
         // otherwise, go by hit test
@@ -161,10 +181,10 @@ impl ui::Widget for Book {
                 // over the page area, send to corresponding page
                 BookHit::Page => {
                     let i = self.current_index.get();
-                    if i < self.core.children.len() {
-                        let child = &self.core.children[i];
-                        let r = child.widget.get_rect();
-                        child.widget.handle_mouse_press(p - r.o,b);
+                    if i < self.pages.len() {
+                        let page = &self.pages[i];
+                        let r = page.widget.get_rect();
+                        page.widget.handle_mouse_press(p - r.o,b);
                     }
                 },
 
@@ -177,9 +197,9 @@ impl ui::Widget for Book {
         // if the page area is capturing, just pass down the mouse release
         if self.page_capturing.get() {
             let i = self.current_index.get();
-            let child = &self.core.children[i];
-            let r = child.widget.get_rect();
-            child.widget.handle_mouse_release(p - r.o,b);
+            let page = &self.pages[i];
+            let r = page.widget.get_rect();
+            page.widget.handle_mouse_release(p - r.o,b);
         }
 
         // otherwise, go by hit test
@@ -189,10 +209,10 @@ impl ui::Widget for Book {
                 // over the page area, send to corresponding page
                 BookHit::Page => {
                     let i = self.current_index.get();
-                    if i < self.core.children.len() {
-                        let child = &self.core.children[i];
-                        let r = child.widget.get_rect();
-                        child.widget.handle_mouse_release(p - r.o,b);
+                    if i < self.pages.len() {
+                        let page = &self.pages[i];
+                        let r = page.widget.get_rect();
+                        page.widget.handle_mouse_release(p - r.o,b);
                     }
                 },
                 _ => { },
@@ -204,9 +224,9 @@ impl ui::Widget for Book {
         // if the page area is capturing, just pass down the move
         if self.page_capturing.get() {
             let i = self.current_index.get();
-            let child = &self.core.children[i];
-            let r = child.widget.get_rect();
-            if child.widget.handle_mouse_move(p - r.o) {
+            let page = &self.pages[i];
+            let r = page.widget.get_rect();
+            if page.widget.handle_mouse_move(p - r.o) {
                 return true;
             }
         }
@@ -219,16 +239,16 @@ impl ui::Widget for Book {
         let font = self.font.borrow();
 
         // if there are no pages, don't bother
-        if self.core.children.len() == 0 {
+        if self.pages.len() == 0 {
             self.hit.set(BookHit::Outside);
             return false;
         }
 
         //calculate height of the tab bar
-        let tab_bar_height = (font.measure(&self.core.children[0].name) + 2 * inner_padding).y;
+        let tab_bar_height = (font.measure(&self.pages[0].name) + 2 * inner_padding).y;
 
         // inside or outside padding
-        let mut r = self.core.r.get();
+        let mut r = self.r.get();
         r.o += padding;
         r.s -= 2 * padding;
         if r.contains(&p) {
@@ -241,15 +261,15 @@ impl ui::Widget for Book {
                 // over the page, pass down to current widget
                 self.hit.set(BookHit::Page);
                 let i = self.current_index.get();
-                let child = &self.core.children[i];
+                let child = &self.pages[i];
                 let r = child.widget.get_rect();
                 return child.widget.handle_mouse_move(p - r.o);
             }
 
             // check each tab
             let mut tab_rect = rect!(r.o,vec2!(0,0));
-            for i in 0..self.core.children.len() {
-                let child = &self.core.children[i];
+            for i in 0..self.pages.len() {
+                let child = &self.pages[i];
                 tab_rect.s = font.measure(&child.name) + 2 * inner_padding;
                 if tab_rect.contains(&p) {
 

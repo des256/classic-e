@@ -16,7 +16,8 @@ pub enum ButtonHit {
 
 /// Button widget.
 pub struct Button {
-    core: ui::Core<Box<dyn ui::Widget>>,
+    state: Rc<ui::UIState>,
+    pub r: Cell<Rect<i32>>,
     hit: Cell<ButtonHit>,
     pub text: String,
     pub font: Rc<ui::Font>,
@@ -30,7 +31,8 @@ pub struct Button {
 impl Button {
     pub fn new(state: &Rc<ui::UIState>,text: &str,font: &Rc<ui::Font>) -> Button {
         Button {
-            core: ui::Core::new(state),
+            state: Rc::clone(state),
+            r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(ButtonHit::Outside),
             text: String::from(text),
             font: Rc::clone(font),
@@ -45,11 +47,11 @@ impl Button {
 
 impl ui::Widget for Button {
     fn get_rect(&self) -> Rect<i32> {
-        self.core.r.get()
+        self.r.get()
     }
 
     fn set_rect(&self,r: Rect<i32>) {
-        self.core.r.set(r);
+        self.r.set(r);
     }
 
     fn calc_min_size(&self) -> Vec2<i32> {
@@ -57,15 +59,14 @@ impl ui::Widget for Button {
     }
 
     fn draw(&self,context: Vec2<i32>) {
-        let local_context = context + self.core.r.get().o;
         let bc = if let ButtonHit::Button = self.hit.get() {
             self.hover_button_color
         }
         else {
             self.button_color
         };
-        self.core.state.draw_rectangle(rect!(local_context + self.padding,self.core.r.get().s - 2 * self.padding),bc,gpu::BlendMode::Replace);
-        self.core.state.draw_text(local_context + self.padding + self.inner_padding,&self.text,self.color,&self.font);
+        self.state.draw_rectangle(rect!(context + self.padding,self.r.get().s - 2 * self.padding),bc,gpu::BlendMode::Replace);
+        self.state.draw_text(context + self.padding + self.inner_padding,&self.text,self.color,&self.font);
     }
 
     fn handle_mouse_press(&self,_p: Vec2<i32>,b: MouseButton) {
@@ -80,12 +81,22 @@ impl ui::Widget for Button {
     }
 
     fn handle_mouse_move(&self,p: Vec2<i32>) -> bool {
-        if rect!(self.padding,self.core.r.get().s - 2 * self.padding).contains(&p) {
-            self.hit.set(ButtonHit::Button);
+        if rect!(self.padding,self.r.get().s - 2 * self.padding).contains(&p) {
+            if let ButtonHit::Button = self.hit.get() {
+            }
+            else {
+                self.hit.set(ButtonHit::Button);
+                self.state.invalidate();
+            }
             true
         }
         else {
-            self.hit.set(ButtonHit::Outside);
+            if let ButtonHit::Outside = self.hit.get() {                
+            }
+            else {
+                self.hit.set(ButtonHit::Outside);
+                self.state.invalidate();
+            }
             false
         }
     }

@@ -2,11 +2,16 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use std::rc::Rc;
+use std::{
+    rc::Rc,
+    cell::Cell,
+};
 
 /// Vertical stack widget.
 pub struct VStack {
-    core: ui::Core<Box<dyn ui::Widget>>,
+    state: Rc<ui::UIState>,
+    r: Cell<Rect<i32>>,
+    widgets: Vec<Box<dyn ui::Widget>>,
     pub padding: Vec2<i32>,
     pub halign: ui::HAlignment,
 }
@@ -14,7 +19,9 @@ pub struct VStack {
 impl VStack {
     pub fn new_from_vec(state: &Rc<ui::UIState>,widgets: Vec<Box<dyn ui::Widget>>) -> VStack {
         VStack {
-            core: ui::Core::new_from_vec(state,widgets),
+            state: Rc::clone(state),
+            r: Cell::new(rect!(0,0,0,0)),
+            widgets: widgets,
             padding: vec2!(0,0),
             halign: ui::HAlignment::Left,
         }
@@ -23,21 +30,21 @@ impl VStack {
 
 impl ui::Widget for VStack {
     fn get_rect(&self) -> Rect<i32> {
-        self.core.r.get()
+        self.r.get()
     }
 
     fn set_rect(&self,r: Rect<i32>) {
-        self.core.r.set(r);
+        self.r.set(r);
         let mut oy = 0;
-        for child in self.core.children.iter() {
-            let size = child.calc_min_size();
+        for widget in self.widgets.iter() {
+            let size = widget.calc_min_size();
             let (ox,sx) = match self.halign {
                 ui::HAlignment::Left => { (r.o.x,size.x) },
                 ui::HAlignment::Right => { (r.o.x + r.s.x - size.x,size.x) },
                 ui::HAlignment::Center => { (r.o.x + (r.s.x - size.x) / 2,size.x / 2) },
                 ui::HAlignment::Fill => { (r.o.x,r.s.x) },
             };
-            child.set_rect(rect!(
+            widget.set_rect(rect!(
                 ox + self.padding.x,
                 oy + self.padding.y,
                 sx - 2 * self.padding.x,
@@ -49,8 +56,8 @@ impl ui::Widget for VStack {
 
     fn calc_min_size(&self) -> Vec2<i32> {
         let mut total_size = vec2!(0i32,0i32);
-        for child in self.core.children.iter() {
-            let size = child.calc_min_size();
+        for widget in self.widgets.iter() {
+            let size = widget.calc_min_size();
             if size.x > total_size.x {
                 total_size.x = size.x;
             }
@@ -60,31 +67,32 @@ impl ui::Widget for VStack {
     }
 
     fn draw(&self,context: Vec2<i32>) {
-        let local_context = context + self.core.r.get().o;
-        for child in self.core.children.iter() {
-            child.draw(local_context);
+        let local_context = context + self.r.get().o;
+        for widget in self.widgets.iter() {
+            widget.draw(local_context);
         }
     }
 
     fn handle_mouse_press(&self,p: Vec2<i32>,b: MouseButton) {
-        if !self.core.capturing_mouse_press(p,b) {
+        /*if !self.core.capturing_mouse_press(p,b) {
             self.core.other_mouse_press(p,b);
-        }
+        }*/
     }
 
     fn handle_mouse_release(&self,p: Vec2<i32>,b: MouseButton) {
-        if !self.core.capturing_mouse_release(p,b) {
+        /*if !self.core.capturing_mouse_release(p,b) {
             self.core.other_mouse_release(p,b);
-        }
+        }*/
     }
 
     fn handle_mouse_move(&self,p: Vec2<i32>) -> bool {
-        if !self.core.capturing_mouse_move(p) {
+        /*if !self.core.capturing_mouse_move(p) {
             self.core.other_mouse_move(p)
         }
         else {
             true
-        }
+        }*/
+        false
     }
 
     fn handle_mouse_wheel(&self,_w: MouseWheel) {

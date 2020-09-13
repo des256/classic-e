@@ -8,8 +8,13 @@
 mod zeroone;
 pub use zeroone::*;
 
+/// Trait for anything that needs a color specification.
 pub trait ColorParameter {
+
+    /// Convert into u32.
     fn into_u32(self) -> u32;
+
+    /// Convert into Vec4<f32>.
     fn into_vec4(self) -> Vec4<f32>;
 }
 

@@ -546,14 +546,14 @@ impl Drop for System {
     }
 }
 
-pub struct WindowCore {
+pub struct BaseWindow {
     pub system: Rc<System>,
     pub id: u64,
     pub r: Cell<Rect<i32>>,
 }
 
-impl WindowCore {
-    fn new(system: &Rc<System>,r: Rect<i32>) -> WindowCore {
+impl BaseWindow {
+    fn new(system: &Rc<System>,r: Rect<i32>) -> BaseWindow {
         let id = system.connection.generate_id() as XID;
         let values = [
             (CW_EVENT_MASK,
@@ -583,15 +583,15 @@ impl WindowCore {
             system.connection.flush();
             XSync(system.connection.get_raw_dpy(),False);
         }
-        WindowCore {
+        BaseWindow {
             system: Rc::clone(system),
             id: id,
             r: Cell::new(rect!(0,0,0,0)),
         }
     }
 
-    pub fn new_frame(system: &Rc<System>,r: Rect<i32>,title: &str) -> WindowCore {
-        let core = WindowCore::new(system,r);
+    pub fn new_frame(system: &Rc<System>,r: Rect<i32>,title: &str) -> BaseWindow {
+        let core = BaseWindow::new(system,r);
         let protocol_set = [system.wm_delete_window];
         change_property(
             &system.connection,
@@ -615,8 +615,8 @@ impl WindowCore {
         core
     }
 
-    pub fn new_popup(system: &Rc<System>,r: Rect<i32>) -> WindowCore {
-        let core = WindowCore::new(system,r);
+    pub fn new_popup(system: &Rc<System>,r: Rect<i32>) -> BaseWindow {
+        let core = BaseWindow::new(system,r);
         let net_type = [system.wm_net_type_utility];
         change_property(
             &system.connection,
@@ -652,7 +652,7 @@ impl WindowCore {
     }
 }
 
-impl Drop for WindowCore {
+impl Drop for BaseWindow {
     fn drop(&mut self) {
         unsafe { glXMakeCurrent(self.system.connection.get_raw_dpy(),self.system.hidden_window,self.system.context); }
         unmap_window(&self.system.connection,self.id as u32);

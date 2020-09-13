@@ -270,7 +270,7 @@ impl UIState {
 
 pub struct WidgetWindow {
     pub state: Rc<UIState>,
-    pub core: WindowCore,
+    pub core: BaseWindow,
     pub widget: Rc<dyn ui::Widget>,
 }
 
@@ -299,7 +299,7 @@ impl UI {
     /// **Returns**
     /// Unique ID for this frame.
     pub fn open_frame<T: ui::Widget + 'static>(&mut self,r: Rect<i32>,title: &str,widget: &Rc<T>) {
-        let core = WindowCore::new_frame(&self.state.system,r,title);
+        let core = BaseWindow::new_frame(&self.state.system,r,title);
         let widget = Rc::clone(widget);
         widget.set_rect(rect!(vec2!(0,0),r.s));
         self.windows.push(WidgetWindow {
