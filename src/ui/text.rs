@@ -4,6 +4,7 @@
 use crate::*;
 use std::{
     rc::Rc,
+    cell::Cell,
 };
 
 /// Text widget.

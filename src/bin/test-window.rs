@@ -8,7 +8,7 @@ use std::{
 };
 
 struct AppWindow {
-    pub core: WindowCore,
+    pub core: BaseWindow,
     running: Cell<bool>,
 }
 

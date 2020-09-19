@@ -26,12 +26,20 @@ fn main() {
     text5.color = 0xFF7700FF;
     text6.color = 0xFFFF0077;
     text7.color = 0xFFFF7700;
-    let mut vstack = ui::VStack::new_from_vec(&ui.state,widgets![text1,text2,text3,text4,text5,text6,text7]);
+    let mut vstack = ui::VStack::new_from_vec(&ui.state,vec![
+        Box::new(text1),
+        Box::new(text2),
+        Box::new(text3),
+        Box::new(text4),
+        Box::new(text5),
+        Box::new(text6),
+        Box::new(text7),
+    ]);
     vstack.halign = ui::HAlignment::Center;
 
-    let book = Rc::new(ui::Book::new_from_vec(&ui.state,named_widgets![
-        "Hello".to_string(),button,
-        "World".to_string(),vstack
+    let book = Rc::new(ui::Book::new_from_vec(&ui.state,vec![
+        ui::Page { name: "Hello".to_string(),widget: Box::new(button), },
+        ui::Page { name: "World".to_string(),widget: Box::new(vstack), },
     ]));
 
     ui.open_frame(i32r::from_os(i32x2::from_xy(50,50),i32x2::from_xy(640,350)),"Book Test",&book);

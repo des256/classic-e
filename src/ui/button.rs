@@ -16,7 +16,8 @@ pub enum ButtonHit {
 
 /// Button widget.
 pub struct Button {
-    core: ui::Core<Box<dyn ui::Widget>>,
+    state: Rc<ui::UIState>,
+    pub r: Cell<Rect<i32>>,
     hit: Cell<ButtonHit>,
     pub text: String,
     pub font: Rc<ui::Font>,
@@ -30,7 +31,8 @@ pub struct Button {
 impl Button {
     pub fn new(state: &Rc<ui::UIState>,text: &str,font: &Rc<ui::Font>) -> Button {
         Button {
-            core: ui::Core::new(state),
+            state: Rc::clone(state),
+            r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(ButtonHit::Outside),
             text: String::from(text),
             font: Rc::clone(font),
@@ -85,7 +87,12 @@ impl ui::Widget for Button {
             true
         }
         else {
-            self.hit.set(ButtonHit::Outside);
+            if let ButtonHit::Outside = self.hit.get() {                
+            }
+            else {
+                self.hit.set(ButtonHit::Outside);
+                self.state.invalidate();
+            }
             false
         }
     }

@@ -5,26 +5,6 @@
 
 use crate::*;
 
-/*#[doc(hidden)]
-trait Clamp1 {
-    fn clamp1(self) -> Self;
-}
-
-macro_rules! impl_clamp1 (
-    ($t:ty) => (
-        impl Clamp1 for $t {
-            fn clamp1(self) -> $t {
-                if self < 0.0 { return 0.0; }
-                if self > 1.0 { return 1.0; }
-                self
-            }            
-        }
-    )
-);
-
-impl_clamp1!(f32);
-impl_clamp1!(f64);*/
-
 pub trait Pixel: Copy + Clone + Zero {
     fn from_f32(v: f32) -> Self;
     fn from_u32(v: u32) -> Self;

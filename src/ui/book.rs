@@ -18,9 +18,16 @@ pub enum BookHit {
     Page,
 }
 
+pub struct Page {
+    pub name: String,
+    pub widget: Box<dyn ui::Widget>,
+}
+
 /// Tab book widget with pages.
 pub struct Book {
-    core: ui::Core<ui::NamedWidget>,
+    state: Rc<ui::UIState>,
+    pub r: Cell<Rect<i32>>,
+    pages: Vec<Page>,
     hit: Cell<BookHit>,
     pub current_index: Cell<usize>,
     pub padding: Cell<i32x2>,
@@ -34,9 +41,11 @@ pub struct Book {
 }
 
 impl Book {
-    pub fn new_from_vec(state: &Rc<ui::UIState>,children: Vec<ui::NamedWidget>) -> Book {
+    pub fn new_from_vec(state: &Rc<ui::UIState>,pages: Vec<ui::Page>) -> Book {
         Book {
-            core: ui::Core::new_from_vec(state,children),
+            state: Rc::clone(state),
+            r: Cell::new(rect!(0,0,0,0)),
+            pages: pages,
             hit: Cell::new(BookHit::Outside),
             current_index: Cell::new(0),
             padding: Cell::new(i32x2::zero()),
@@ -114,8 +123,8 @@ impl ui::Widget for Book {
         // draw tab bar
         let mut tab_rect = i32r::zero();
         tab_rect.o = context + padding;
-        for i in 0..self.core.children.len() {
-            let child = &self.core.children[i];
+        for i in 0..self.pages.len() {
+            let child = &self.pages[i];
             tab_rect.s = font.measure(&child.name) + 2 * inner_padding;
             let mut tc = tab_color;
             if let BookHit::Tab(n) = hit {
@@ -147,9 +156,9 @@ impl ui::Widget for Book {
     fn handle_mouse_press(&self,p: i32x2,b: MouseButton) {
         if self.page_capturing.get() {
             let i = self.current_index.get();
-            let child = &self.core.children[i];
-            let r = child.widget.get_rect();
-            child.widget.handle_mouse_press(p - r.o,b);
+            let page = &self.pages[i];
+            let r = page.widget.get_rect();
+            page.widget.handle_mouse_press(p - r.o,b);
         }
 
         // otherwise, go by hit test
@@ -167,10 +176,10 @@ impl ui::Widget for Book {
                 // over the page area, send to corresponding page
                 BookHit::Page => {
                     let i = self.current_index.get();
-                    if i < self.core.children.len() {
-                        let child = &self.core.children[i];
-                        let r = child.widget.get_rect();
-                        child.widget.handle_mouse_press(p - r.o,b);
+                    if i < self.pages.len() {
+                        let page = &self.pages[i];
+                        let r = page.widget.get_rect();
+                        page.widget.handle_mouse_press(p - r.o,b);
                     }
                 },
 
@@ -183,9 +192,9 @@ impl ui::Widget for Book {
         // if the page area is capturing, just pass down the mouse release
         if self.page_capturing.get() {
             let i = self.current_index.get();
-            let child = &self.core.children[i];
-            let r = child.widget.get_rect();
-            child.widget.handle_mouse_release(p - r.o,b);
+            let page = &self.pages[i];
+            let r = page.widget.get_rect();
+            page.widget.handle_mouse_release(p - r.o,b);
         }
 
         // otherwise, go by hit test
@@ -195,10 +204,10 @@ impl ui::Widget for Book {
                 // over the page area, send to corresponding page
                 BookHit::Page => {
                     let i = self.current_index.get();
-                    if i < self.core.children.len() {
-                        let child = &self.core.children[i];
-                        let r = child.widget.get_rect();
-                        child.widget.handle_mouse_release(p - r.o,b);
+                    if i < self.pages.len() {
+                        let page = &self.pages[i];
+                        let r = page.widget.get_rect();
+                        page.widget.handle_mouse_release(p - r.o,b);
                     }
                 },
                 _ => { },
@@ -210,9 +219,9 @@ impl ui::Widget for Book {
         // if the page area is capturing, just pass down the move
         if self.page_capturing.get() {
             let i = self.current_index.get();
-            let child = &self.core.children[i];
-            let r = child.widget.get_rect();
-            if child.widget.handle_mouse_move(p - r.o) {
+            let page = &self.pages[i];
+            let r = page.widget.get_rect();
+            if page.widget.handle_mouse_move(p - r.o) {
                 return true;
             }
         }
@@ -225,7 +234,7 @@ impl ui::Widget for Book {
         let font = self.font.borrow();
 
         // if there are no pages, don't bother
-        if self.core.children.len() == 0 {
+        if self.pages.len() == 0 {
             self.hit.set(BookHit::Outside);
             return false;
         }
@@ -234,7 +243,7 @@ impl ui::Widget for Book {
         let tab_bar_height = *(font.measure(&self.core.children[0].name) + 2 * inner_padding).y();
 
         // inside or outside padding
-        let mut r = self.core.r.get();
+        let mut r = self.r.get();
         r.o += padding;
         r.s -= 2 * padding;
         if r.contains(&p) {
@@ -247,7 +256,7 @@ impl ui::Widget for Book {
                 // over the page, pass down to current widget
                 self.hit.set(BookHit::Page);
                 let i = self.current_index.get();
-                let child = &self.core.children[i];
+                let child = &self.pages[i];
                 let r = child.widget.get_rect();
                 return child.widget.handle_mouse_move(p - r.o);
             }

@@ -2,7 +2,10 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use std::rc::Rc;
+use std::{
+    rc::Rc,
+    cell::Cell,
+};
 
 /// Vertical stack widget.
 pub struct VStack {
@@ -29,8 +32,8 @@ impl ui::Widget for VStack {
     fn set_rect(&self,r: i32r) {
         self.core.r.set(r);
         let mut oy = 0;
-        for child in self.core.children.iter() {
-            let size = child.calc_min_size();
+        for widget in self.widgets.iter() {
+            let size = widget.calc_min_size();
             let (ox,sx) = match self.halign {
                 ui::HAlignment::Left => { (*r.o.x(),*size.x()) },
                 ui::HAlignment::Right => { (*r.o.x() + *r.s.x() - *size.x(),*size.x()) },
@@ -67,13 +70,13 @@ impl ui::Widget for VStack {
     fn handle_mouse_press(&self,p: i32x2,b: MouseButton) {
         if !self.core.capturing_mouse_press(p,b) {
             self.core.other_mouse_press(p,b);
-        }
+        }*/
     }
 
     fn handle_mouse_release(&self,p: i32x2,b: MouseButton) {
         if !self.core.capturing_mouse_release(p,b) {
             self.core.other_mouse_release(p,b);
-        }
+        }*/
     }
 
     fn handle_mouse_move(&self,p: i32x2) -> bool {
@@ -82,7 +85,8 @@ impl ui::Widget for VStack {
         }
         else {
             true
-        }
+        }*/
+        false
     }
 
     fn handle_mouse_wheel(&self,_w: MouseWheel) {

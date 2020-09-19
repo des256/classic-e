@@ -270,7 +270,7 @@ impl UIState {
 
 pub struct WidgetWindow {
     pub state: Rc<UIState>,
-    pub core: WindowCore,
+    pub core: BaseWindow,
     pub widget: Rc<dyn ui::Widget>,
 }
 

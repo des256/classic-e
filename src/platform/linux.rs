@@ -546,7 +546,7 @@ impl Drop for System {
     }
 }
 
-pub struct WindowCore {
+pub struct BaseWindow {
     pub system: Rc<System>,
     pub id: u64,
     pub r: Cell<i32r>,
@@ -583,7 +583,7 @@ impl WindowCore {
             system.connection.flush();
             XSync(system.connection.get_raw_dpy(),False);
         }
-        WindowCore {
+        BaseWindow {
             system: Rc::clone(system),
             id: id,
             r: Cell::new(i32r::from_os(i32x2::zero(),i32x2::zero())),
@@ -652,7 +652,7 @@ impl WindowCore {
     }
 }
 
-impl Drop for WindowCore {
+impl Drop for BaseWindow {
     fn drop(&mut self) {
         unsafe { glXMakeCurrent(self.system.connection.get_raw_dpy(),self.system.hidden_window,self.system.context); }
         unmap_window(&self.system.connection,self.id as u32);

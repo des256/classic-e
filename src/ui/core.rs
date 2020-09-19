@@ -1,40 +1,15 @@
 // E - UI - Core
 // Desmond Germans, 2020
 
-use crate::*;
-use std::{
-    rc::Rc,
-    cell::Cell,
-};
-
-pub struct NamedWidget {
-    pub name: String,
-    pub widget: Box<dyn ui::Widget>,
-}
-
-pub trait ChildType {
-    fn get(&self) -> &Box<dyn ui::Widget>;
-    fn get_mut(&mut self) -> &mut Box<dyn ui::Widget>;
-}
-
-impl ChildType for Box<dyn ui::Widget> {
-    fn get(&self) -> &Box<dyn ui::Widget> {
-        self
+/*
+pub fn capturing_mouse_press(&self,p: Vec2<i32>,b: MouseButton) -> bool {
+    if let Some(i) = self.capturing_child.get() {
+        let child = &self.children[i].get();
+        let r = child.get_rect();
+        child.handle_mouse_press(p - r.o,b);
+        return true;
     }
-
-    fn get_mut(&mut self) -> &mut Box<dyn ui::Widget> {
-        self
-    }
-}
-
-impl ChildType for NamedWidget {
-    fn get(&self) -> &Box<dyn ui::Widget> {
-        &self.widget
-    }
-
-    fn get_mut(&mut self) -> &mut Box<dyn ui::Widget> {
-        &mut self.widget
-    }
+    false
 }
 
 /// Widget core.
@@ -78,10 +53,9 @@ impl<T: ChildType> Core<T> {
             let child = &self.children[i].get();
             let r = child.get_rect();
             child.handle_mouse_press(p - r.o,b);
-            return true;
         }
-        false
     }
+}
 
     pub fn other_mouse_press(&self,p: i32x2,b: MouseButton) {
         for i in 0..self.children.len() {
@@ -92,16 +66,17 @@ impl<T: ChildType> Core<T> {
             }
         }
     }
+    false
+}
 
     pub fn capturing_mouse_release(&self,p: i32x2,b: MouseButton) -> bool {
         if let Some(i) = self.capturing_child.get() {
             let child = self.children[i].get();
             let r = child.get_rect();
             child.handle_mouse_release(p - r.o,b);
-            return true;
         }
-        false
     }
+}
 
     pub fn other_mouse_release(&self,p: i32x2,b: MouseButton) {
         for i in 0..self.children.len() {
@@ -112,16 +87,18 @@ impl<T: ChildType> Core<T> {
             }
         }
     }
+    false
+}
 
     pub fn capturing_mouse_move(&self,p: i32x2) -> bool {
         if let Some(i) = self.capturing_child.get() {
             let child = self.children[i].get();
             let r = child.get_rect();
             if child.handle_mouse_move(p - r.o) {
+                self.capturing_child.set(Some(i));
                 return true;
             }
             else {
-                self.capturing_child.set(None);
                 return false;
             }
         }
@@ -144,30 +121,6 @@ impl<T: ChildType> Core<T> {
         }
         false
     }
+    false
 }
-
-#[macro_export]
-macro_rules! widgets {
-    ($($x:expr),*) => {
-        {
-            let mut temp_vec = Vec::new();
-            $(
-                temp_vec.push(Box::new($x) as Box<dyn ui::Widget>);
-            )*
-            temp_vec
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! named_widgets {
-    ($($n:expr,$x:expr),*) => {
-        {
-            let mut temp_vec = Vec::new();
-            $(
-                temp_vec.push(ui::NamedWidget { name: $n,widget: Box::new($x) as Box<dyn ui::Widget>, });
-            )*
-            temp_vec
-        }
-    };
-}
+*/

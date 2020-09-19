@@ -48,7 +48,7 @@ Serialization/deserialization, but not with `Serde`.
 
 ### [2020/9]
 
-In order to access the platform, create a `System` object. This abstracts away housekeeping of system resources. In order to open a desktop window (for Linux, Windows and MacOS), create a `WindowCore` object. This represents an open window on the screen. To handle events, create an object that implements the `Window` trait (and owning a `WindowCore`). Use `System::flush()` to handle pending windowing events with `Window::handle()`.
+In order to access the platform, create a `System` object. This abstracts away housekeeping of system resources. In order to open a desktop window (for Linux, Windows and MacOS), create a `BaseWindow` object. This represents an open window on the screen. To handle events, create an object that implements the `Window` trait (and owning a `BaseWindow`). Use `System::flush()` to handle pending windowing events with `Window::handle()`.
 
 ### Future
 
