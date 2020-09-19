@@ -9,7 +9,7 @@ use std::{
 /// Text widget.
 pub struct Text {
     core: ui::Core<Box<dyn ui::Widget>>,
-    pub padding: Vec2<i32>,
+    pub padding: i32x2,
     pub text: String,
     pub font: Rc<ui::Font>,
     pub color: u32,
@@ -19,7 +19,7 @@ impl Text {
     pub fn new(state: &Rc<ui::UIState>,text: &str,font: &Rc<ui::Font>) -> Text {
         Text {
             core: ui::Core::new(state),
-            padding: vec2!(0,0),
+            padding: i32x2::zero(),
             text: String::from(text),
             font: Rc::clone(font),
             color: 0xFFFFFFFF,
@@ -28,30 +28,30 @@ impl Text {
 }
 
 impl ui::Widget for Text {
-    fn get_rect(&self) -> Rect<i32> {
+    fn get_rect(&self) -> i32r {
         self.core.r.get()
     }
 
-    fn set_rect(&self,r: Rect<i32>) {
+    fn set_rect(&self,r: i32r) {
         self.core.r.set(r);
     }
 
-    fn calc_min_size(&self) -> Vec2<i32> {
+    fn calc_min_size(&self) -> i32x2 {
         self.font.measure(&self.text) + 2 * self.padding
     }
 
-    fn draw(&self,context: Vec2<i32>) {
+    fn draw(&self,context: i32x2) {
         let local_context = context + self.core.r.get().o;
         self.core.state.draw_text(local_context + self.padding,&self.text,self.color,&self.font);
     }
 
-    fn handle_mouse_press(&self,_p: Vec2<i32>,_b: MouseButton) {
+    fn handle_mouse_press(&self,_p: i32x2,_b: MouseButton) {
     }
 
-    fn handle_mouse_release(&self,_p: Vec2<i32>,_b: MouseButton) {
+    fn handle_mouse_release(&self,_p: i32x2,_b: MouseButton) {
     }
 
-    fn handle_mouse_move(&self,_p: Vec2<i32>) -> bool {
+    fn handle_mouse_move(&self,_p: i32x2) -> bool {
         false
     }
 

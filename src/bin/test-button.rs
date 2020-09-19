@@ -10,10 +10,10 @@ fn main() {
     let mut ui = ui::UI::new(&system,&graphics,"static/fonts").expect("Cannot open UI.");
 
     let mut button = ui::Button::new(&ui.state,"Click",&ui.state.font);
-    button.padding = vec2!(40,20);
+    button.padding = i32x2::from_xy(40,20);
 
     let widget = Rc::new(button);
-    ui.open_frame(rect!(50,50,640,350),"Button Test",&widget);
+    ui.open_frame(i32r::from_os(i32x2::from_xy(50,50),i32x2::from_xy(640,350)),"Button Test",&widget);
 
     ui.run();
 

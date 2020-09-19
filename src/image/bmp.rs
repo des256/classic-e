@@ -328,7 +328,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut [T],src: &[u8],width: usize,height: 
                     g = (g << 3) | (g >> 2);
                     b = (b << 3) | (b >> 2);
                     //println!("{},{}: {:04X} - a{} r{} g{} b{}",x,line,d,a,r,g,b);
-                    dst[dp] = T::from_vec4u8(vec4!(r as u8,g as u8,b as u8,255));
+                    dst[dp] = T::from_u8x4(u8x4::from_xyzw(r as u8,g as u8,b as u8,255));
                     dp += 1;
                 }
                 let rest = (width * 2) & 3;
@@ -348,7 +348,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut [T],src: &[u8],width: usize,height: 
                     let g = green.get(d,0);
                     let b = blue.get(d,0);
                     let a = if alphamask == 0 { 255 } else { alpha.get(d,255) };
-                    dst[dp] = T::from_vec4u8(vec4!(r as u8,g as u8,b as u8,a as u8));
+                    dst[dp] = T::from_u8x4(u8x4::from_xyzw(r as u8,g as u8,b as u8,a as u8));
                     dp += 1;
                 }
                 let rest = (width * 2) & 3;
@@ -366,7 +366,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut [T],src: &[u8],width: usize,height: 
                     let g = src[sp + 1];
                     let r = src[sp + 2];
                     sp += 3;
-                    dst[dp] = T::from_vec4u8(vec4!(r as u8,g as u8,b as u8,255));
+                    dst[dp] = T::from_u8x4(u8x4::from_xyzw(r as u8,g as u8,b as u8,255));
                     dp += 1;
                 }
                 let rest = (width * 3) & 3;
@@ -386,7 +386,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut [T],src: &[u8],width: usize,height: 
                     let g = (d >> 8) & 255;
                     let b = d & 255;
                     let a = if alphamask == 0 { 255 } else { d >> 24 };
-                    dst[dp] = T::from_vec4u8(vec4!(r as u8,g as u8,b as u8,a as u8));
+                    dst[dp] = T::from_u8x4(u8x4::from_xyzw(r as u8,g as u8,b as u8,a as u8));
                     dp += 1;
                 }
                 line = (line as isize + dline) as usize;
@@ -402,7 +402,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut [T],src: &[u8],width: usize,height: 
                     let g = green.get(d,0);
                     let b = blue.get(d,0);
                     let a = if alphamask == 0 { 255 } else { alpha.get(d,255) };
-                    dst[dp] = T::from_vec4u8(vec4!(r as u8,g as u8,b as u8,a as u8));
+                    dst[dp] = T::from_u8x4(u8x4::from_xyzw(r as u8,g as u8,b as u8,a as u8));
                     dp += 1;
                 }
                 line = (line as isize + dline) as usize;
@@ -654,7 +654,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
                     let b = src[sp];
                     let g = src[sp + 1];
                     let r = src[sp + 2];
-                    palette[i as usize] = T::from_vec4u8(vec4!(r,g,b,255));
+                    palette[i as usize] = T::from_u8x4(u8x4::from_xyzw(r,g,b,255));
                 }
             },
             Type::B16 | Type::B32 => {
@@ -674,7 +674,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
             _ => { },
         }
     }
-    let mut image = Mat::<T>::new(vec2!(width,height));
+    let mut image = Mat::<T>::new(usizex2::from_xy(width,height));
     decode_pixels(&mut image.data,&src[offset as usize..],width,height,bottom_up,itype,&palette,redmask,greenmask,bluemask,alphamask);
     Some(image)
 }
@@ -709,9 +709,9 @@ impl WriteTypes for Vec<u8> {
     }
 }
 
-pub fn encode<T: Copy + Clone + Zero>(image: &Mat<T>) -> Option<Vec<u8>> where T: From<Vec4<u8>>,Vec4<u8>: From<T> {
+pub fn encode<T: Copy + Clone + Zero>(image: &Mat<T>) -> Option<Vec<u8>> where T: From<u8x4>,u8x4: From<T> {
     let headersize = 108;
-    let stride = image.size.x * 4;
+    let stride = *image.size.x() * 4;
     let palettesize = 0;
     let bpp = 32;
     let compression = 3;
@@ -720,7 +720,7 @@ pub fn encode<T: Copy + Clone + Zero>(image: &Mat<T>) -> Option<Vec<u8>> where T
     let greenmask: u32 = 0x0000FF00;
     let bluemask: u32 = 0x000000FF;
     let alphamask: u32 = 0xFF000000;
-    let imagesize = stride * image.size.y;
+    let imagesize = stride * *image.size.y();
     let offset = 14 + headersize + palettesize;
     let filesize = offset + imagesize;
     let mut dst: Vec<u8> = Vec::new();
@@ -729,8 +729,8 @@ pub fn encode<T: Copy + Clone + Zero>(image: &Mat<T>) -> Option<Vec<u8>> where T
     dst.push32(0);  // 6
     dst.push32(offset as u32);  // 10
     dst.push32(headersize as u32);  // 14
-    dst.push32(image.size.x as u32);  // 18
-    dst.push32(-(image.size.y as i32) as u32);  // 22
+    dst.push32(*image.size.x() as u32);  // 18
+    dst.push32(-(*image.size.y() as i32) as u32);  // 22
     dst.push16(1);  // 26
     dst.push16(bpp);  // 28
     dst.push32(compression);  // 30
@@ -756,9 +756,9 @@ pub fn encode<T: Copy + Clone + Zero>(image: &Mat<T>) -> Option<Vec<u8>> where T
     dst.push32(0);  // 110
     dst.push32(0);  // 114
     dst.push32(0);  // 118
-    for y in 0..image.size.y {
-        for x in 0..image.size.x {
-            let d: Vec4<u8> = Vec4::<u8>::from(image.get(vec2!(x,y)));
+    for y in 0..*image.size.y() {
+        for x in 0..*image.size.x() {
+            let d: u8x4 = u8x4::from(image.get(usizex2::from_xy(x,y)));
             dst.push(d.z);
             dst.push(d.y);
             dst.push(d.x);

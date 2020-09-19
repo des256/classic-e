@@ -456,7 +456,7 @@ fn clampf(v: f32,min: f32,max: f32) -> f32 {
 
 fn make_lf<T: pixel::Pixel>(l: f32,gamma: f32) -> T {
     let ul = (clampf(l.powf(gamma),0.0,1.0) * 255.0) as u8;
-    T::from_vec4u8(vec4!(ul,ul,ul,255))
+    T::from_u8x4(u8x4::from_xyzw(ul,ul,ul,255))
 }
 
 fn make_rgbaf<T: pixel::Pixel>(r: f32,g: f32,b: f32,a: f32,gamma: f32) -> T {
@@ -464,11 +464,11 @@ fn make_rgbaf<T: pixel::Pixel>(r: f32,g: f32,b: f32,a: f32,gamma: f32) -> T {
     let ug = (clampf(g.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ub = (clampf(b.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ua = (clampf(a.powf(gamma),0.0,1.0) * 255.0) as u8;
-    T::from_vec4u8(vec4!(ur,ug,ub,ua))
+    T::from_u8x4(u8x4::from_xyzw(ur,ug,ub,ua))
 }
 
 fn make_c<T: pixel::Pixel>(c: T,gamma: f32) -> T {
-    let p = c.as_vec4u8();
+    let p = c.as_u8x4();
     let r = (p.x as f32) / 255.0;
     let g = (p.y as f32) / 255.0;
     let b = (p.z as f32) / 255.0;
@@ -477,7 +477,7 @@ fn make_c<T: pixel::Pixel>(c: T,gamma: f32) -> T {
     let ug = (clampf(g.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ub = (clampf(b.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ua = (clampf(a.powf(gamma),0.0,1.0) * 255.0) as u8;
-    T::from_vec4u8(vec4!(ur,ug,ub,ua))
+    T::from_u8x4(u8x4::from_xyzw(ur,ug,ub,ua))
 }
 
 fn decode_pixels<T: pixel::Pixel>(dst: &mut [T],src: &[u8],width: usize,height: usize,stride: usize,x0: usize,y0: usize,dx: usize,dy: usize,itype: Type,palette: &[T; 256],gamma: f32) {
@@ -832,7 +832,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
                     let g = src[sp + 1];
                     let b = src[sp + 2];
                     sp += 3;
-                    palette[i] = T::from_vec4u8(vec4!(r,g,b,255));
+                    palette[i] = T::from_u8x4(u8x4::from_xyzw(r,g,b,255));
                 }
             },
             0x624B4744 => { // bKGD
@@ -842,13 +842,13 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
                     },
                     Type::L1 | Type::L2 | Type::L4 | Type::L8 | Type::LA8 | Type::L16 | Type::LA16 => {
                         let level = src[sp];
-                        _background = T::from_vec4u8(vec4!(level,level,level,255));
+                        _background = T::from_u8x4(u8x4::from_xyzw(level,level,level,255));
                     },
                     _ => {
                         let r = src[sp];
                         let g = src[sp + 2];
                         let b = src[sp + 4];
-                        _background = T::from_vec4u8(vec4!(r,g,b,255));
+                        _background = T::from_u8x4(u8x4::from_xyzw(r,g,b,255));
                     },
                 }
                 sp += chunk_length;
@@ -977,7 +977,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
             None => { return None; },
         };
         let mut sp = 0usize;
-        let mut result = Mat::<T>::new(vec2!(width as usize,height as usize));
+        let mut result = Mat::<T>::new(usizex2::from_xy(width as usize,height as usize));
         for i in 0..7 {
             if apresent[i] {
                 let raw_data = unfilter(&filtered_data[sp..sp + adsize[i] as usize],aheight[i] as usize,astride[i] as usize,bpp);
@@ -1001,7 +1001,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
         
         //let after_unfilter = Instant::now();
         
-        let mut result = Mat::new(vec2!(width as usize,height as usize));
+        let mut result = Mat::new(usizex2::from_xy(width as usize,height as usize));
         decode_pixels(&mut result.data,&raw_data,width as usize,height as usize,width as usize,0,0,1,1,itype,&palette,gamma);
         
         //let after_decode = Instant::now();

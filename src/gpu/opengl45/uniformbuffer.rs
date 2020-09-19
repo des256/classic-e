@@ -17,13 +17,13 @@ pub trait GLUniform {
     fn len() -> isize;
 }
 
-impl GLUniform for Vec2<f32> {
+impl GLUniform for f32x2 {
     fn len() -> isize {
         8
     }
 }
 
-impl GLUniform for Vec4<f32> {
+impl GLUniform for f32x4 {
     fn len() -> isize {
         16
     }

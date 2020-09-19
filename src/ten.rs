@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 
 /// Generic 3-dimensional array of elements.
 pub struct Ten<T: Clone + Copy + Zero> {
-    pub size: Vec3<usize>,
+    pub size: usizex3,
     pub data: Box<[T]>,
     phantom: PhantomData<T>,
 }
@@ -17,7 +17,7 @@ impl<T: Clone + Copy + Zero> Ten<T> {
     /// * `size` - Size of the array.
     /// # Returns
     /// The new array, filled with `zero()`.
-    pub fn new(size: Vec3<usize>) -> Ten<T> {
+    pub fn new(size: usizex3) -> Ten<T> {
         Ten {
             size: size,
             data: vec![T::zero(); (size.x * size.y * size.z) as usize].into_boxed_slice(),
@@ -29,7 +29,7 @@ impl<T: Clone + Copy + Zero> Ten<T> {
     /// # Arguments
     /// * `p` - Coordinates of the element.
     /// * `v` - Element value.
-    pub fn set(&mut self,p: Vec3<usize>,v: T) {
+    pub fn set(&mut self,p: usizex3,v: T) {
         self.data[(p.z * self.size.y + p.y) * self.size.x + p.x] = v;
     }
 
@@ -38,7 +38,7 @@ impl<T: Clone + Copy + Zero> Ten<T> {
     /// * `p` - Coordinates of the element.
     /// # Returns
     /// Element value.
-    pub fn get(&self,p: Vec3<usize>) -> T {
+    pub fn get(&self,p: usizex3) -> T {
         self.data[(p.z * self.size.y + p.y) * self.size.x + p.x]
     }
 }

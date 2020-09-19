@@ -9,7 +9,7 @@ use gl::types::GLuint;
 pub struct Framebuffer {
     pub(crate) fbo: GLuint,
     pub(crate) tex: GLuint,
-    pub size: Vec2<usize>,
+    pub size: usizex2,
 }
 
 impl Framebuffer {
@@ -24,7 +24,7 @@ impl Framebuffer {
     /// 
     /// * `Ok(Framebuffer)` - The new framebuffer.
     /// * `Err(SystemError)` - The framebuffer could not be created.
-    pub fn new(_graphics: &Rc<gpu::Graphics>,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
+    pub fn new(_graphics: &Rc<gpu::Graphics>,size: usizex2) -> Result<Framebuffer,SystemError> {
         let mut fbo: GLuint = 0;
         let mut tex: GLuint = 0;
         unsafe {
@@ -36,7 +36,7 @@ impl Framebuffer {
             gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_WRAP_T,gl::CLAMP_TO_EDGE as i32);
             gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_MIN_FILTER,gl::NEAREST as i32);
             gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_MAG_FILTER,gl::NEAREST as i32);
-            gl::TexStorage2D(gl::TEXTURE_2D,1,gl::RGBA8,size.x as i32,size.y as i32);
+            gl::TexStorage2D(gl::TEXTURE_2D,1,gl::RGBA8,*size.x() as i32,*size.y() as i32);
             gl::FramebufferTexture(gl::FRAMEBUFFER,gl::COLOR_ATTACHMENT0,tex,0);
             if gl::CheckFramebufferStatus(gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE {
                 return Err(SystemError::Generic);

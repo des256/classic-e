@@ -1,7 +1,7 @@
 // E - Matrix
 // Desmond Germans, 2020
 
-use crate::*;
+/*use crate::*;
 use std::cmp::PartialEq;
 use std::fmt::{Display,Formatter,Result,Debug};
 use std::ops::{Add,Sub,Neg,Mul,Div,AddAssign,SubAssign,MulAssign,DivAssign};
@@ -1054,4 +1054,4 @@ macro_rules! impl_mat4x4 (
 );
 
 impl_mat4x4!(f32);
-impl_mat4x4!(f64);
+impl_mat4x4!(f64);*/

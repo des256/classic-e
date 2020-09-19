@@ -36,7 +36,7 @@ struct ImageCharacter {
     size: u32,
     n: u32,
     image: Mat<u8>,
-    bearing: Vec2<i32>,
+    bearing: i32x2,
     advance: i32,
 }
 
@@ -48,8 +48,8 @@ struct ImageCharacterSet {
 
 struct Character {
     n: u32,
-    r: Rect<i32>,
-    bearing: Vec2<i32>,
+    r: i32r,
+    bearing: i32x2,
     advance: i32,
 }
 
@@ -95,7 +95,7 @@ fn exit_version() {
     std::process::exit(-1);
 }
 
-fn find_empty(size: &Vec2<usize>,haystack: &Mat<Mapped>,p: &mut Vec2<isize>) -> bool {
+fn find_empty(size: &usizex2,haystack: &Mat<Mapped>,p: &mut Vec2<isize>) -> bool {
     for hy in 0..haystack.size.y - size.y {
         for hx in 0..haystack.size.x - size.x {
             let mut found = true;
@@ -193,7 +193,7 @@ fn main() {
         }
     }
 
-    let padding: Vec2<i32> = vec2!(1,1);
+    let padding: i32x2 = vec2!(1,1);
 
     // initialize FreeType
     let ft = freetype::Library::init().unwrap();

@@ -12,8 +12,8 @@ use std::{
 #[doc(hidden)]
 pub struct Character {
     pub(crate) n: u32,
-    pub(crate) r: Rect<i32>,
-    pub(crate) bearing: Vec2<i32>,
+    pub(crate) r: i32r,
+    pub(crate) bearing: i32x2,
     pub(crate) advance: i32,
 }
 
@@ -82,8 +82,8 @@ impl FontProto {
                 let a = get_i32(bref); bref = &bref[4..];
                 characters.push(Character {
                     n: n,
-                    r: rect!(ox,oy,sx,sy),
-                    bearing: vec2!(bx,by),
+                    r: i32r::from_os(i32x2::from_xy(ox,oy),i32x2::from_xy(sx,sy)),
+                    bearing: i32x2::from_xy(bx,by),
                     advance: a,
                 });
             }
@@ -94,10 +94,10 @@ impl FontProto {
                 characters: characters,
             });
         }
-        let mut mat = Mat::<pixel::R8>::new(vec2!(atlas_size_x as usize,atlas_size_y as usize));
+        let mut mat = Mat::<pixel::R8>::new(usizex2::from_xy(atlas_size_x as usize,atlas_size_y as usize));
         for y in 0..atlas_size_y as usize {
             for x in 0..atlas_size_x as usize {
-                mat.set(vec2!(x,y),pixel::R8 { d: bref[y * (atlas_size_x as usize) + x] });
+                mat.set(usizex2::from_xy(x,y),pixel::R8 { d: bref[y * (atlas_size_x as usize) + x] });
             }
         }
         let texture = gpu::Texture2D::new_from_mat(graphics,mat)?;
@@ -138,7 +138,7 @@ impl Font {
     /// * `text` - String to measure.
     /// ## Returns
     /// The size of the string when rendered.
-    pub fn measure(&self,text: &str) -> Vec2<i32> {
+    pub fn measure(&self,text: &str) -> i32x2 {
         let mut x = 0i32;
         let mut height = 0i32;
         for s in self.proto.sets.iter() {
@@ -156,6 +156,6 @@ impl Font {
                 break;
             }
         }
-        vec2!(x,height)
+        i32x2::from_xy(x,height)
     }
 }

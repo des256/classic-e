@@ -30,7 +30,7 @@ pub struct MenuBar {
     items: RefCell<Vec<ui::MenuItem>>,
 
     /// Padding around the menubar items.
-    pub inner_padding: Cell<Vec2<i32>>,
+    pub inner_padding: Cell<i32x2>,
 
     /// Font for menu item text.
     pub font: RefCell<Rc<ui::Font>>,
@@ -60,7 +60,7 @@ impl MenuBar {
         })
     }
 
-    fn test_hit(&self,pos: Vec2<i32>) -> MenuBarHit {
+    fn test_hit(&self,pos: i32x2) -> MenuBarHit {
 
         let items = self.items.borrow();
         let inner_padding = self.inner_padding.get();
@@ -85,7 +85,7 @@ impl MenuBar {
 }
 
 impl ui::Widget for MenuBar {
-    fn measure(&self) -> Vec2<i32> {
+    fn measure(&self) -> i32x2 {
         // measure size of menu bar
         // PROBLEM LATER: When the tab bar becomes too long, there should
         // be more lines below each other, or some sort of scrolling
@@ -106,11 +106,11 @@ impl ui::Widget for MenuBar {
         total_size
     }
 
-    fn get_rect(&self) -> Rect<i32> {
+    fn get_rect(&self) -> i32r {
         self.r.get()
     }
 
-    fn set_rect(&self,r: Rect<i32>) {
+    fn set_rect(&self,r: i32r) {
         self.r.set(r);
     }
 

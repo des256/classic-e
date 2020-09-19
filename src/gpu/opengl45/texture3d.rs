@@ -12,7 +12,7 @@ use gl::types::GLuint;
 /// 3D texture GPU resource.
 pub struct Texture3D<T: gpu::GLFormat> {
     pub tex: GLuint,
-    pub size: Vec3<usize>,
+    pub size: usizex3,
     phantom: PhantomData<T>,
 }
 
@@ -28,7 +28,7 @@ impl<T: gpu::GLFormat> Texture3D<T> {
     /// 
     /// * `Ok(Texture3D)` - The new 3D texture.
     /// * `Err(SystemError)` - The 3D texture could not be created.
-    pub fn new(_graphics: &Rc<gpu::Graphics>,size: Vec3<usize>) -> Result<Texture3D<T>,SystemError> {
+    pub fn new(_graphics: &Rc<gpu::Graphics>,size: usizex3) -> Result<Texture3D<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -60,7 +60,7 @@ impl<T: gpu::GLFormat> Texture3D<T> {
     /// * `Err(SystemError)` - The 3D texture could not be created.
     pub fn new_from_ten(graphics: &Rc<gpu::Graphics>,src: Ten<T>) -> Result<Texture3D<T>,SystemError> {
         let texture = Texture3D::new(graphics,src.size)?;
-        texture.load(vec3!(0,0,0),&src);
+        texture.load(usizex3::zero(),&src);
         Ok(texture)
     }
 
@@ -70,7 +70,7 @@ impl<T: gpu::GLFormat> Texture3D<T> {
     /// 
     /// * `o` - offset.
     /// * `src` - Ten containing source data.
-    pub fn load(&self,o: Vec3<usize>,src: &Ten<T>) {
+    pub fn load(&self,o: usizex3,src: &Ten<T>) {
         unsafe {
             gl::BindTexture(gl::TEXTURE_3D,self.tex);
             gl::TexSubImage3D(gl::TEXTURE_3D,0,o.x as i32,o.y as i32,o.z as i32,src.size.x as i32,src.size.y as i32,src.size.z as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void);

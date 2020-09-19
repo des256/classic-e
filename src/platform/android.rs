@@ -8,7 +8,7 @@ pub struct System {
 
 /// OS window (for desktop environments).
 pub struct Window {
-    pub r: Cell<Rect<i32>>,
+    pub r: Cell<i32r>,
 }
 
 impl System {
@@ -32,17 +32,17 @@ impl System {
     pub fn release_mouse(&self) {
     }
 
-    fn new_window(&self,r: Rect<i32>) -> Result<Rc<Window>,SystemError> {
+    fn new_window(&self,r: i32r) -> Result<Rc<Window>,SystemError> {
         Err(SystemError::Generic)        
     }
 
     /// Create new framed window
-    pub fn new_frame(&self,r: Rect<i32>,title: &str) -> Result<Rc<Window>,SystemError> {
+    pub fn new_frame(&self,r: i32r,title: &str) -> Result<Rc<Window>,SystemError> {
         self.new_window(r)
     }
 
     /// Create new floating window
-    pub fn new_popup(&self,r: Rect<i32>) -> Result<Rc<Window>,SystemError> {
+    pub fn new_popup(&self,r: i32r) -> Result<Rc<Window>,SystemError> {
         self.new_window(r)
     }
 }

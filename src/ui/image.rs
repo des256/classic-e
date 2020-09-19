@@ -13,7 +13,7 @@ pub struct Image<T: gpu::GLFormat> {  // GLFormat should not be referred to here
     _ui: Rc<ui::UI>,
 
     /// Padding around the image.
-    _padding: Cell<Vec2<i32>>,
+    _padding: Cell<i32x2>,
 
     /// (temporary) Texture to use.
     tex: RefCell<Rc<gpu::Texture2D<T>>>,
@@ -40,7 +40,7 @@ impl<T: gpu::GLFormat> Image<T> {
 
 impl<T: gpu::GLFormat> ui::Widget for Image<T> {
 
-    fn measure(&self) -> Vec2<i32> {
+    fn measure(&self) -> i32x2 {
         let size = self.tex.borrow().size;
         vec2!(size.x as i32,size.y as i32)
     }

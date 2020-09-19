@@ -28,7 +28,7 @@ fn main() {
     let vstack = Rc::new(ui::VStack::new_from_vec(&ui.state,widgets![text1,text2,text3,text4,text5,text6,text7]));
     //vstack.halign = ui::HAlignment::Center;
 
-    ui.open_frame(rect!(50,50,640,350),"VStack Test",&vstack);
+    ui.open_frame(i32r::from_os(i32x2::from_xy(50,50),i32x2::from_xy(640,350)),"VStack Test",&vstack);
 
     ui.run();
 

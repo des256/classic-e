@@ -28,17 +28,17 @@ pub enum Event {
     /// Key was released.
     KeyRelease(u8),
     /// Mouse button was pressed.
-    MousePress(Vec2<i32>,MouseButton),
+    MousePress(i32x2,MouseButton),
     /// Mouse button was released.
-    MouseRelease(Vec2<i32>,MouseButton),
+    MouseRelease(i32x2,MouseButton),
     /// Mouse wheel was moved.
     MouseWheel(MouseWheel),
     /// Mouse was moved.
-    MouseMove(Vec2<i32>),
+    MouseMove(i32x2),
     /// Window was resized.
-    Size(Vec2<i32>),
+    Size(i32x2),
     /// Window was moved.
-    Move(Vec2<i32>),
+    Move(i32x2),
     /// The window requires redrawing.
     Render,
     /// Window close button was pressed.
@@ -55,8 +55,8 @@ pub enum SystemError {
 /// Window trait.
 pub trait Window {
     fn handle(&self,event: Event);
-    fn rect(&self) -> Rect<i32>;
-    fn set_rect(&self,r: Rect<i32>);
+    fn rect(&self) -> i32r;
+    fn set_rect(&self,r: i32r);
     fn id(&self) -> u64;
 }
 

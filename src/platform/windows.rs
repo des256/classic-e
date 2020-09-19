@@ -494,7 +494,7 @@ impl System {
         }
     }
 
-    fn open_window(&self,r: Rect<i32>,title: &str,style: DWORD,exstyle: DWORD) -> Result<Rc<Window>,SystemError> {
+    fn open_window(&self,r: i32r,title: &str,style: DWORD,exstyle: DWORD) -> Result<Rc<Window>,SystemError> {
         let mut rc = RECT {
             left: r.o.x,
             right: r.o.x + r.s.x,
@@ -543,12 +543,12 @@ impl System {
     }
 
     /// Create new framed window
-    pub fn open_frame_window(&self,r: Rect<i32>,title: &str) -> Result<Rc<Window>,SystemError> {
+    pub fn open_frame_window(&self,r: i32r,title: &str) -> Result<Rc<Window>,SystemError> {
         self.open_window(r,title,WS_OVERLAPPEDWINDOW,WS_EX_APPWINDOW | WS_EX_WINDOWEDGE)
     }
 
     /// Create new floating window
-    pub fn open_popup_window(&self,r: Rect<i32>) -> Result<Rc<Window>,SystemError> {
+    pub fn open_popup_window(&self,r: i32r) -> Result<Rc<Window>,SystemError> {
         self.open_window(r,"",WS_POPUPWINDOW,0)
     }
 
@@ -583,7 +583,7 @@ impl Drop for System {
 
 pub struct Window {
     pub(crate) anchor: Rc<SystemAnchor>,
-    pub(crate) r: Cell<Rect<i32>>,
+    pub(crate) r: Cell<i32r>,
     pub(crate) hwnd: HWND,
     pub(crate) hdc: HDC,
     pub(crate) handler: RefCell<Option<Box<dyn Fn(Event)>>>,

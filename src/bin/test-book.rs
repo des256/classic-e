@@ -10,7 +10,7 @@ fn main() {
     let mut ui = ui::UI::new(&system,&graphics,"static/fonts").expect("Cannot open UI.");
 
     let mut button = ui::Button::new(&ui.state,"Page Button",&ui.state.font);
-    button.padding = vec2!(40,20);
+    button.padding = i32x2::from_xy(40,20);
 
     let mut text1 = ui::Text::new(&ui.state,"This",&ui.state.font);
     let mut text2 = ui::Text::new(&ui.state,"is a vertical",&ui.state.font);
@@ -34,7 +34,7 @@ fn main() {
         "World".to_string(),vstack
     ]));
 
-    ui.open_frame(rect!(50,50,640,350),"Book Test",&book);
+    ui.open_frame(i32r::from_os(i32x2::from_xy(50,50),i32x2::from_xy(640,350)),"Book Test",&book);
 
     ui.run();
 

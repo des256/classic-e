@@ -38,16 +38,16 @@ fn main() {
     let mut text9 = Box::new(ui::Text::new(&ui.state,"Edit",&ui.state.font));
     let mut text10 = Box::new(ui::Text::new(&ui.state,"Selection",&ui.state.font));
     let mut text11 = Box::new(ui::Text::new(&ui.state,"View",&ui.state.font));
-    text8.padding = vec2!(4,2);
-    text9.padding = vec2!(4,2);
-    text10.padding = vec2!(4,2);
-    text11.padding = vec2!(4,2);
+    text8.padding = i32x2::from_xy(4,2);
+    text9.padding = i32x2::from_xy(4,2);
+    text10.padding = i32x2::from_xy(4,2);
+    text11.padding = i32x2::from_xy(4,2);
     
     // create HStack
     let hstack = Rc::new(ui::HStack::new_from_vec(&ui.state,vec![text8,text9,text10,text11,vstack]));
     //hstack.valign = ui::VAlignment::Center;
 
-    ui.open_frame(rect!(50,50,640,350),"HStack Test",&hstack);
+    ui.open_frame(i32r::from_os(i32x2::from_xy(50,50),i32x2::from_xy(640,350)),"HStack Test",&hstack);
 
     ui.run();
 
