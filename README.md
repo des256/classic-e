@@ -18,23 +18,25 @@ The submodule `ui` defines interactive widgets that can be placed on windows fro
 
 ## Data Structures
 
-`Mat` are 2D arrays, mimicking `Vec`, but for 2D. `Mat` is short for matrix in a similar way that `Vec` is short for vector.
+`Mat` are 2D arrays, just like `Vec` are 1D arrays.
 
-`Ten` are 3D arrays, mimicking `Vec` and `Mat`, but for 3D. `Ten` is short for tensor in a similar way that `Vec` is short for vector.
+`Ten` are 3D arrays, like `Vec` and `Mat`.
 
 `pixel` defines various pixel formats as basic data types. Constructions like `Mat<pixel::ARGB8>` can be regarded as main memory images.
 
 ### Future
 
-Serialization/deserialization, but not with `Serde`.
+- Serialization/deserialization, but not with `Serde`.
 
 ## Mathematical Types
 
 `Vec2`, `Vec3` and `Vec4` are 2D, 3D and 4D vectors in a mathematical sense. `Mat2x2`, `Mat3x3` and `Mat4x4` are matrices in a mathematical sense. Basic arithmetic operations are defined for these types, and they correspond directly to similar types inside shaders. Most likely, they are implemented using SIMD instructions.
 
-`Rect` describes a rectangle. A rectangle consists of an origin and a size, both `Vec2`.
+`Vec3A` is different from `Vec3` in that it is aligned. It takes up 4x the base type (instead of 3), but is implemented as SIMD type. In contrast, `Vec3` is packed. Use `Vec3` for storage and `Vec3A` for calculations. The trait `From` is defined to convert one to the other, and math operations allow mixed types, biased towards `Vec3A`.
 
-`MultiVec2`, `MultiVec3` and `MultiVec4` are 2D, 3D and 4D multivectors.
+`Rect` describes a rectangle. A rectangle consists of an origin and a size.
+
+`MultiVec2`, `MultiVec3` and `MultiVec4` are 2D, 3D and 4D multivectors (Geometric Algebra).
 
 ### Future
 
@@ -121,7 +123,7 @@ The `ui` module manages interaction and design of widgets via the `UI` context. 
 - 3D Formats
 - Video Formats
 - Audio Formats
-- AR tools
-- VR tools
-- Deep learning tools
+- AR
+- VR
+- Deep learning
 - Networking
