@@ -84,6 +84,7 @@ macro_rules! impl_vec4u {
             }
         }
 
+        // Vec4 == Vec4
         impl PartialEq for Vec4<$t> {
             fn eq(&self,other: &Self) -> bool {
                 <$t as Simd4>::Type::eq(&self.0,&other.0,0xF)
@@ -102,6 +103,7 @@ macro_rules! impl_vec4u {
             }
         }
 
+        // Vec4 + Vec4
         impl Add<Vec4<$t>> for Vec4<$t> {
             type Output = Self;
             fn add(self,other: Self) -> Self {
@@ -109,12 +111,14 @@ macro_rules! impl_vec4u {
             }
         }
 
+        // Vec4 += Vec4
         impl AddAssign<Vec4<$t>> for Vec4<$t> {
             fn add_assign(&mut self,other: Self) {
                 self.0 = <$t as Simd4>::Type::add(&self.0,&other.0);
             }
         }
 
+        // Vec4 - Vec4
         impl Sub<Vec4<$t>> for Vec4<$t> {
             type Output = Self;
             fn sub(self,other: Self) -> Self {
@@ -122,12 +126,14 @@ macro_rules! impl_vec4u {
             }
         }
 
+        // Vec4 -= Vec4
         impl SubAssign<Vec4<$t>> for Vec4<$t> {
             fn sub_assign(&mut self,other: Self) {
                 self.0 = <$t as Simd4>::Type::sub(&self.0,&other.0);
             }
         }
 
+        // s * Vec4
         impl Mul<Vec4<$t>> for $t {
             type Output = Vec4<$t>;
             fn mul(self,other: Vec4<$t>) -> Vec4<$t> {
@@ -135,6 +141,7 @@ macro_rules! impl_vec4u {
             }
         }
 
+        // Vec4 * s
         impl Mul<$t> for Vec4<$t> {
             type Output = Self;
             fn mul(self,other: $t) -> Self {
@@ -142,12 +149,14 @@ macro_rules! impl_vec4u {
             }
         }
         
+        // Vec4 *= s
         impl MulAssign<$t> for Vec4<$t> {
             fn mul_assign(&mut self,other: $t) {
                 self.0 = <$t as Simd4>::Type::mul(&self.0,&<$t as Simd4>::Type::splat(other));
             }
         }        
 
+        // Vec4 / s
         impl Div<$t> for Vec4<$t> {
             type Output = Self;
             fn div(self,other: $t) -> Self {
@@ -155,9 +164,31 @@ macro_rules! impl_vec4u {
             }
         }
         
+        // Vec4 /= s
         impl DivAssign<$t> for Vec4<$t> {
             fn div_assign(&mut self,other: $t) {
                 self.0 = <$t as Simd4>::Type::div(&self.0,&<$t as Simd4>::Type::splat(other));
+            }
+        }
+
+        // Vec4 = (Vec2,0,1)
+        impl From<Vec2<$t>> for Vec4<$t> {
+            fn from(v: Vec2<$t>) -> Vec4<$t> {
+                Vec4::<$t>::new(v.x(),v.y(),$z,$o)
+            }
+        }
+
+        // Vec4 = (Vec3,1)
+        impl From<Vec3<$t>> for Vec4<$t> {
+            fn from(v: Vec3<$t>) -> Vec4<$t> {
+                Vec4::<$t>::new(v.x(),v.y(),v.z(),$o)
+            }
+        }
+
+        // Vec4 = (Vec3A,1)
+        impl From<Vec3A<$t>> for Vec4<$t> {
+            fn from(v: Vec3A<$t>) -> Vec4<$t> {
+                Vec4::<$t>::new(v.x(),v.y(),v.z(),$o)
             }
         }
     }
@@ -221,7 +252,7 @@ impl_vec4i!(isize; 1; 0);
 impl_vec4f!(f32; 1.0; 0.0);
 impl_vec4f!(f64; 1.0; 0.0);
 
-//#[macro_export]
-//macro_rules! vec4 {
-//    ($x:expr,$y:expr,$z:expr,$w:expr) => { Vec4::new($x,$y,$z,$w) };
-//}
+#[macro_export]
+macro_rules! vec4 {
+    ($t:ty: $x:expr,$y:expr,$z:expr,$w:expr) => { Vec4::<$t>::new($x,$y,$z,$w) };
+}

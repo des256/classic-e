@@ -210,6 +210,24 @@ macro_rules! impl_multivec2 (
                 MultiVec2(<$t as Simd4>::Type::sub(&<$t as Simd4>::Type::zero(),&self.0))
             }
         }
+
+        impl From<$t> for MultiVec2<$t> {
+            fn from(v: $t) -> MultiVec2<$t> {
+                MultiVec2::<$t>::new(v,$z,$z,$z)
+            }
+        }
+
+        impl From<Vec2<$t>> for MultiVec2<$t> {
+            fn from(v: Vec2<$t>) -> MultiVec2<$t> {
+                MultiVec2::<$t>::new($z,v.x(),v.y(),$z)
+            }
+        }
+
+        impl From<Complex<$t>> for MultiVec2<$t> {
+            fn from(v: Complex<$t>) -> MultiVec2<$t> {
+                MultiVec2::<$t>::new(v.r(),$z,$z,v.i())
+            }
+        }
     );
 );
 

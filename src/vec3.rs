@@ -76,6 +76,7 @@ macro_rules! impl_vec3u {
             }
         }
 
+        // Vec3 == Vec3
         impl PartialEq for Vec3<$t> {
             fn eq(&self,other: &Self) -> bool {
                 (self.x == other.x) &&
@@ -96,6 +97,7 @@ macro_rules! impl_vec3u {
             }
         }
 
+        // Vec3 + Vec3
         impl Add<Vec3<$t>> for Vec3<$t> {
             type Output = Self;
             fn add(self,other: Self) -> Self {
@@ -103,6 +105,7 @@ macro_rules! impl_vec3u {
             }
         }
 
+        // Vec3 += Vec3
         impl AddAssign<Vec3<$t>> for Vec3<$t> {
             fn add_assign(&mut self,other: Self) {
                 self.x += other.x;
@@ -111,6 +114,7 @@ macro_rules! impl_vec3u {
             }
         }
 
+        // Vec3 - Vec3
         impl Sub<Vec3<$t>> for Vec3<$t> {
             type Output = Self;
             fn sub(self,other: Self) -> Self {
@@ -118,6 +122,7 @@ macro_rules! impl_vec3u {
             }
         }
 
+        // Vec3 -= Vec3
         impl SubAssign<Vec3<$t>> for Vec3<$t> {
             fn sub_assign(&mut self,other: Self) {
                 self.x -= other.x;
@@ -126,6 +131,7 @@ macro_rules! impl_vec3u {
             }
         }
 
+        // s * Vec3
         impl Mul<Vec3<$t>> for $t {
             type Output = Vec3<$t>;
             fn mul(self,other: Vec3<$t>) -> Vec3<$t> {
@@ -133,6 +139,7 @@ macro_rules! impl_vec3u {
             }
         }
 
+        // Vec3 * s
         impl Mul<$t> for Vec3<$t> {
             type Output = Self;
             fn mul(self,other: $t) -> Self {
@@ -140,6 +147,7 @@ macro_rules! impl_vec3u {
             }
         }
         
+        // Vec3 *= s
         impl MulAssign<$t> for Vec3<$t> {
             fn mul_assign(&mut self,other: $t) {
                 self.x *= other;
@@ -148,6 +156,7 @@ macro_rules! impl_vec3u {
             }
         }        
 
+        // Vec3 / s
         impl Div<$t> for Vec3<$t> {
             type Output = Self;
             fn div(self,other: $t) -> Self {
@@ -155,11 +164,26 @@ macro_rules! impl_vec3u {
             }
         }
         
+        // Vec3 /= s
         impl DivAssign<$t> for Vec3<$t> {
             fn div_assign(&mut self,other: $t) {
                 self.x /= other;
                 self.y /= other;
                 self.z /= other;
+            }
+        }
+
+        // Vec3 = (Vec2,0)
+        impl From<Vec2<$t>> for Vec3<$t> {
+            fn from(v: Vec2<$t>) -> Vec3<$t> {
+                Vec3::<$t>::new(v.x(),v.y(),$z)
+            }
+        }
+
+        // Vec3 = Vec3A
+        impl From<Vec3A<$t>> for Vec3<$t> {
+            fn from(v: Vec3A<$t>) -> Vec3<$t> {
+                Vec3::<$t>::new(v.x(),v.y(),v.z())
             }
         }
     }
@@ -169,6 +193,7 @@ macro_rules! impl_vec3i {
     ($t:ty; $o:expr; $z:expr) => {
         impl_vec3u!($t; $o; $z);
 
+        // -Vec3
         impl Neg for Vec3<$t> {
             type Output = Self;
             fn neg(self) -> Self {
@@ -225,7 +250,7 @@ impl_vec3i!(isize; 1; 0);
 impl_vec3f!(f32; 1.0; 0.0);
 impl_vec3f!(f64; 1.0; 0.0);
 
-//#[macro_export]
-//macro_rules! vec3 {
-//    ($x:expr,$y:expr,$z:expr) => { Vec3::new($x,$y,$z) };
-//}
+#[macro_export]
+macro_rules! vec3 {
+    ($t:ty: $x:expr,$y:expr,$z:expr) => { Vec3::<$t>::new($x,$y,$z) };
+}

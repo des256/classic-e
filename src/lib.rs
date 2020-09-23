@@ -24,7 +24,7 @@ impl ColorParameter for u32 {
         let g = (((self >> 8) & 0xFF) as f32) / 255.0;
         let b = ((self & 0xFF) as f32) / 255.0;
         let a = (((self >> 24) & 0xFF) as f32) / 255.0;
-        Vec4::<f32>::new(r,g,b,a)
+        vec4!(f32: r,g,b,a)
     }
 }
 
@@ -43,6 +43,9 @@ impl ColorParameter for Vec4<f32> {
     }
 }
 
+mod platform;
+pub use platform::*;
+
 mod zero;
 pub use zero::*;
 
@@ -54,6 +57,15 @@ pub use mat::*;
 
 mod ten;
 pub use ten::*;
+
+mod complex;
+pub use complex::*;
+
+mod quat;
+pub use quat::*;
+
+mod rect;
+pub use rect::*;
 
 mod vec2;
 pub use vec2::*;
@@ -78,13 +90,6 @@ pub use multivec4::*;
 
 mod matrix;
 pub use matrix::*;
-
-#[macro_use]
-mod rect;
-pub use rect::*;
-
-mod platform;
-pub use platform::*;
 
 pub mod pixel;
 

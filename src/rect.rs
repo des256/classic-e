@@ -96,8 +96,8 @@ impl_rect!(f64);
 impl_rect!(usize);
 impl_rect!(isize);
 
-//#[macro_export]
-//macro_rules! rect {
-//    ($ox:expr,$oy:expr,$sx:expr,$sy:expr) => { Rect::new($ox,$oy,$sx,$sy) };
-//    ($o:expr,$s:expr) => { Rect::new_os($o,$s) };
-//}
+#[macro_export]
+macro_rules! rect {
+    ($t:ty: $ox:expr,$oy:expr,$sx:expr,$sy:expr) => { Rect::<$t>::new($ox,$oy,$sx,$sy) };
+    ($t:ty: $o:expr,$s:expr) => { Rect::<$t>::new_os($o,$s) };
+}

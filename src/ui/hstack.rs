@@ -42,10 +42,12 @@ impl ui::Widget for HStack {
                 ui::VAlignment::Center => { (r.oy() + (r.sy() - size.y()) / 2,size.y() / 2) },
                 ui::VAlignment::Fill => { (r.oy(),r.sy()) },
             };
-            widget.set_rect(Rect::<i32>::new_os(
-                Vec2::<i32>::new(ox,oy) + self.padding,
-                Vec2::<i32>::new(size.x(),sy) - 2 * self.padding
-            ));
+            widget.set_rect(
+                rect!(i32:
+                    vec2!(i32: ox,oy) + self.padding,
+                    vec2!(i32: size.x(),sy) - 2 * self.padding
+                )
+            );
             ox += size.x();
         }
     }

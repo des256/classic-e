@@ -284,6 +284,18 @@ macro_rules! impl_multivec3 (
                 MultiVec3(<$t as Simd8>::Type::sub(&<$t as Simd8>::Type::zero(),&self.0))
             }
         }
+
+        impl From<$t> for MultiVec3<$t> {
+            fn from(v: $t) -> MultiVec3<$t> {
+                MultiVec3::<$t>::new(v,$z,$z,$z,$z,$z,$z,$z)
+            }
+        }
+
+        impl From<Vec3<$t>> for MultiVec3<$t> {
+            fn from(v: Vec3<$t>) -> MultiVec3<$t> {
+                MultiVec3::<$t>::new($z,v.x(),v.y(),v.z(),$z,$z,$z,$z)
+            }
+        }
     );
 );
 

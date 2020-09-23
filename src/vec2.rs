@@ -60,6 +60,7 @@ macro_rules! impl_vec2u {
             }
         }
 
+        // Vec2 == Vec2
         impl PartialEq for Vec2<$t> {
             fn eq(&self,other: &Self) -> bool {
                 <$t as Simd2>::Type::eq(&self.0,&other.0,0x3)
@@ -78,6 +79,7 @@ macro_rules! impl_vec2u {
             }
         }
 
+        // Vec2 + Vec2
         impl Add<Vec2<$t>> for Vec2<$t> {
             type Output = Self;
             fn add(self,other: Self) -> Self {
@@ -85,12 +87,14 @@ macro_rules! impl_vec2u {
             }
         }
 
+        // Vec2 += Vec2
         impl AddAssign<Vec2<$t>> for Vec2<$t> {
             fn add_assign(&mut self,other: Self) {
                 self.0 = <$t as Simd2>::Type::add(&self.0,&other.0);
             }
         }
 
+        // Vec2 - Vec2
         impl Sub<Vec2<$t>> for Vec2<$t> {
             type Output = Self;
             fn sub(self,other: Self) -> Self {
@@ -98,12 +102,14 @@ macro_rules! impl_vec2u {
             }
         }
 
+        // Vec2 -= Vec2
         impl SubAssign<Vec2<$t>> for Vec2<$t> {
             fn sub_assign(&mut self,other: Self) {
                 self.0 = <$t as Simd2>::Type::sub(&self.0,&other.0);
             }
         }
 
+        // s * Vec2
         impl Mul<Vec2<$t>> for $t {
             type Output = Vec2<$t>;
             fn mul(self,other: Vec2<$t>) -> Vec2<$t> {
@@ -111,6 +117,7 @@ macro_rules! impl_vec2u {
             }
         }
 
+        // Vec2 * s
         impl Mul<$t> for Vec2<$t> {
             type Output = Self;
             fn mul(self,other: $t) -> Self {
@@ -118,12 +125,14 @@ macro_rules! impl_vec2u {
             }
         }
         
+        // Vec2 *= s
         impl MulAssign<$t> for Vec2<$t> {
             fn mul_assign(&mut self,other: $t) {
                 self.0 = <$t as Simd2>::Type::mul(&self.0,&<$t as Simd2>::Type::splat(other));
             }
         }        
 
+        // Vec2 / s
         impl Div<$t> for Vec2<$t> {
             type Output = Self;
             fn div(self,other: $t) -> Self {
@@ -131,6 +140,7 @@ macro_rules! impl_vec2u {
             }
         }
         
+        // Vec2 /= s
         impl DivAssign<$t> for Vec2<$t> {
             fn div_assign(&mut self,other: $t) {
                 self.0 = <$t as Simd2>::Type::div(&self.0,&<$t as Simd2>::Type::splat(other));
@@ -143,6 +153,7 @@ macro_rules! impl_vec2i {
     ($t:ty; $o:expr; $z:expr) => {
         impl_vec2u!($t; $o; $z);
 
+        // -Vec2
         impl Neg for Vec2<$t> {
             type Output = Self;
             fn neg(self) -> Self {
@@ -197,7 +208,7 @@ impl_vec2i!(isize; 1; 0);
 impl_vec2f!(f32; 1.0; 0.0);
 impl_vec2f!(f64; 1.0; 0.0);
 
-//#[macro_export]
-//macro_rules! vec2 {
-//    ($x:expr,$y:expr) => { Vec2::new($x,$y) };
-//}
+#[macro_export]
+macro_rules! vec2 {
+    ($t:ty: $x:expr,$y:expr) => { Vec2::<$t>::new($x,$y) };
+}

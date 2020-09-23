@@ -449,6 +449,18 @@ macro_rules! impl_multivec4 (
                 MultiVec4(<$t as Simd16>::Type::sub(&<$t as Simd16>::Type::zero(),&self.0))
             }
         }
+
+        impl From<$t> for MultiVec4<$t> {
+            fn from(v: $t) -> MultiVec4<$t> {
+                MultiVec4::<$t>::new(v,$z,$z,$z,$z,$z,$z,$z,$z,$z,$z,$z,$z,$z,$z,$z)
+            }
+        }
+
+        impl From<Vec4<$t>> for MultiVec4<$t> {
+            fn from(v: Vec4<$t>) -> MultiVec4<$t> {
+                MultiVec4::<$t>::new($z,v.x(),v.y(),v.z(),v.w(),$z,$z,$z,$z,$z,$z,$z,$z,$z,$z,$z)
+            }
+        }
     );
 );
 

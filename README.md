@@ -22,7 +22,17 @@ The submodule `ui` defines interactive widgets that can be placed on windows fro
 
 `Ten` are 3D arrays, like `Vec` and `Mat`.
 
-`pixel` defines various pixel formats as basic data types. Constructions like `Mat<pixel::ARGB8>` can be regarded as main memory images.
+`pixel` defines various pixel formats as basic data types. Constructions like `Mat<pixel::ARGB8>` can be regarded as main memory images. The following pixel formats are currently defined:
+
+- pixel::R8
+- pixel::R3G3B2
+- pixel::ARGB2
+- pixel::R5G6B5
+- pixel::ARGB4
+- pixel::A1RGB5
+- pixel::RGB8
+- pixel::ARGB8
+- pixel::A2RGB10
 
 ### Future
 
@@ -30,19 +40,18 @@ The submodule `ui` defines interactive widgets that can be placed on windows fro
 
 ## Mathematical Types
 
-`Vec2`, `Vec3` and `Vec4` are 2D, 3D and 4D vectors in a mathematical sense. `Mat2x2`, `Mat3x3` and `Mat4x4` are matrices in a mathematical sense. Basic arithmetic operations are defined for these types, and they correspond directly to similar types inside shaders. Most likely, they are implemented using SIMD instructions.
+`Complex` are complex numbers. `Quat` are quaternions.
 
-`Vec3A` is different from `Vec3` in that it is aligned. It takes up 4x the base type (instead of 3), but is implemented as SIMD type. In contrast, `Vec3` is packed. Use `Vec3` for storage and `Vec3A` for calculations. The trait `From` is defined to convert one to the other, and math operations allow mixed types, biased towards `Vec3A`.
+`Vec2`, `Vec3`, `Vec3A` and `Vec4` are 2D, 3D and 4D vectors
+in a mathematical sense. `Mat2x2`, `Mat3x3`, `Mat3x3A` and `Mat4x4` are matrices in a mathematical sense. Basic arithmetic operations are defined for these types, and they correspond directly to similar types inside shaders. `Vec2`, `Vec3A` and `Vec4` are implemented on top of SIMD access. `Vec3` is not. `Mat2x2`, `Mat3x3A` and `Mat4x4` are implemented on top of SIMD access. `Mat3x3` is not. Use `Vec3` for storage and space-preservation. Use `Vec3A` for calculations speed. The trait `From` is defined to convert one to the other.
 
 `Rect` describes a rectangle. A rectangle consists of an origin and a size.
 
-`MultiVec2`, `MultiVec3` and `MultiVec4` are 2D, 3D and 4D multivectors (Geometric Algebra).
+`MultiVec2`, `MultiVec3` and `MultiVec4` are 2D, 3D and 4D multivectors.
 
 ### Future
 
-- Euler angles
-- Quaternions
-- Complex numbers
+- Euler angles (all 6 versions)
 - Higher-dimensional vectors and matrices
 - Optimization algorithms
 

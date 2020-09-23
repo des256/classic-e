@@ -436,7 +436,7 @@ impl System {
                 },
                 BUTTON_PRESS => {
                     let button_press: &ButtonPressEvent = unsafe { cast_event(&xcb_event) };
-                    let p = Vec2::<i32>::new(button_press.event_x() as i32,button_press.event_y() as i32);
+                    let p = vec2!(i32: button_press.event_x() as i32,button_press.event_y() as i32);
                     let xid = button_press.event() as XID;
                     match button_press.detail() {
                         1 => { self.send_event(windows,xid,Event::MousePress(p,MouseButton::Left)); },
@@ -451,7 +451,7 @@ impl System {
                 },
                 BUTTON_RELEASE => {
                     let button_release: &ButtonReleaseEvent = unsafe { cast_event(&xcb_event) };
-                    let p = Vec2::<i32>::new(button_release.event_x() as i32,button_release.event_y() as i32);
+                    let p = vec2!(i32: button_release.event_x() as i32,button_release.event_y() as i32);
                     let xid = button_release.event() as XID;
                     match button_release.detail() {
                         1 => { self.send_event(windows,xid,Event::MouseRelease(p,MouseButton::Left)); },
@@ -462,13 +462,13 @@ impl System {
                 },
                 MOTION_NOTIFY => {
                     let motion_notify: &MotionNotifyEvent = unsafe { cast_event(&xcb_event) };
-                    let p = Vec2::<i32>::new(motion_notify.event_x() as i32,motion_notify.event_y() as i32);
+                    let p = vec2!(i32: motion_notify.event_x() as i32,motion_notify.event_y() as i32);
                     let xid = motion_notify.event() as XID;
                     self.send_event(windows,xid,Event::MouseMove(p));
                 },
                 CONFIGURE_NOTIFY => {
                     let configure_notify: &ConfigureNotifyEvent = unsafe { cast_event(&xcb_event) };
-                    let r = Rect::<i32>::new(configure_notify.x() as i32,configure_notify.y() as i32,configure_notify.width() as i32,configure_notify.height() as i32);
+                    let r = rect!(i32: configure_notify.x() as i32,configure_notify.y() as i32,configure_notify.width() as i32,configure_notify.height() as i32);
                     let xid = configure_notify.event() as XID;
                     for window in windows.iter() {
                         if xid == window.id() {

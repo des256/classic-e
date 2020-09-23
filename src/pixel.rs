@@ -29,7 +29,7 @@ impl Pixel for R8 {
     }
 
     fn as_vec4(&self) -> Vec4<u8> {
-        Vec4::<u8>::new(self.d,self.d,self.d,255)
+        vec4!(u8: self.d,self.d,self.d,255)
     }
 }
 
@@ -76,7 +76,7 @@ impl Pixel for R3G3B2 {
         r = (r << 5) | (r << 2) | (r >> 1);
         g = (g << 5) | (g << 2) | (g >> 1);
         b = (b << 6) | (b << 4) | (b << 2) | b;
-        Vec4::<u8>::new(r as u8,g as u8,b as u8,255)
+        vec4!(u8: r as u8,g as u8,b as u8,255)
     }
 }
 
@@ -127,7 +127,7 @@ impl Pixel for ARGB2 {
         g = (g << 6) | (g << 4) | (g << 2) | g;
         b = (b << 6) | (b << 4) | (b << 2) | b;
         a = (a << 6) | (a << 4) | (a << 2) | a;
-        Vec4::<u8>::new(r,g,b,a)
+        vec4!(u8: r,g,b,a)
     }
 }
 
@@ -174,7 +174,7 @@ impl Pixel for R5G6B5 {
         r = (r << 3) | (r >> 2);
         g = (g << 3) | (g >> 2);
         b = (b << 3) | (b >> 2);
-        Vec4::<u8>::new(r,g,b,255)
+        vec4!(u8: r,g,b,255)
     }
 }
 
@@ -225,7 +225,7 @@ impl Pixel for ARGB4 {
         r = (r << 4) | r;
         g = (g << 4) | g;
         b = (b << 4) | b;
-        Vec4::<u8>::new(r,g,b,a)
+        vec4!(u8: r,g,b,a)
     }
 }
 
@@ -281,7 +281,7 @@ impl Pixel for A1RGB5 {
         else {
             0x00
         };
-        Vec4::<u8>::new(r,g,b,a)
+        vec4!(u8: r,g,b,a)
     }
 }
 
@@ -319,7 +319,7 @@ impl Pixel for RGB8 {
     }
 
     fn as_vec4(&self) -> Vec4<u8> {
-        Vec4::<u8>::new(self.r,self.g,self.b,255)
+        vec4!(u8: self.r,self.g,self.b,255)
     }
 }
 
@@ -359,7 +359,7 @@ impl Pixel for ARGB8 {
     }
 
     fn as_vec4(&self) -> Vec4<u8> {
-        Vec4::<u8>::new(self.r,self.g,self.b,self.a)        
+        vec4!(u8: self.r,self.g,self.b,self.a)        
     }
 }
 
@@ -418,7 +418,7 @@ impl Pixel for A2RGB10 {
         let b = ((self.d >> 2) & 0x000000FF) as u8;
         let mut a = ((self.d >> 30) & 0x00000003) as u8;
         a = (a << 6) | (a << 4) | (a << 2) | a;
-        Vec4::<u8>::new(r,g,b,a)        
+        vec4!(u8: r,g,b,a)        
     }
 }
 

@@ -42,10 +42,12 @@ impl ui::Widget for VStack {
                 ui::HAlignment::Center => { (r.ox() + (r.sx() - size.x()) / 2,size.x() / 2) },
                 ui::HAlignment::Fill => { (r.ox(),r.sx()) },
             };
-            widget.set_rect(Rect::<i32>::new_os(
-                Vec2::<i32>::new(ox,oy) + self.padding,
-                Vec2::<i32>::new(sx,size.y()) - 2 * self.padding,
-            ));
+            widget.set_rect(
+                rect!(i32:
+                    vec2!(i32: ox,oy) + self.padding,
+                    vec2!(i32: sx,size.y()) - 2 * self.padding
+                )
+            );
             oy += size.y();
         }
     }
