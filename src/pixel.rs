@@ -6,54 +6,30 @@
 use crate::*;
 
 pub trait Pixel: Copy + Clone + Zero {
-    fn from_f32(v: f32) -> Self;
-    fn from_u32(v: u32) -> Self;
-    fn from_f32x4(v: f32x4) -> Self;
-    fn from_u8x4(v: u8x4) -> Self;
-    fn as_f32(&self) -> f32;
-    fn as_u32(&self) -> u32;
-    fn as_f32x4(&self) -> f32x4;
-    fn as_u8x4(&self) -> u8x4;
+    fn from_rgba(r: u8,g: u8,b: u8,a: u8) -> Self;
+    fn from_vec4(v: Vec4<u8>) -> Self;
+    fn as_vec4(&self) -> Vec4<u8>;
+    // could also consider from_vec4f and as_vec4f for more exotic formats
 }
 
 /// 8-bit R pixel format.
 #[allow(dead_code)]
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct R8 {
     pub d: u8,
 }
 
 impl Pixel for R8 {
-    fn from_f32(v: f32) -> Self {
-        R8 { d: (v * 255.0) as u8, }
+    fn from_rgba(r: u8,g: u8,b: u8,_a: u8) -> Self {
+        R8 { d: (((r as u16) + (b as u16) + (g as u16)) / 3) as u8, }
     }
 
-    fn from_u32(v: u32) -> Self {
-        R8 { d: v as u8, }
+    fn from_vec4(v: Vec4<u8>) -> Self {
+        R8 { d: v.x(), }
     }
 
-    fn from_f32x4(v: f32x4) -> Self {
-        R8 { d: (v.x * 255.0) as u8, }
-    }
-
-    fn from_u8x4(v: u8x4) -> Self {
-        R8 { d: v.x, }
-    }
-
-    fn as_f32(&self) -> f32 {
-        (self.d as f32) / 255.0
-    }
-
-    fn as_u32(&self) -> u32 {
-        self.d as u32
-    }
-
-    fn as_f32x4(&self) -> f32x4 {
-        f32x4::from_xyzw((self.d as f32) / 255.0,(self.d as f32) / 255.0,(self.d as f32) / 255.0,1.0)
-    }
-
-    fn as_u8x4(&self) -> u8x4 {
-        u8x4::from_xyzw(self.d,self.d,self.d,255)
+    fn as_vec4(&self) -> Vec4<u8> {
+        Vec4::<u8>::new(self.d,self.d,self.d,255)
     }
 }
 
@@ -73,72 +49,34 @@ impl PartialEq<R8> for R8 {
 
 /// 8-bit RGB pixel format.
 #[allow(dead_code)]
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct R3G3B2 {
     d: u8,
 }
 
 impl Pixel for R3G3B2 {
-    fn from_f32(v: f32) -> Self {
-        let r = ((v * 7.0) as u8) << 5;
-        let g = ((v * 7.0) as u8) << 2;
-        let b = (v * 3.0) as u8;
+    fn from_rgba(r: u8,g: u8,b: u8,_a: u8) -> Self {
+        let r = (r & 0xE0) as u8;
+        let g = ((g >> 2) & 0x1C) as u8;
+        let b = ((b >> 6) & 0x03) as u8;
         R3G3B2 { d: r | g | b, }
     }
 
-    fn from_u32(v: u32) -> Self {
-        let r = ((v >> 16) & 0xE0) as u8;
-        let g = ((v >> 11) & 0x1C) as u8;
-        let b = ((v >> 6) & 0x03) as u8;
+    fn from_vec4(v: Vec4<u8>) -> Self {
+        let r = (v.x() & 0xE0) as u8;
+        let g = ((v.y() >> 2) & 0x1C) as u8;
+        let b = ((v.z() >> 6) & 0x03) as u8;
         R3G3B2 { d: r | g | b, }
     }
 
-    fn from_f32x4(v: f32x4) -> Self {
-        let r = ((v.x * 7.0) as u8) << 5;
-        let g = ((v.y * 7.0) as u8) << 2;
-        let b = (v.z * 3.0) as u8;
-        R3G3B2 { d: r | g | b, }
-    }
-
-    fn from_u8x4(v: u8x4) -> Self {
-        let r = (v.x & 0xE0) as u8;
-        let g = ((v.y >> 2) & 0x1C) as u8;
-        let b = ((v.z >> 6) & 0x03) as u8;
-        R3G3B2 { d: r | g | b, }
-    }
-
-    fn as_f32(&self) -> f32 {
-        let r = ((self.d >> 5) as f32) / 7.0;
-        let g = (((self.d >> 2) & 0x07) as f32) / 7.0;
-        let b = ((self.d & 0x03) as f32) / 3.0;
-        (r + g + b) / 3.0
-    }
-
-    fn as_u32(&self) -> u32 {
+    fn as_vec4(&self) -> Vec4<u8> {
         let mut r = (self.d >> 5) as u32;
         let mut g = ((self.d >> 2) & 0x07) as u32;
         let mut b = (self.d & 0x03) as u32;
         r = (r << 5) | (r << 2) | (r >> 1);
         g = (g << 5) | (g << 2) | (g >> 1);
         b = (b << 6) | (b << 4) | (b << 2) | b;
-        0xFF000000 | (r << 16) | (g << 8) | b
-    }
-
-    fn as_f32x4(&self) -> f32x4 {
-        let r = ((self.d >> 5) as f32) / 7.0;
-        let g = (((self.d >> 2) & 0x07) as f32) / 7.0;
-        let b = ((self.d & 0x03) as f32) / 3.0;
-        f32x4::from_xyzw(r,g,b,1.0)
-    }
-
-    fn as_u8x4(&self) -> u8x4 {
-        let mut r = (self.d >> 5) as u32;
-        let mut g = ((self.d >> 2) & 0x07) as u32;
-        let mut b = (self.d & 0x03) as u32;
-        r = (r << 5) | (r << 2) | (r >> 1);
-        g = (g << 5) | (g << 2) | (g >> 1);
-        b = (b << 6) | (b << 4) | (b << 2) | b;
-        u8x4::from_xyzw(r as u8,g as u8,b as u8,255)
+        Vec4::<u8>::new(r as u8,g as u8,b as u8,255)
     }
 }
 
@@ -158,72 +96,29 @@ impl PartialEq<R3G3B2> for R3G3B2 {
 
 /// 8-bit RGBA pixel format.
 #[allow(dead_code)]
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct ARGB2 {
     d: u8,
 }
 
 impl Pixel for ARGB2 {
-    fn from_f32(v: f32) -> Self {
-        let r = ((v * 3.0) as u8) << 4;
-        let g = ((v * 3.0) as u8) << 2;
-        let b = (v * 3.0) as u8;
-        let a = ((v * 3.0) as u8) << 6;
-        ARGB2 { d: a | r | g | b, }
-    }
-
-    fn from_u32(v: u32) -> Self {
-        let r = ((v >> 22) & 0x03) as u8;
-        let g = ((v >> 14) & 0x03) as u8;
-        let b = (v & 0x03) as u8;
-        let a = ((v >> 30) & 0x03) as u8;
+    fn from_rgba(r: u8,g: u8,b: u8,a: u8) -> Self {
+        let r = ((r >> 6) & 0x03) as u8;
+        let g = ((g >> 6) & 0x03) as u8;
+        let b = (b & 0x03) as u8;
+        let a = ((a >> 6) & 0x03) as u8;
         ARGB2 { d: (a << 6) | (r << 4) | (g << 2) | b, }
     }
 
-    fn from_f32x4(v: f32x4) -> Self {
-        let r = ((v.x * 3.0) as u8) << 4;
-        let g = ((v.y * 3.0) as u8) << 2;
-        let b = (v.z * 3.0) as u8;
-        let a = ((v.w * 3.0) as u8) << 6;
-        ARGB2 { d: a | r | g | b, }
-    }
-
-    fn from_u8x4(v: u8x4) -> Self {
-        let r = ((v.x >> 6) & 0x03) as u8;
-        let g = ((v.y >> 6) & 0x03) as u8;
-        let b = (v.z & 0x03) as u8;
-        let a = ((v.w >> 6) & 0x03) as u8;
+    fn from_vec4(v: Vec4<u8>) -> Self {
+        let r = ((v.x() >> 6) & 0x03) as u8;
+        let g = ((v.y() >> 6) & 0x03) as u8;
+        let b = (v.z() & 0x03) as u8;
+        let a = ((v.w() >> 6) & 0x03) as u8;
         ARGB2 { d: (a << 6) | (r << 4) | (g << 2) | b, }
     }
 
-    fn as_f32(&self) -> f32 {
-        let r = (((self.d >> 4) & 0x03) as f32) / 3.0;
-        let g = (((self.d >> 2) & 0x03) as f32) / 3.0;
-        let b = ((self.d & 0x03) as f32) / 3.0;
-        (r + g + b) / 3.0
-    }
-
-    fn as_u32(&self) -> u32 {
-        let mut r = ((self.d >> 4) & 0x03) as u32;
-        let mut g = ((self.d >> 2) & 0x03) as u32;
-        let mut b = (self.d & 0x03) as u32;
-        let mut a = (self.d >> 6) as u32;
-        r = (r << 6) | (r << 4) | (r << 2) | r;
-        g = (g << 6) | (g << 4) | (g << 2) | g;
-        b = (b << 6) | (b << 4) | (b << 2) | b;
-        a = (a << 6) | (a << 4) | (a << 2) | a;
-        (a << 24) | (r << 16) | (g << 8) | b
-    }
-
-    fn as_f32x4(&self) -> f32x4 {
-        let r = (((self.d >> 4) & 0x03) as f32) / 3.0;
-        let g = (((self.d >> 2) & 0x03) as f32) / 3.0;
-        let b = ((self.d & 0x03) as f32) / 3.0;
-        let a = ((self.d >> 6) as f32) / 3.0;
-        f32x4::from_xyzw(r,g,b,a)
-    }
-
-    fn as_u8x4(&self) -> u8x4 {
+    fn as_vec4(&self) -> Vec4<u8> {
         let mut r = ((self.d >> 4) & 0x03) as u8;
         let mut g = ((self.d >> 2) & 0x03) as u8;
         let mut b = (self.d & 0x03) as u8;
@@ -232,7 +127,7 @@ impl Pixel for ARGB2 {
         g = (g << 6) | (g << 4) | (g << 2) | g;
         b = (b << 6) | (b << 4) | (b << 2) | b;
         a = (a << 6) | (a << 4) | (a << 2) | a;
-        u8x4::from_xyzw(r,g,b,a)
+        Vec4::<u8>::new(r,g,b,a)
     }
 }
 
@@ -252,72 +147,34 @@ impl PartialEq<ARGB2> for ARGB2 {
 
 /// 16-bit RGB pixel format.
 #[allow(dead_code)]
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct R5G6B5 {
     d: u16,
 }
 
 impl Pixel for R5G6B5 {
-    fn from_f32(v: f32) -> Self {
-        let r = ((v * 31.0) as u16) << 11;
-        let g = ((v * 63.0) as u16) << 5;
-        let b = (v * 31.0) as u16;
-        R5G6B5 { d: r | g | b, }
-    }
-
-    fn from_u32(v: u32) -> Self {
-        let r = ((v >> 19) & 0x001F) as u16;
-        let g = ((v >> 10) & 0x003F) as u16;
-        let b = ((v >> 3) & 0x001F) as u16;
+    fn from_rgba(r: u8,g: u8,b: u8,_a: u8) -> Self {
+        let r = ((r >> 3) & 0x001F) as u16;
+        let g = ((g >> 2) & 0x003F) as u16;
+        let b = ((b >> 3) & 0x001F) as u16;
         R5G6B5 { d: (r << 11) | (g << 5) | b, }
     }
 
-    fn from_f32x4(v: f32x4) -> Self {
-        let r = ((v.x * 31.0) as u16) << 11;
-        let g = ((v.y * 63.0) as u16) << 5;
-        let b = (v.z * 31.0) as u16;
-        R5G6B5 { d: r | g | b, }
-    }
-
-    fn from_u8x4(v: u8x4) -> Self {
-        let r = ((v.x >> 3) & 0x001F) as u16;
-        let g = ((v.y >> 2) & 0x003F) as u16;
-        let b = ((v.z >> 3) & 0x001F) as u16;
+    fn from_vec4(v: Vec4<u8>) -> Self {
+        let r = ((v.x() >> 3) & 0x001F) as u16;
+        let g = ((v.y() >> 2) & 0x003F) as u16;
+        let b = ((v.z() >> 3) & 0x001F) as u16;
         R5G6B5 { d: (r << 11) | (g << 5) | b, }
     }
 
-    fn as_f32(&self) -> f32 {
-        let r = (((self.d >> 11) & 0x001F) as f32) / 31.0;
-        let g = (((self.d >> 5) & 0x003F) as f32) / 63.0;
-        let b = ((self.d & 0x001F) as f32) / 31.0;
-        (r + g + b) / 3.0
-    }
-
-    fn as_u32(&self) -> u32 {
-        let mut r = ((self.d >> 11) & 0x001F) as u32;
-        let mut g = ((self.d >> 5) & 0x003F) as u32;
-        let mut b = (self.d & 0x001F) as u32;
-        r = (r << 3) | (r >> 2);
-        g = (g << 3) | (g >> 2);
-        b = (b << 3) | (b >> 2);
-        0xFF000000 | (r << 16) | (g << 8) | b
-    }
-
-    fn as_f32x4(&self) -> f32x4 {
-        let r = (((self.d >> 11) & 0x001F) as f32) / 31.0;
-        let g = (((self.d >> 5) & 0x003F) as f32) / 63.0;
-        let b = ((self.d & 0x001F) as f32) / 31.0;
-        f32x4::from_xyzw(r,g,b,1.0)
-    }
-
-    fn as_u8x4(&self) -> u8x4 {
+    fn as_vec4(&self) -> Vec4<u8> {
         let mut r = ((self.d >> 11) & 0x001F) as u8;
         let mut g = ((self.d >> 5) & 0x003F) as u8;
         let mut b = (self.d & 0x001F) as u8;
         r = (r << 3) | (r >> 2);
         g = (g << 3) | (g >> 2);
         b = (b << 3) | (b >> 2);
-        u8x4::from_xyzw(r,g,b,255)
+        Vec4::<u8>::new(r,g,b,255)
     }
 }
 
@@ -337,71 +194,29 @@ impl PartialEq<R5G6B5> for R5G6B5 {
 
 /// 16-bit RGBA pixel format.
 #[allow(dead_code)]
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct ARGB4 {
     d: u16,
 }
 
 impl Pixel for ARGB4 {
-    fn from_f32(v: f32) -> Self {
-        let r = ((v * 15.0) as u16) << 8;
-        let g = ((v * 15.0) as u16) << 4;
-        let b = (v * 15.0) as u16;
-        ARGB4 { d: 0xF000 | r | g | b, }
-    }
-
-    fn from_u32(v: u32) -> Self {
-        let r = ((v >> 20) & 0x000F) as u16;
-        let g = ((v >> 12) & 0x000F) as u16;
-        let b = ((v >> 4) & 0x000F) as u16;
-        let a = ((v >> 28) & 0x000F) as u16;
+    fn from_rgba(r: u8,g: u8,b: u8,a: u8) -> Self {
+        let r = ((r >> 4) & 0x000F) as u16;
+        let g = ((g >> 4) & 0x000F) as u16;
+        let b = ((b >> 4) & 0x000F) as u16;
+        let a = ((a >> 4) & 0x000F) as u16;
         ARGB4 { d: (a << 12) | (r << 8) | (g << 4) | b, }
     }
 
-    fn from_f32x4(v: f32x4) -> Self {
-        let r = ((v.x * 15.0) as u16) << 8;
-        let g = ((v.y * 15.0) as u16) << 4;
-        let b = (v.z * 15.0) as u16;
-        let a = ((v.w * 15.0) as u16) << 12;
-        ARGB4 { d: a | r | g | b, }
-    }
-
-    fn from_u8x4(v: u8x4) -> Self {
-        let r = ((v.x >> 4) & 0x000F) as u16;
-        let g = ((v.y >> 4) & 0x000F) as u16;
-        let b = ((v.z >> 4) & 0x000F) as u16;
-        let a = ((v.w >> 4) & 0x000F) as u16;
+    fn from_vec4(v: Vec4<u8>) -> Self {
+        let r = ((v.x() >> 4) & 0x000F) as u16;
+        let g = ((v.y() >> 4) & 0x000F) as u16;
+        let b = ((v.z() >> 4) & 0x000F) as u16;
+        let a = ((v.w() >> 4) & 0x000F) as u16;
         ARGB4 { d: (a << 12) | (r << 8) | (g << 4) | b, }
     }
 
-    fn as_f32(&self) -> f32 {
-        let r = (((self.d >> 8) & 0x000F) as f32) / 15.0;
-        let g = (((self.d >> 4) & 0x000F) as f32) / 15.0;
-        let b = ((self.d & 0x000F) as f32) / 15.0;
-        (r + g + b) / 3.0
-    }
-
-    fn as_u32(&self) -> u32 {
-        let mut r = ((self.d >> 8) & 0x000F) as u32;
-        let mut g = ((self.d >> 4) & 0x000F) as u32;
-        let mut b = (self.d & 0x000F) as u32;
-        let mut a = ((self.d >> 12) & 0x000F) as u32;
-        a = (a << 4) | a;
-        r = (r << 4) | r;
-        g = (g << 4) | g;
-        b = (b << 4) | b;
-        (a << 24) | (r << 16) | (g << 8) | b
-    }
-
-    fn as_f32x4(&self) -> f32x4 {
-        let r = (((self.d >> 8) & 0x000F) as f32) / 15.0;
-        let g = (((self.d >> 4) & 0x000F) as f32) / 15.0;
-        let b = ((self.d & 0x000F) as f32) / 15.0;
-        let a = (((self.d >> 12) & 0x000F) as f32) / 15.0;
-        f32x4::from_xyzw(r,g,b,a)
-    }
-
-    fn as_u8x4(&self) -> u8x4 {
+    fn as_vec4(&self) -> Vec4<u8> {
         let mut r = ((self.d >> 8) & 0x000F) as u8;
         let mut g = ((self.d >> 4) & 0x000F) as u8;
         let mut b = (self.d & 0x000F) as u8;
@@ -410,7 +225,7 @@ impl Pixel for ARGB4 {
         r = (r << 4) | r;
         g = (g << 4) | g;
         b = (b << 4) | b;
-        u8x4::from_xyzw(r,g,b,a)
+        Vec4::<u8>::new(r,g,b,a)
     }
 }
 
@@ -430,76 +245,29 @@ impl PartialEq<ARGB4> for ARGB4 {
 
 /// 16-bit RGBA pixel format.
 #[allow(dead_code)]
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct A1RGB5 {
     d: u16,
 }
 
 impl Pixel for A1RGB5 {
-    fn from_f32(v: f32) -> Self {
-        let r = ((v * 31.0) as u16) << 10;
-        let g = ((v * 31.0) as u16) << 5;
-        let b = (v * 31.0) as u16;
-        A1RGB5 { d: 0x8000 | (r << 10) | (g << 5) | b, }
-    }
-
-    fn from_u32(v: u32) -> Self {
-        let r = ((v >> 19) & 0x001F) as u16;
-        let g = ((v >> 11) & 0x001F) as u16;
-        let b = ((v >> 3) & 0x001F) as u16;
-        let a = ((v >> 31) & 0x0001) as u16;
+    fn from_rgba(r: u8,g: u8,b: u8,a: u8) -> Self {
+        let r = ((r >> 3) & 0x001F) as u16;
+        let g = ((g >> 3) & 0x001F) as u16;
+        let b = ((b >> 3) & 0x001F) as u16;
+        let a = ((a >> 7) & 0x0001) as u16;
         A1RGB5 { d: (a << 15) | (r << 10) | (g << 5) | b, }
     }
 
-    fn from_f32x4(v: f32x4) -> Self {
-        let r = ((v.x * 31.0) as u16) << 10;
-        let g = ((v.y * 31.0) as u16) << 5;
-        let b = (v.z * 31.0) as u16;
-        let a = if v.w >= 0.5 { 0x8000u16 } else { 0x0000u16 };
-        A1RGB5 { d: a | r | g | b, }
-    }
-
-    fn from_u8x4(v: u8x4) -> Self {
-        let r = ((v.x >> 3) & 0x001F) as u16;
-        let g = ((v.y >> 3) & 0x001F) as u16;
-        let b = ((v.z >> 3) & 0x001F) as u16;
-        let a = ((v.w >> 7) & 0x0001) as u16;
+    fn from_vec4(v: Vec4<u8>) -> Self {
+        let r = ((v.x() >> 3) & 0x001F) as u16;
+        let g = ((v.y() >> 3) & 0x001F) as u16;
+        let b = ((v.z() >> 3) & 0x001F) as u16;
+        let a = ((v.w() >> 7) & 0x0001) as u16;
         A1RGB5 { d: (a << 15) | (r << 10) | (g << 5) | b, }
     }
 
-    fn as_f32(&self) -> f32 {
-        let r = (((self.d >> 10) & 0x001F) as f32) / 31.0;
-        let g = (((self.d >> 5) & 0x001F) as f32) / 31.0;
-        let b = ((self.d & 0x001F) as f32) / 31.0;
-        (r + g + b) / 3.0
-    }
-
-    fn as_u32(&self) -> u32 {
-        let mut r = ((self.d >> 10) & 0x001F) as u32;
-        let mut g = ((self.d >> 5) & 0x001F) as u32;
-        let mut b = (self.d & 0x001F) as u32;
-        let mut a = ((self.d >> 15) & 0x0001) as u32;
-        r = (r << 3) | (r >> 2);
-        g = (g << 3) | (g >> 2);
-        b = (b << 3) | (b >> 2);
-        a = if a != 0 {
-            0xFF
-        }
-        else {
-            0x00
-        };
-        (a << 24) | (r << 16) | (g << 8) | b
-    }
-
-    fn as_f32x4(&self) -> f32x4 {
-        let r = (((self.d >> 10) & 0x001F) as f32) / 31.0;
-        let g = (((self.d >> 5) & 0x001F) as f32) / 31.0;
-        let b = ((self.d & 0x001F) as f32) / 31.0;
-        let a = if (self.d & 0x8000) == 0x8000 { 1.0 } else { 0.0 };
-        f32x4::from_xyzw(r,g,b,a)
-    }
-
-    fn as_u8x4(&self) -> u8x4 {
+    fn as_vec4(&self) -> Vec4<u8> {
         let mut r = ((self.d >> 10) & 0x001F) as u8;
         let mut g = ((self.d >> 5) & 0x001F) as u8;
         let mut b = (self.d & 0x001F) as u8;
@@ -513,7 +281,7 @@ impl Pixel for A1RGB5 {
         else {
             0x00
         };
-        u8x4::from_xyzw(r,g,b,a)
+        Vec4::<u8>::new(r,g,b,a)
     }
 }
 
@@ -534,7 +302,7 @@ impl PartialEq<A1RGB5> for A1RGB5 {
 
 /// 24-bit RGB pixel format.
 #[allow(dead_code)]
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct RGB8 {
     r: u8,
     g: u8,
@@ -542,54 +310,16 @@ pub struct RGB8 {
 }
 
 impl Pixel for RGB8 {
-    fn from_f32(v: f32) -> Self {
-        let r = (v * 255.0) as u8;
-        let g = (v * 255.0) as u8;
-        let b = (v * 255.0) as u8;
+    fn from_rgba(r: u8,g: u8,b: u8,_a: u8) -> Self {
         RGB8 { r: r,g: g,b: b, }
     }
 
-    fn from_u32(v: u32) -> Self {
-        let r = ((v >> 16) & 0xFF) as u8;
-        let g = ((v >> 8) & 0xFF) as u8;
-        let b = (v & 0xFF) as u8;
-        RGB8 { r: r,g: g,b: b, }
+    fn from_vec4(v: Vec4<u8>) -> Self {
+        RGB8 { r: v.x(),g: v.y(),b: v.z(), }
     }
 
-    fn from_f32x4(v: f32x4) -> Self {
-        let r = (v.x * 255.0) as u8;
-        let g = (v.y * 255.0) as u8;
-        let b = (v.z * 255.0) as u8;
-        RGB8 { r: r,g: g,b: b, }
-    }
-
-    fn from_u8x4(v: u8x4) -> Self {
-        RGB8 { r: v.x,g: v.y,b: v.z, }
-    }
-
-    fn as_f32(&self) -> f32 {
-        let r = (self.r as f32) / 255.0;
-        let g = (self.g as f32) / 255.0;
-        let b = (self.b as f32) / 255.0;
-        (r + g + b) / 3.0
-    }
-
-    fn as_u32(&self) -> u32 {
-        let r = self.r as u32;
-        let g = self.g as u32;
-        let b = self.b as u32;
-        0xFF000000 | (r << 16) | (g << 8) | b
-    }
-
-    fn as_f32x4(&self) -> f32x4 {
-        let r = (self.r as f32) / 255.0;
-        let g = (self.g as f32) / 255.0;
-        let b = (self.b as f32) / 255.0;
-        f32x4::from_xyzw(r,g,b,1.0)
-    }
-
-    fn as_u8x4(&self) -> u8x4 {
-        u8x4::from_xyzw(self.r,self.g,self.b,255)
+    fn as_vec4(&self) -> Vec4<u8> {
+        Vec4::<u8>::new(self.r,self.g,self.b,255)
     }
 }
 
@@ -611,7 +341,7 @@ impl PartialEq<RGB8> for RGB8 {
 
 /// 32-bit RGBA pixel format.
 #[allow(dead_code)]
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct ARGB8 {
     b: u8,
     g: u8,
@@ -620,59 +350,16 @@ pub struct ARGB8 {
 }
 
 impl Pixel for ARGB8 {
-    fn from_f32(v: f32) -> Self {
-        let r = (v * 255.0) as u8;
-        let g = (v * 255.0) as u8;
-        let b = (v * 255.0) as u8;
-        ARGB8 { a: 0xFF,r: r,g: g,b: b, }
-
-    }
-
-    fn from_u32(v: u32) -> Self {
-        let r = ((v >> 16) & 0xFF) as u8;
-        let g = ((v >> 8) & 0xFF) as u8;
-        let b = (v & 0xFF) as u8;
-        let a = ((v >> 24) & 0xFF) as u8;
+    fn from_rgba(r: u8,g: u8,b: u8,a: u8) -> Self {
         ARGB8 { a: a,r: r,g: g,b: b, }
     }
 
-    fn from_f32x4(v: f32x4) -> Self {
-        let r = (v.x * 255.0) as u8;
-        let g = (v.y * 255.0) as u8;
-        let b = (v.z * 255.0) as u8;
-        let a = (v.w * 255.0) as u8;
-        ARGB8 { a: a,r: r,g: g,b: b, }
+    fn from_vec4(v: Vec4<u8>) -> Self {
+        ARGB8 { a: v.w(),r: v.x(),g: v.y(),b: v.z(), }
     }
 
-    fn from_u8x4(v: u8x4) -> Self {
-        ARGB8 { a: v.w,r: v.x,g: v.y,b: v.z, }
-    }
-
-    fn as_f32(&self) -> f32 {
-        let r = (self.r as f32) / 255.0;
-        let g = (self.g as f32) / 255.0;
-        let b = (self.b as f32) / 255.0;
-        (r + g + b) / 3.0
-    }
-
-    fn as_u32(&self) -> u32 {
-        let r = self.r as u32;
-        let g = self.g as u32;
-        let b = self.b as u32;
-        let a = self.a as u32;
-        (a << 24) | (r << 16) | (g << 8) | b
-    }
-
-    fn as_f32x4(&self) -> f32x4 {
-        let r = (self.r as f32) / 255.0;
-        let g = (self.g as f32) / 255.0;
-        let b = (self.b as f32) / 255.0;
-        let a = (self.a as f32) / 255.0;
-        f32x4::from_xyzw(r,g,b,a)
-    }
-
-    fn as_u8x4(&self) -> u8x4 {
-        u8x4::from_xyzw(self.r,self.g,self.b,self.a)        
+    fn as_vec4(&self) -> Vec4<u8> {
+        Vec4::<u8>::new(self.r,self.g,self.b,self.a)        
     }
 }
 
@@ -695,24 +382,17 @@ impl PartialEq<ARGB8> for ARGB8 {
 
 /// 32-bit RGBA pixel format.
 #[allow(dead_code)]
-#[derive(Copy,Clone)]
+#[derive(Copy,Clone,Debug)]
 pub struct A2RGB10 {
     d: u32,
 }
 
 impl Pixel for A2RGB10 {
-    fn from_f32(v: f32) -> Self {
-        let r = ((v * 1023.0) as u32) << 20;
-        let g = ((v * 1023.0) as u32) << 10;
-        let b = (v * 1023.0) as u32;
-        A2RGB10 { d: 0xC0000000 | r | g | b, }
-    }
-
-    fn from_u32(v: u32) -> Self {
-        let mut r = (v >> 16) & 0x000000FF;
-        let mut g = (v >> 8) & 0x000000FF;
-        let mut b = v & 0x000000FF;
-        let mut a = (v >> 24) & 0x00000003;
+    fn from_rgba(r: u8,g: u8,b: u8,a: u8) -> Self {
+        let mut r = r as u32;
+        let mut g = g as u32;
+        let mut b = b as u32;
+        let mut a = a as u32;
         r = (r << 2) | (r >> 6);
         g = (g << 2) | (g >> 6);
         b = (b << 2) | (b >> 6);
@@ -720,19 +400,11 @@ impl Pixel for A2RGB10 {
         A2RGB10 { d: (a << 30) | (r << 20) | (g << 10) | b, }
     }
 
-    fn from_f32x4(v: f32x4) -> Self {
-        let r = ((v.x * 1023.0) as u32) << 20;
-        let g = ((v.y * 1023.0) as u32) << 10;
-        let b = (v.z * 1023.0) as u32;
-        let a = ((v.w * 3.0) as u32) << 30;
-        A2RGB10 { d: a | r | g | b, }
-    }
-
-    fn from_u8x4(v: u8x4) -> Self {
-        let mut r = v.x as u32;
-        let mut g = v.y as u32;
-        let mut b = v.z as u32;
-        let mut a = v.w as u32;
+    fn from_vec4(v: Vec4<u8>) -> Self {
+        let mut r = v.x() as u32;
+        let mut g = v.y() as u32;
+        let mut b = v.z() as u32;
+        let mut a = v.w() as u32;
         r = (r << 2) | (r >> 6);
         g = (g << 2) | (g >> 6);
         b = (b << 2) | (b >> 6);
@@ -740,38 +412,13 @@ impl Pixel for A2RGB10 {
         A2RGB10 { d: (a << 30) | (r << 20) | (g << 10) | b, }
     }
 
-    fn as_f32(&self) -> f32 {
-        let r = (((self.d >> 20) & 0x000003FF) as f32) / 1023.0;
-        let g = (((self.d >> 10) & 0x000003FF) as f32) / 1023.0;
-        let b = ((self.d & 0x000003FF) as f32) / 1023.0;
-        (r + g + b) / 3.0
-    }
-
-    fn as_u32(&self) -> u32 {
-        let r = ((self.d >> 22) & 0x000000FF) as u32;
-        let g = ((self.d >> 12) & 0x000000FF) as u32;
-        let b = ((self.d >> 2) & 0x000000FF) as u32;
-        let mut a = ((self.d >> 30) & 0x00000003) as u32;
-        a = (a << 6) | (a << 4) | (a << 2) | a;
-        (a << 24) | (r << 16) | (g << 8) | b
-    }
-
-    fn as_f32x4(&self) -> f32x4 {
-        let r = (((self.d >> 20) & 0x000003FF) as f32) / 1023.0;
-        let g = (((self.d >> 10) & 0x000003FF) as f32) / 1023.0;
-        let b = ((self.d & 0x000003FF) as f32) / 1023.0;
-        let a = (((self.d >> 30) & 0x00000003) as f32) / 3.0;
-        f32x4::from_xyzw(r,g,b,a)
-
-    }
-
-    fn as_u8x4(&self) -> u8x4 {
+    fn as_vec4(&self) -> Vec4<u8> {
         let r = ((self.d >> 22) & 0x000000FF) as u8;
         let g = ((self.d >> 12) & 0x000000FF) as u8;
         let b = ((self.d >> 2) & 0x000000FF) as u8;
         let mut a = ((self.d >> 30) & 0x00000003) as u8;
         a = (a << 6) | (a << 4) | (a << 2) | a;
-        u8x4::from_xyzw(r,g,b,a)        
+        Vec4::<u8>::new(r,g,b,a)        
     }
 }
 

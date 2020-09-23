@@ -5,46 +5,49 @@
 //!
 //! It's E. E for everything.
 
-mod zeroone;
-pub use zeroone::*;
-
 /// Trait for anything that needs a color specification.
 pub trait ColorParameter {
 
     /// Convert into u32.
-    fn into_u32(self) -> u32;
-    fn into_vec4(self) -> f32x4;
+    fn as_u32(&self) -> u32;
+    fn as_vec4(&self) -> Vec4<f32>;
 }
 
 impl ColorParameter for u32 {
 
-    fn into_u32(self) -> u32 {
-        self
+    fn as_u32(&self) -> u32 {
+        *self
     }
 
-    fn into_vec4(self) -> f32x4 {
+    fn as_vec4(&self) -> Vec4<f32> {
         let r = (((self >> 16) & 0xFF) as f32) / 255.0;
         let g = (((self >> 8) & 0xFF) as f32) / 255.0;
         let b = ((self & 0xFF) as f32) / 255.0;
         let a = (((self >> 24) & 0xFF) as f32) / 255.0;
-        f32x4::from_xyzw(r,g,b,a)
+        Vec4::<f32>::new(r,g,b,a)
     }
 }
 
-impl ColorParameter for f32x4 {
+impl ColorParameter for Vec4<f32> {
 
-    fn into_u32(self) -> u32 {
-        let r = ((self.x * 255.0) as u32) << 16;
-        let g = ((self.y * 255.0) as u32) << 8;
-        let b = (self.z * 255.0) as u32;
-        let a = ((self.w * 255.0) as u32) << 24;
+    fn as_u32(&self) -> u32 {
+        let r = ((self.x() * 255.0) as u32) << 16;
+        let g = ((self.y() * 255.0) as u32) << 8;
+        let b = (self.z() * 255.0) as u32;
+        let a = ((self.w() * 255.0) as u32) << 24;
         a | r | g | b
     }
 
-    fn into_vec4(self) -> f32x4 {
-        self
+    fn as_vec4(&self) -> Vec4<f32> {
+        *self
     }
 }
+
+mod zero;
+pub use zero::*;
+
+mod simd;
+pub use simd::*;
 
 mod mat;
 pub use mat::*;
@@ -58,15 +61,23 @@ pub use vec2::*;
 mod vec3;
 pub use vec3::*;
 
+mod vec3a;
+pub use vec3a::*;
+
 mod vec4;
 pub use vec4::*;
 
+mod multivec2;
+pub use multivec2::*;
+
+mod multivec3;
+pub use multivec3::*;
+
+mod multivec4;
+pub use multivec4::*;
+
 mod matrix;
 pub use matrix::*;
-
-#[macro_use]
-mod multivector;
-pub use multivector::*;
 
 #[macro_use]
 mod rect;

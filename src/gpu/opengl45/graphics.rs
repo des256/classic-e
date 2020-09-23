@@ -50,19 +50,19 @@ impl GLSetUniform for f32 {
     }
 }
 
-impl GLSetUniform for f32x2 {
+impl GLSetUniform for Vec2<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
-impl GLSetUniform for f32x3 {
+impl GLSetUniform for Vec3<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform3fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
-impl GLSetUniform for f32x4 {
+impl GLSetUniform for Vec4<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4fv(location,1,&value as *const Self as *const GLfloat) };
     }
@@ -74,19 +74,19 @@ impl GLSetUniform for u32 {
     }
 }
 
-impl GLSetUniform for u32x2 {
+impl GLSetUniform for Vec2<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2uiv(location,1,&value as *const Self as *const GLuint) };
     }
 }
 
-impl GLSetUniform for u32x3 {
+impl GLSetUniform for Vec3<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform3uiv(location,1,&value as *const Self as *const GLuint) };
     }
 }
 
-impl GLSetUniform for u32x4 {
+impl GLSetUniform for Vec4<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4uiv(location,1,&value as *const Self as *const GLuint) };
     }
@@ -98,37 +98,37 @@ impl GLSetUniform for i32 {
     }
 }
 
-impl GLSetUniform for i32x2 {
+impl GLSetUniform for Vec2<i32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform2iv(location,1,&value as *const Self as *const GLint) };
     }
 }
 
-impl GLSetUniform for i32x3 {
+impl GLSetUniform for Vec3<i32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform3iv(location,1,&value as *const Self as *const GLint) };
     }
 }
 
-impl GLSetUniform for i32x4 {
+impl GLSetUniform for Vec4<i32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4iv(location,1,&value as *const Self as *const GLint) };
     }
 }
 
-impl GLSetUniform for f32r {
+impl GLSetUniform for Rect<f32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4fv(location,1,&value as *const Self as *const GLfloat) };
     }
 }
 
-impl GLSetUniform for u32r {
+impl GLSetUniform for Rect<u32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4uiv(location,1,&value as *const Self as *const GLuint) };
     }
 }
 
-impl GLSetUniform for i32r {
+impl GLSetUniform for Rect<i32> {
     fn set_uniform(location: i32,value: Self) {
         unsafe { gl::Uniform4iv(location,1,&value as *const Self as *const GLint) };
     }
@@ -206,8 +206,8 @@ impl BindTarget for gpu::Framebuffer {
 #[cfg(target_os="windows")]
             wglMakeCurrent(graphics.system.hidden_hdc(),graphics.system.hglrc());
             gl::BindFramebuffer(gl::FRAMEBUFFER,self.fbo);
-            gl::Viewport(0,0,*self.size.x() as i32,*self.size.y() as i32);
-            gl::Scissor(0,0,*self.size.x() as i32,*self.size.y() as i32);
+            gl::Viewport(0,0,self.size.x() as i32,self.size.y() as i32);
+            gl::Scissor(0,0,self.size.x() as i32,self.size.y() as i32);
         }
     }
 }
@@ -222,8 +222,8 @@ impl<T: Window> BindTarget for T {
             wglMakeCurrent(self.hdc,self.anchor.hglrc);
             gl::BindFramebuffer(gl::FRAMEBUFFER,0);
             let r = self.rect();
-            gl::Viewport(0,0,*r.s.x(),*r.s.y());
-            gl::Scissor(0,0,*r.s.x(),*r.s.y());
+            gl::Viewport(0,0,r.s().x(),r.s().y());
+            gl::Scissor(0,0,r.s().x(),r.s().y());
         }
     }
 }
@@ -267,9 +267,9 @@ impl Graphics {
     /// 
     /// * `color` - Color to clear with.
     pub fn clear<T: ColorParameter>(&self,color: T) {
-        let color = color.into_vec4();
+        let color = color.as_vec4();
         unsafe {
-            gl::ClearColor(color.x,color.y,color.z,color.w);
+            gl::ClearColor(color.x(),color.y(),color.z(),color.w());
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
     }

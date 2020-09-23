@@ -73,13 +73,13 @@ impl<T: gpu::GLFormat> TextureCube<T> {
     /// * `Ok(TextureCube)` - The new cube texture.
     /// * `Err(SystemError)` - The cube texture could not be created.
     pub fn new_from_mats(graphics: &Rc<gpu::Graphics>,src_xp: Mat<T>,src_xn: Mat<T>,src_yp: Mat<T>,src_yn: Mat<T>,src_zp: Mat<T>,src_zn: Mat<T>) -> Result<TextureCube<T>,SystemError> {
-        let texture = TextureCube::new(graphics,*src_xp.size.x())?;
-        texture.load(CubeFace::PositiveX,usizex2::zero(),&src_xp);
-        texture.load(CubeFace::NegativeX,usizex2::zero(),&src_xn);
-        texture.load(CubeFace::PositiveY,usizex2::zero(),&src_yp);
-        texture.load(CubeFace::NegativeY,usizex2::zero(),&src_yn);
-        texture.load(CubeFace::PositiveZ,usizex2::zero(),&src_zp);
-        texture.load(CubeFace::NegativeZ,usizex2::zero(),&src_zn);
+        let texture = TextureCube::new(graphics,src_xp.size.x())?;
+        texture.load(CubeFace::PositiveX,Vec2::<usize>::zero(),&src_xp);
+        texture.load(CubeFace::NegativeX,Vec2::<usize>::zero(),&src_xn);
+        texture.load(CubeFace::PositiveY,Vec2::<usize>::zero(),&src_yp);
+        texture.load(CubeFace::NegativeY,Vec2::<usize>::zero(),&src_yn);
+        texture.load(CubeFace::PositiveZ,Vec2::<usize>::zero(),&src_zp);
+        texture.load(CubeFace::NegativeZ,Vec2::<usize>::zero(),&src_zn);
         Ok(texture)
     }
 
@@ -90,7 +90,7 @@ impl<T: gpu::GLFormat> TextureCube<T> {
     /// * `cf` - Cube face identifier (one of `CubeFace::*`).
     /// * `o` - offset.
     /// * `src` - Mat containing source data.
-    pub fn load(&self,cf: CubeFace,o: usizex2,src: &Mat<T>) {
+    pub fn load(&self,cf: CubeFace,o: Vec2<usize>,src: &Mat<T>) {
         unsafe {
             gl::BindTexture(gl::TEXTURE_CUBE_MAP,self.tex);
             let target = match cf {
@@ -101,7 +101,7 @@ impl<T: gpu::GLFormat> TextureCube<T> {
                 CubeFace::PositiveZ => gl::TEXTURE_CUBE_MAP_POSITIVE_Z,
                 CubeFace::NegativeZ => gl::TEXTURE_CUBE_MAP_NEGATIVE_Z,
             };
-            gl::TexSubImage2D(target,0,*o.x() as i32,*o.y() as i32,*src.size.x() as i32,*src.size.y() as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void);
+            gl::TexSubImage2D(target,0,o.x() as i32,o.y() as i32,src.size.x() as i32,src.size.y() as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void);
         }
     }
 

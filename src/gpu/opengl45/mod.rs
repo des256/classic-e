@@ -56,127 +56,169 @@ impl GLFormat for f32 {
     fn gl_type() -> GLenum { gl::FLOAT }
 }
 
-impl GLFormat for u8x2 {
+impl GLFormat for Vec2<u8> {
     fn gl_internal_format() -> GLuint { gl::RG8UI as GLuint }
     fn gl_format() -> GLenum { gl::RG_INTEGER }
     fn gl_type() -> GLenum { gl::UNSIGNED_BYTE }
 }
 
-impl GLFormat for i8x2 {
+impl GLFormat for Vec2<i8> {
     fn gl_internal_format() -> GLuint { gl::RG8I as GLuint }
     fn gl_format() -> GLenum { gl::RG_INTEGER }
     fn gl_type() -> GLenum { gl::BYTE }
 }
 
-impl GLFormat for u16x2 {
+impl GLFormat for Vec2<u16> {
     fn gl_internal_format() -> GLuint { gl::RG16UI as GLuint }
     fn gl_format() -> GLenum { gl::RG_INTEGER }
     fn gl_type() -> GLenum { gl::UNSIGNED_SHORT }
 }
 
-impl GLFormat for i16x2 {
+impl GLFormat for Vec2<i16> {
     fn gl_internal_format() -> GLuint { gl::RG16I as GLuint }
     fn gl_format() -> GLenum { gl::RG_INTEGER }
     fn gl_type() -> GLenum { gl::SHORT }
 }
 
-impl GLFormat for u32x2 {
+impl GLFormat for Vec2<u32> {
     fn gl_internal_format() -> GLuint { gl::RG32UI as GLuint }
     fn gl_format() -> GLenum { gl::RG_INTEGER }
     fn gl_type() -> GLenum { gl::UNSIGNED_INT }
 }
 
-impl GLFormat for i32x2 {
+impl GLFormat for Vec2<i32> {
     fn gl_internal_format() -> GLuint { gl::RG32I as GLuint }
     fn gl_format() -> GLenum { gl::RG_INTEGER }
     fn gl_type() -> GLenum { gl::INT }
 }
 
-impl GLFormat for f32x2 {
+impl GLFormat for Vec2<f32> {
     fn gl_internal_format() -> GLuint { gl::RG32F as GLuint }
     fn gl_format() -> GLenum { gl::RG }
     fn gl_type() -> GLenum { gl::FLOAT }
 }
 
-impl GLFormat for u8x3 {
+impl GLFormat for Vec3<u8> {
     fn gl_internal_format() -> GLuint { gl::RGB8UI as GLuint }
     fn gl_format() -> GLenum { gl::RGB_INTEGER }
     fn gl_type() -> GLenum { gl::UNSIGNED_BYTE }
 }
 
-impl GLFormat for i8x3 {
+impl GLFormat for Vec3<i8> {
     fn gl_internal_format() -> GLuint { gl::RGB8I as GLuint }
     fn gl_format() -> GLenum { gl::RGB_INTEGER }
     fn gl_type() -> GLenum { gl::BYTE }
 }
 
-impl GLFormat for u16x3 {
+impl GLFormat for Vec3<u16> {
     fn gl_internal_format() -> GLuint { gl::RGB16UI as GLuint }
     fn gl_format() -> GLenum { gl::RGB_INTEGER }
     fn gl_type() -> GLenum { gl::UNSIGNED_SHORT }
 }
 
-impl GLFormat for i16x3 {
+impl GLFormat for Vec3<i16> {
     fn gl_internal_format() -> GLuint { gl::RGB16I as GLuint }
     fn gl_format() -> GLenum { gl::RGB_INTEGER }
     fn gl_type() -> GLenum { gl::SHORT }
 }
 
-impl GLFormat for u32x3 {
+impl GLFormat for Vec3<u32> {
     fn gl_internal_format() -> GLuint { gl::RGB32UI as GLuint }
     fn gl_format() -> GLenum { gl::RGB_INTEGER }
     fn gl_type() -> GLenum { gl::UNSIGNED_INT }
 }
 
-impl GLFormat for i32x3 {
+impl GLFormat for Vec3<i32> {
     fn gl_internal_format() -> GLuint { gl::RGB32I as GLuint }
     fn gl_format() -> GLenum { gl::RGB_INTEGER }
     fn gl_type() -> GLenum { gl::INT }
 }
 
-impl GLFormat for f32x3 {
+impl GLFormat for Vec3<f32> {
     fn gl_internal_format() -> GLuint { gl::RGB32F as GLuint }
     fn gl_format() -> GLenum { gl::RGB }
     fn gl_type() -> GLenum { gl::FLOAT }
 }
 
-impl GLFormat for u8x4 {
+impl GLFormat for Vec3A<u8> {
     fn gl_internal_format() -> GLuint { gl::RGBA8UI as GLuint }
     fn gl_format() -> GLenum { gl::RGBA_INTEGER }
     fn gl_type() -> GLenum { gl::UNSIGNED_BYTE }
 }
 
-impl GLFormat for i8x4 {
+impl GLFormat for Vec3A<i8> {
     fn gl_internal_format() -> GLuint { gl::RGBA8I as GLuint }
     fn gl_format() -> GLenum { gl::RGBA_INTEGER }
     fn gl_type() -> GLenum { gl::BYTE }
 }
 
-impl GLFormat for u16x4 {
+impl GLFormat for Vec3A<u16> {
     fn gl_internal_format() -> GLuint { gl::RGBA16UI as GLuint }
     fn gl_format() -> GLenum { gl::RGBA_INTEGER }
     fn gl_type() -> GLenum { gl::UNSIGNED_SHORT }
 }
 
-impl GLFormat for i16x4 {
+impl GLFormat for Vec3A<i16> {
     fn gl_internal_format() -> GLuint { gl::RGBA16I as GLuint }
     fn gl_format() -> GLenum { gl::RGBA_INTEGER }
     fn gl_type() -> GLenum { gl::SHORT }
 }
 
-impl GLFormat for u32x4 {
+impl GLFormat for Vec3A<u32> {
     fn gl_internal_format() -> GLuint { gl::RGBA32UI as GLuint }
     fn gl_format() -> GLenum { gl::RGBA_INTEGER }
     fn gl_type() -> GLenum { gl::UNSIGNED_INT }
 }
 
-impl GLFormat for i32x4 {
+impl GLFormat for Vec3A<i32> {
     fn gl_internal_format() -> GLuint { gl::RGBA32I as GLuint }
     fn gl_format() -> GLenum { gl::RGBA_INTEGER }
     fn gl_type() -> GLenum { gl::INT }
 }
 
-impl GLFormat for f32x4 {
+impl GLFormat for Vec3A<f32> {
+    fn gl_internal_format() -> GLuint { gl::RGBA32F as GLuint }
+    fn gl_format() -> GLenum { gl::RGBA }
+    fn gl_type() -> GLenum { gl::FLOAT }
+}
+
+impl GLFormat for Vec4<u8> {
+    fn gl_internal_format() -> GLuint { gl::RGBA8UI as GLuint }
+    fn gl_format() -> GLenum { gl::RGBA_INTEGER }
+    fn gl_type() -> GLenum { gl::UNSIGNED_BYTE }
+}
+
+impl GLFormat for Vec4<i8> {
+    fn gl_internal_format() -> GLuint { gl::RGBA8I as GLuint }
+    fn gl_format() -> GLenum { gl::RGBA_INTEGER }
+    fn gl_type() -> GLenum { gl::BYTE }
+}
+
+impl GLFormat for Vec4<u16> {
+    fn gl_internal_format() -> GLuint { gl::RGBA16UI as GLuint }
+    fn gl_format() -> GLenum { gl::RGBA_INTEGER }
+    fn gl_type() -> GLenum { gl::UNSIGNED_SHORT }
+}
+
+impl GLFormat for Vec4<i16> {
+    fn gl_internal_format() -> GLuint { gl::RGBA16I as GLuint }
+    fn gl_format() -> GLenum { gl::RGBA_INTEGER }
+    fn gl_type() -> GLenum { gl::SHORT }
+}
+
+impl GLFormat for Vec4<u32> {
+    fn gl_internal_format() -> GLuint { gl::RGBA32UI as GLuint }
+    fn gl_format() -> GLenum { gl::RGBA_INTEGER }
+    fn gl_type() -> GLenum { gl::UNSIGNED_INT }
+}
+
+impl GLFormat for Vec4<i32> {
+    fn gl_internal_format() -> GLuint { gl::RGBA32I as GLuint }
+    fn gl_format() -> GLenum { gl::RGBA_INTEGER }
+    fn gl_type() -> GLenum { gl::INT }
+}
+
+impl GLFormat for Vec4<f32> {
     fn gl_internal_format() -> GLuint { gl::RGBA32F as GLuint }
     fn gl_format() -> GLenum { gl::RGBA }
     fn gl_type() -> GLenum { gl::FLOAT }

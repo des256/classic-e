@@ -705,7 +705,7 @@ fn draw_rgb<T: pixel::Pixel>(image: &mut Mat<T>,px: usize,py: usize,r: i32,g: i3
 	let r = if r < 0 { 0 } else { if r > 255 { 255 } else { r as u8 } };
 	let g = if g < 0 { 0 } else { if g > 255 { 255 } else { g as u8 } };
 	let b = if b < 0 { 0 } else { if b > 255 { 255 } else { b as u8 } };
-	image.set(usizex2::from_xy(px,py),T::from_u8x4(u8x4::from_xyzw(r,g,b,255)));
+	image.set(Vec2::<usize>::new(px,py),T::from_rgba(r,g,b,255));
 }
 
 fn draw_yuv<T: pixel::Pixel>(image: &mut Mat<T>,px: usize,py: usize,y: i32,u: i32,v: i32) {
@@ -942,7 +942,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
 			},
 			0xFFD9 => {  // image end
 				//println!("end");
-				let mut image = Mat::new(usizex2::from_xy(width,height));
+				let mut image = Mat::new(Vec2::<usize>::new(width,height));
 				match itype {
 					Type::Y => { convert_blocks(&mut coeffs,mbtotal,Type::Y,&qtable,&qt); },
 					Type::YUV420 => { convert_blocks(&mut coeffs,mbtotal * 6,Type::YUV420,&qtable,&qt); },

@@ -436,7 +436,7 @@ impl System {
                 },
                 BUTTON_PRESS => {
                     let button_press: &ButtonPressEvent = unsafe { cast_event(&xcb_event) };
-                    let p = i32x2::from_xy(button_press.event_x() as i32,button_press.event_y() as i32);
+                    let p = Vec2::<i32>::new(button_press.event_x() as i32,button_press.event_y() as i32);
                     let xid = button_press.event() as XID;
                     match button_press.detail() {
                         1 => { self.send_event(windows,xid,Event::MousePress(p,MouseButton::Left)); },
@@ -451,7 +451,7 @@ impl System {
                 },
                 BUTTON_RELEASE => {
                     let button_release: &ButtonReleaseEvent = unsafe { cast_event(&xcb_event) };
-                    let p = i32x2::from_xy(button_release.event_x() as i32,button_release.event_y() as i32);
+                    let p = Vec2::<i32>::new(button_release.event_x() as i32,button_release.event_y() as i32);
                     let xid = button_release.event() as XID;
                     match button_release.detail() {
                         1 => { self.send_event(windows,xid,Event::MouseRelease(p,MouseButton::Left)); },
@@ -462,26 +462,26 @@ impl System {
                 },
                 MOTION_NOTIFY => {
                     let motion_notify: &MotionNotifyEvent = unsafe { cast_event(&xcb_event) };
-                    let p = i32x2::from_xy(motion_notify.event_x() as i32,motion_notify.event_y() as i32);
+                    let p = Vec2::<i32>::new(motion_notify.event_x() as i32,motion_notify.event_y() as i32);
                     let xid = motion_notify.event() as XID;
                     self.send_event(windows,xid,Event::MouseMove(p));
                 },
                 CONFIGURE_NOTIFY => {
                     let configure_notify: &ConfigureNotifyEvent = unsafe { cast_event(&xcb_event) };
-                    let r = i32r::from_os(i32x2::from_xy(configure_notify.x() as i32,configure_notify.y() as i32),i32x2::from_xy(configure_notify.width() as i32,configure_notify.height() as i32));
+                    let r = Rect::<i32>::new(configure_notify.x() as i32,configure_notify.y() as i32,configure_notify.width() as i32,configure_notify.height() as i32);
                     let xid = configure_notify.event() as XID;
                     for window in windows.iter() {
                         if xid == window.id() {
                             let mut window_r = window.rect();
-                            if r.o != window_r.o {
-                                window_r.o = r.o;
+                            if r.o() != window_r.o() {
+                                window_r.set_o(r.o());
                                 window.set_rect(window_r);
-                                window.handle(Event::Move(r.o));
+                                window.handle(Event::Move(r.o()));
                             }
-                            if r.s != window_r.s {
-                                window_r.s = r.s;
+                            if r.s() != window_r.s() {
+                                window_r.set_s(r.s());
                                 window.set_rect(window_r);
-                                window.handle(Event::Size(r.s));
+                                window.handle(Event::Size(r.s()));
                             }
                             break;
                         }
@@ -549,11 +549,11 @@ impl Drop for System {
 pub struct BaseWindow {
     pub system: Rc<System>,
     pub id: u64,
-    pub r: Cell<i32r>,
+    pub r: Cell<Rect<i32>>,
 }
 
-impl WindowCore {
-    fn new(system: &Rc<System>,r: i32r) -> WindowCore {
+impl BaseWindow {
+    fn new(system: &Rc<System>,r: Rect<i32>) -> BaseWindow {
         let id = system.connection.generate_id() as XID;
         let values = [
             (CW_EVENT_MASK,
@@ -572,7 +572,7 @@ impl WindowCore {
             system.depth as u8,
             id as u32,
             system.rootwindow as u32,
-            *r.o.x() as i16,*r.o.y() as i16,*r.s.x() as u16,*r.s.y() as u16,
+            r.ox() as i16,r.oy() as i16,r.sx() as u16,r.sy() as u16,
             0,
             WINDOW_CLASS_INPUT_OUTPUT as u16,
             system.visualid as u32,
@@ -586,12 +586,12 @@ impl WindowCore {
         BaseWindow {
             system: Rc::clone(system),
             id: id,
-            r: Cell::new(i32r::from_os(i32x2::zero(),i32x2::zero())),
+            r: Cell::new(Rect::<i32>::zero()),
         }
     }
 
-    pub fn new_frame(system: &Rc<System>,r: i32r,title: &str) -> WindowCore {
-        let core = WindowCore::new(system,r);
+    pub fn new_frame(system: &Rc<System>,r: Rect<i32>,title: &str) -> BaseWindow {
+        let core = BaseWindow::new(system,r);
         let protocol_set = [system.wm_delete_window];
         change_property(
             &system.connection,
@@ -615,8 +615,8 @@ impl WindowCore {
         core
     }
 
-    pub fn new_popup(system: &Rc<System>,r: i32r) -> WindowCore {
-        let core = WindowCore::new(system,r);
+    pub fn new_popup(system: &Rc<System>,r: Rect<i32>) -> BaseWindow {
+        let core = BaseWindow::new(system,r);
         let net_type = [system.wm_net_type_utility];
         change_property(
             &system.connection,

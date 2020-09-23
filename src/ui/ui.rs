@@ -14,8 +14,8 @@ use std::{
 #[repr(C)]
 #[doc(hidden)]
 pub struct UIRect {
-    pub(crate) r: f32x4,  // rectangle: x, y, w, h
-    pub(crate) t: f32x4,  // texture coordinates: x, y, w, h
+    pub(crate) r: Vec4<f32>,  // rectangle: x, y, w, h
+    pub(crate) t: Vec4<f32>,  // texture coordinates: x, y, w, h
 }
 
 // this is locks the system into OpenGL, fix later
@@ -27,7 +27,7 @@ impl gpu::GLUniform for UIRect {
 
 #[doc(hidden)]
 pub struct DrawContext {
-    pub r: i32r,
+    pub r: Rect<i32>,
 }
 
 pub struct UIState {
@@ -40,10 +40,10 @@ pub struct UIState {
     pub proto_serif: Rc<ui::FontProto>,
     pub proto_mono: Rc<ui::FontProto>,
     pub font: Rc<ui::Font>,
-    pub rect_vb: gpu::VertexBuffer<f32x2>,
+    pub rect_vb: gpu::VertexBuffer<Vec2<f32>>,
     pub draw_ub: gpu::UniformBuffer<UIRect>,
     pub running: Cell<bool>,
-    pub two_over_current_window_size: Cell<f32x2>,
+    pub two_over_current_window_size: Cell<Vec2<f32>>,
     pub current_capturing_id: Cell<Option<u64>>,
     pub follow_with_render: Cell<bool>,
 }
@@ -169,11 +169,11 @@ impl UIState {
         let font = Rc::new(ui::Font::new(&proto_sans,16).expect("unable to load font"));
 
         // create vertex buffer for one rectangle
-        let rect_vb = gpu::VertexBuffer::<f32x2>::new_from_vec(graphics,vec![
-            f32x2::from_xy(0.0,0.0),
-            f32x2::from_xy(1.0,0.0),
-            f32x2::from_xy(1.0,1.0),
-            f32x2::from_xy(0.0,1.0)
+        let rect_vb = gpu::VertexBuffer::<Vec2<f32>>::new_from_vec(graphics,vec![
+            Vec2::<f32>::new(0.0,0.0),
+            Vec2::<f32>::new(1.0,0.0),
+            Vec2::<f32>::new(1.0,1.0),
+            Vec2::<f32>::new(0.0,1.0)
         ]).expect("unable to create vertex buffer");
 
         // create draw uniform buffer
@@ -192,14 +192,14 @@ impl UIState {
             rect_vb: rect_vb,
             draw_ub: draw_ub,
             running: Cell::new(true),
-            two_over_current_window_size: Cell::new(f32x2::from_xy(0.0,0.0)),
+            two_over_current_window_size: Cell::new(Vec2::<f32>::new(0.0,0.0)),
             current_capturing_id: Cell::new(None),
             follow_with_render: Cell::new(false),
         })
     }
 
-    pub fn set_current_window_size(&self,size: i32x2) {
-        self.two_over_current_window_size.set(f32x2::from_xy(2.0 / (*size.x() as f32),2.0 / (*size.y() as f32)));
+    pub fn set_current_window_size(&self,size: Vec2<i32>) {
+        self.two_over_current_window_size.set(Vec2::<f32>::new(2.0 / (size.x() as f32),2.0 / (size.y() as f32)));
     }
 
     pub fn invalidate(&self) {
@@ -207,10 +207,10 @@ impl UIState {
     }
 
     /// Draw rectangle.
-    pub fn draw_rectangle<C: ColorParameter>(&self,r: i32r,color: C,blend_mode: gpu::BlendMode) {
+    pub fn draw_rectangle<C: ColorParameter>(&self,r: Rect<i32>,color: C,blend_mode: gpu::BlendMode) {
         self.draw_ub.load(0,&vec![UIRect {
-            r: f32x4::from_xyzw(*r.o.x() as f32,*r.o.y() as f32,*r.s.x() as f32,*r.s.y() as f32),
-            t: f32x4::from_xyzw(0.0,0.0,0.0,0.0),
+            r: Vec4::<f32>::new(r.ox() as f32,r.oy() as f32,r.sx() as f32,r.sy() as f32),
+            t: Vec4::<f32>::zero(),
         }]);
         self.graphics.set_blend(blend_mode);
         self.graphics.bind_shader(&self.flat_shader);
@@ -218,35 +218,35 @@ impl UIState {
         self.graphics.bind_uniformbuffer(1,"rect_block",&self.draw_ub);
         let tows = self.two_over_current_window_size.get();
         self.graphics.set_uniform("tows",tows);
-        self.graphics.set_uniform("color",color.into_vec4());
+        self.graphics.set_uniform("color",color.as_vec4());
         self.graphics.draw_instanced_triangle_fan(4,1);
     }
 
     /// Draw text.
-    pub fn draw_text<C: ColorParameter>(&self,p: i32x2,text: &str,color: C,font: &ui::Font) {
+    pub fn draw_text<C: ColorParameter>(&self,p: Vec2<i32>,text: &str,color: C,font: &ui::Font) {
         let mut buffer: Vec<UIRect> = Vec::new();
         for s in font.proto.sets.iter() {
             if s.font_size == font.font_size {
-                let mut v = i32x2::from_xy(*p.x(),*p.y() + (font.ratio * (s.y_bearing as f32)) as i32);
+                let mut v = Vec2::<i32>::new(p.x(),p.y() + (font.ratio * (s.y_bearing as f32)) as i32);
                 for c in text.chars() {
                     let code = c as u32;
                     for ch in s.characters.iter() {
                         if ch.n == code {
                             buffer.push(ui::UIRect {
-                                r: f32x4::from_xyzw(
-                                    (*v.x() + (font.ratio * (*ch.bearing.x() as f32)) as i32) as f32,
-                                    (*v.y() - (font.ratio * (*ch.bearing.y() as f32)) as i32) as f32,
-                                    ((font.ratio * (*ch.r.s.x() as f32)) as i32) as f32,
-                                    ((font.ratio * (*ch.r.s.y() as f32)) as i32) as f32
+                                r: Vec4::<f32>::new(
+                                    (v.x() + (font.ratio * (ch.bearing.x() as f32)) as i32) as f32,
+                                    (v.y() - (font.ratio * (ch.bearing.y() as f32)) as i32) as f32,
+                                    ((font.ratio * (ch.r.sx() as f32)) as i32) as f32,
+                                    ((font.ratio * (ch.r.sy() as f32)) as i32) as f32
                                 ),
-                                t: f32x4::from_xyzw(
-                                    (*ch.r.o.x() as f32) / (*font.proto.texture.size.x() as f32),
-                                    (*ch.r.o.y() as f32) / (*font.proto.texture.size.y() as f32),
-                                    (*ch.r.s.x() as f32) / (*font.proto.texture.size.x() as f32),
-                                    (*ch.r.s.y() as f32) / (*font.proto.texture.size.y() as f32)
+                                t: Vec4::<f32>::new(
+                                    (ch.r.ox() as f32) / (font.proto.texture.size.x() as f32),
+                                    (ch.r.oy() as f32) / (font.proto.texture.size.y() as f32),
+                                    (ch.r.sx() as f32) / (font.proto.texture.size.x() as f32),
+                                    (ch.r.sy() as f32) / (font.proto.texture.size.y() as f32)
                                 ),
                             });
-                            *v.x() += (font.ratio * (ch.advance as f32)) as i32;
+                            v.set_x(v.x() + (font.ratio * (ch.advance as f32)) as i32);
                             break;
                         }
                     }
@@ -263,7 +263,7 @@ impl UIState {
         self.graphics.set_uniform("alpha_texture",0);
         let tows = self.two_over_current_window_size.get();
         self.graphics.set_uniform("tows",tows);
-        self.graphics.set_uniform("color",color.into_vec4());
+        self.graphics.set_uniform("color",color.as_vec4());
         self.graphics.draw_instanced_triangle_fan(4,buffer.len() as i32);
     }
 }
@@ -298,10 +298,10 @@ impl UI {
     /// 
     /// **Returns**
     /// Unique ID for this frame.
-    pub fn open_frame<T: ui::Widget + 'static>(&mut self,r: i32r,title: &str,widget: &Rc<T>) {
-        let core = WindowCore::new_frame(&self.state.system,r,title);
+    pub fn open_frame<T: ui::Widget + 'static>(&mut self,r: Rect<i32>,title: &str,widget: &Rc<T>) {
+        let core = BaseWindow::new_frame(&self.state.system,r,title);
         let widget = Rc::clone(widget);
-        widget.set_rect(i32r::from_os(i32x2::zero(),r.s));
+        widget.set_rect(Rect::<i32>::new_os(Vec2::<i32>::zero(),r.s()));
         self.windows.push(WidgetWindow {
             state: Rc::clone(&self.state),
             core: core,
@@ -344,15 +344,15 @@ impl Window for WidgetWindow {
             Event::Render => {
                 self.state.graphics.bind_target(self);
                 self.state.graphics.clear(0xFF001122);
-                let context = i32x2::zero();
-                self.state.set_current_window_size(self.core.r.get().s);
+                let context = Vec2::<i32>::zero();
+                self.state.set_current_window_size(self.core.r.get().s());
                 self.widget.draw(context);
                 self.state.graphics.flush();
                 self.state.graphics.present(self.id());
             },
 
             Event::Size(s) => {
-                self.widget.set_rect(i32r::from_os(i32x2::zero(),s));
+                self.widget.set_rect(Rect::<i32>::new_os(Vec2::<i32>::zero(),s));
             },
 
             Event::Move(_o) => {
@@ -403,11 +403,11 @@ impl Window for WidgetWindow {
         }
     }
 
-    fn rect(&self) -> i32r {
+    fn rect(&self) -> Rect<i32> {
         self.core.r.get()
     }
 
-    fn set_rect(&self,r: i32r) {
+    fn set_rect(&self,r: Rect<i32>) {
         self.core.r.set(r);
     }
 

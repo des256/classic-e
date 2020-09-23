@@ -12,7 +12,7 @@ use gl::types::GLuint;
 /// 2D texture array GPU resource.
 pub struct Texture2DArray<T: gpu::GLFormat> {  // start with one layer, rebuild later
     pub tex: GLuint,
-    pub size: usizex3,
+    pub size: Vec3<usize>,
     phantom: PhantomData<T>,
 }
 
@@ -28,7 +28,7 @@ impl<T: gpu::GLFormat> Texture2DArray<T> {
     /// 
     /// * `Ok(Texture2DArray)` - The new 2D texture.
     /// * `Err(SystemError)` - The 2D texture array could not be created.
-    pub fn new(_graphics: &Rc<gpu::Graphics>,size: usizex3) -> Result<Texture2DArray<T>,SystemError> {
+    pub fn new(_graphics: &Rc<gpu::Graphics>,size: Vec3<usize>) -> Result<Texture2DArray<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -37,7 +37,7 @@ impl<T: gpu::GLFormat> Texture2DArray<T> {
             gl::TexParameteri(gl::TEXTURE_2D_ARRAY,gl::TEXTURE_WRAP_T,gl::CLAMP_TO_EDGE as i32);
             gl::TexParameteri(gl::TEXTURE_2D_ARRAY,gl::TEXTURE_MIN_FILTER,gl::LINEAR as i32);
             gl::TexParameteri(gl::TEXTURE_2D_ARRAY,gl::TEXTURE_MAG_FILTER,gl::LINEAR as i32);
-            gl::TexStorage3D(gl::TEXTURE_2D_ARRAY,1,T::gl_internal_format(),size.x as i32,size.y as i32,size.z as i32);
+            gl::TexStorage3D(gl::TEXTURE_2D_ARRAY,1,T::gl_internal_format(),size.x() as i32,size.y() as i32,size.z() as i32);
         };
         Ok(Texture2DArray {
             tex: tex,
@@ -59,7 +59,7 @@ impl<T: gpu::GLFormat> Texture2DArray<T> {
     /// * `Err(SystemError)` - The 2D texture array could not be created.
     pub fn new_from_ten(graphics: &Rc<gpu::Graphics>,src: Ten<T>) -> Result<Texture2DArray<T>,SystemError> {
         let texture = Texture2DArray::new(graphics,src.size)?;
-        texture.load(usizex3::zero(),&src);
+        texture.load(Vec3::<usize>::zero(),&src);
         Ok(texture)
     }
 
@@ -69,10 +69,10 @@ impl<T: gpu::GLFormat> Texture2DArray<T> {
     /// 
     /// * `o` - offset.
     /// * `src` - Ten containing source data.
-    pub fn load(&self,o: usizex3,src: &Ten<T>) {
+    pub fn load(&self,o: Vec3<usize>,src: &Ten<T>) {
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D_ARRAY,self.tex);
-            gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY,0,o.x as i32,o.y as i32,o.z as i32,src.size.x as i32,src.size.y as i32,src.size.z as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void);
+            gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY,0,o.x() as i32,o.y() as i32,o.z() as i32,src.size.x() as i32,src.size.y() as i32,src.size.z() as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void);
         }
     }
 
@@ -83,10 +83,10 @@ impl<T: gpu::GLFormat> Texture2DArray<T> {
     /// * `layer` - layer.
     /// * `o` - offset.
     /// * `src` - Mat containing source data.
-    pub fn load_mat(&self,layer: usize,o: usizex2,src: &Mat<T>) {
+    pub fn load_mat(&self,layer: usize,o: Vec2<usize>,src: &Mat<T>) {
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D_ARRAY,self.tex);
-            gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY,0,*o.x() as i32,*o.y() as i32,layer as i32,*src.size.x() as i32,*src.size.y() as i32,1,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void);
+            gl::TexSubImage3D(gl::TEXTURE_2D_ARRAY,0,o.x() as i32,o.y() as i32,layer as i32,src.size.x() as i32,src.size.y() as i32,1,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void);
         }
     }
     

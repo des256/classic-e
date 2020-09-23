@@ -29,27 +29,27 @@ pub enum VAlignment {
 pub trait Widget {
 
     /// Get rectangle for this widget.
-    fn get_rect(&self) -> i32r;
+    fn get_rect(&self) -> Rect<i32>;
 
     /// Set rectangle for this widget.
     /// 
     /// If the widget has children, the rectangles for the children are also updated accordingly.
-    fn set_rect(&self,r: i32r);
+    fn set_rect(&self,r: Rect<i32>);
 
     /// Calculate minimum size this widget needs.
-    fn calc_min_size(&self) -> i32x2;
+    fn calc_min_size(&self) -> Vec2<i32>;
 
     /// Draw the widget.
-    fn draw(&self,context: i32x2);
+    fn draw(&self,context: Vec2<i32>);
 
     /// Handle mouse button press.
-    fn handle_mouse_press(&self,p: i32x2,b: MouseButton);
+    fn handle_mouse_press(&self,p: Vec2<i32>,b: MouseButton);
 
     /// Handle mouse button release.
-    fn handle_mouse_release(&self,p: i32x2,b: MouseButton);
+    fn handle_mouse_release(&self,p: Vec2<i32>,b: MouseButton);
 
     /// Handle mouse pointer move. Returns whether or not widget captures the mouse.
-    fn handle_mouse_move(&self,p: i32x2) -> bool;
+    fn handle_mouse_move(&self,p: Vec2<i32>) -> bool;
 
     /// Handle mouse wheel.
     fn handle_mouse_wheel(&self,w: MouseWheel);

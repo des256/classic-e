@@ -19,7 +19,7 @@ pub trait GLVertex {
     fn len() -> isize;
 }
 
-impl GLVertex for f32x2 {
+impl GLVertex for Vec2<f32> {
     fn bind() {
         unsafe {
             gl::EnableVertexAttribArray(0);
@@ -32,7 +32,7 @@ impl GLVertex for f32x2 {
     }
 }
 
-impl GLVertex for f32x4 {
+impl GLVertex for Vec4<f32> {
     fn bind() {
         unsafe {
             gl::EnableVertexAttribArray(0);

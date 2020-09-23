@@ -22,11 +22,11 @@ impl Window for AppWindow {
         }
     }
 
-    fn rect(&self) -> i32r {
+    fn rect(&self) -> Rect<i32> {
         self.core.r.get()
     }
 
-    fn set_rect(&self,r: i32r) {
+    fn set_rect(&self,r: Rect<i32>) {
         self.core.r.set(r);
     }
 
@@ -45,7 +45,7 @@ fn main() {
 
     // create application window
     let appwindow = AppWindow {
-        core: WindowCore::new_frame(&system,i32r::from_os(i32x2::from_xy(50,50),i32x2::from_xy(640,350)),"Test Window"),
+        core: BaseWindow::new_frame(&system,Rect::<i32>::new(50,50,640,350),"Test Window"),
         running: Cell::new(true),
     };
 
