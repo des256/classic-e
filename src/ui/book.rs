@@ -49,7 +49,7 @@ impl Book {
             hit: Cell::new(BookHit::Outside),
             current_index: Cell::new(0),
             padding: Cell::new(Vec2::<i32>::zero()),
-            inner_padding: Cell::new(vec2!(i32: 8,4)),
+            inner_padding: Cell::new(vec2!(8,4)),
             font: RefCell::new(Rc::clone(&state.font)),
             color: Cell::new(0xFFFFFFFF),
             tab_color: Cell::new(0xFF001133),
@@ -138,7 +138,7 @@ impl ui::Widget for Book {
         }
         self.state.draw_rectangle(Rect::<i32>::new_os(
             tab_rect.o(),
-            vec2!(i32:
+            vec2!(
                 self.r.get().sx() - tab_rect.ox(),
                 tab_rect.sy()
             )

@@ -170,10 +170,10 @@ impl UIState {
 
         // create vertex buffer for one rectangle
         let rect_vb = gpu::VertexBuffer::<Vec2<f32>>::new_from_vec(graphics,vec![
-            vec2!(f32: 0.0,0.0),
-            vec2!(f32: 1.0,0.0),
-            vec2!(f32: 1.0,1.0),
-            vec2!(f32: 0.0,1.0)
+            vec2!(0.0,0.0),
+            vec2!(1.0,0.0),
+            vec2!(1.0,1.0),
+            vec2!(0.0,1.0)
         ]).expect("unable to create vertex buffer");
 
         // create draw uniform buffer
@@ -199,7 +199,7 @@ impl UIState {
     }
 
     pub fn set_current_window_size(&self,size: Vec2<i32>) {
-        self.two_over_current_window_size.set(vec2!(f32: 2.0 / (size.x() as f32),2.0 / (size.y() as f32)));
+        self.two_over_current_window_size.set(vec2!(2.0 / (size.x() as f32),2.0 / (size.y() as f32)));
     }
 
     pub fn invalidate(&self) {
@@ -209,7 +209,7 @@ impl UIState {
     /// Draw rectangle.
     pub fn draw_rectangle<C: ColorParameter>(&self,r: Rect<i32>,color: C,blend_mode: gpu::BlendMode) {
         self.draw_ub.load(0,&vec![UIRect {
-            r: vec4!(f32: r.ox() as f32,r.oy() as f32,r.sx() as f32,r.sy() as f32),
+            r: vec4!(r.ox() as f32,r.oy() as f32,r.sx() as f32,r.sy() as f32),
             t: Vec4::<f32>::zero(),
         }]);
         self.graphics.set_blend(blend_mode);
@@ -227,19 +227,19 @@ impl UIState {
         let mut buffer: Vec<UIRect> = Vec::new();
         for s in font.proto.sets.iter() {
             if s.font_size == font.font_size {
-                let mut v = vec2!(i32: p.x(),p.y() + (font.ratio * (s.y_bearing as f32)) as i32);
+                let mut v = vec2!(p.x(),p.y() + (font.ratio * (s.y_bearing as f32)) as i32);
                 for c in text.chars() {
                     let code = c as u32;
                     for ch in s.characters.iter() {
                         if ch.n == code {
                             buffer.push(ui::UIRect {
-                                r: vec4!(f32:
+                                r: vec4!(
                                     (v.x() + (font.ratio * (ch.bearing.x() as f32)) as i32) as f32,
                                     (v.y() - (font.ratio * (ch.bearing.y() as f32)) as i32) as f32,
                                     ((font.ratio * (ch.r.sx() as f32)) as i32) as f32,
                                     ((font.ratio * (ch.r.sy() as f32)) as i32) as f32
                                 ),
-                                t: vec4!(f32:
+                                t: vec4!(
                                     (ch.r.ox() as f32) / (font.proto.texture.size.x() as f32),
                                     (ch.r.oy() as f32) / (font.proto.texture.size.y() as f32),
                                     (ch.r.sx() as f32) / (font.proto.texture.size.x() as f32),

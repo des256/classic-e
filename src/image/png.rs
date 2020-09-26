@@ -977,7 +977,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
             None => { return None; },
         };
         let mut sp = 0usize;
-        let mut result = Mat::<T>::new(vec2!(usize: width as usize,height as usize));
+        let mut result = Mat::<T>::new(vec2!(width as usize,height as usize));
         for i in 0..7 {
             if apresent[i] {
                 let raw_data = unfilter(&filtered_data[sp..sp + adsize[i] as usize],aheight[i] as usize,astride[i] as usize,bpp);
@@ -1001,7 +1001,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
         
         //let after_unfilter = Instant::now();
         
-        let mut result = Mat::new(vec2!(usize: width as usize,height as usize));
+        let mut result = Mat::new(vec2!(width as usize,height as usize));
         decode_pixels(&mut result.data,&raw_data,width as usize,height as usize,width as usize,0,0,1,1,itype,&palette,gamma);
         
         //let after_decode = Instant::now();

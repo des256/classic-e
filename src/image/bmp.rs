@@ -674,7 +674,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
             _ => { },
         }
     }
-    let mut image = Mat::<T>::new(vec2!(usize: width,height));
+    let mut image = Mat::<T>::new(vec2!(width,height));
     decode_pixels(&mut image.data,&src[offset as usize..],width,height,bottom_up,itype,&palette,redmask,greenmask,bluemask,alphamask);
     Some(image)
 }
@@ -758,7 +758,7 @@ pub fn encode<T: pixel::Pixel>(image: &Mat<T>) -> Option<Vec<u8>> {
     dst.push32(0);  // 118
     for y in 0..image.size.y() {
         for x in 0..image.size.x() {
-            let d: Vec4<u8> = image.get(vec2!(usize: x,y)).as_vec4();
+            let d: Vec4<u8> = image.get(vec2!(x,y)).as_vec4();
             dst.push(d.z());
             dst.push(d.y());
             dst.push(d.x());

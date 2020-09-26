@@ -43,9 +43,9 @@ impl ui::Widget for VStack {
                 ui::HAlignment::Fill => { (r.ox(),r.sx()) },
             };
             widget.set_rect(
-                rect!(i32:
-                    vec2!(i32: ox,oy) + self.padding,
-                    vec2!(i32: sx,size.y()) - 2 * self.padding
+                rect!(
+                    vec2!(ox,oy) + self.padding,
+                    vec2!(sx,size.y()) - 2 * self.padding
                 )
             );
             oy += size.y();

@@ -43,9 +43,9 @@ impl ui::Widget for HStack {
                 ui::VAlignment::Fill => { (r.oy(),r.sy()) },
             };
             widget.set_rect(
-                rect!(i32:
-                    vec2!(i32: ox,oy) + self.padding,
-                    vec2!(i32: size.x(),sy) - 2 * self.padding
+                rect!(
+                    vec2!(ox,oy) + self.padding,
+                    vec2!(size.x(),sy) - 2 * self.padding
                 )
             );
             ox += size.x();

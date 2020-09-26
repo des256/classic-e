@@ -26,189 +26,166 @@ use std::{
 };
 
 #[derive(Copy,Clone,Debug)]
-pub struct Vec2<T: Simd2>(pub <T as Simd2>::Type);
+pub struct Vec2<T: Simdable>(Simd2<T>);
 
-macro_rules! impl_vec2u {
-    ($t:ty; $o:expr; $z:expr) => {
-        impl Vec2<$t> {
-            pub fn new(x: $t,y: $t) -> Self {
-                Vec2(<$t as Simd2>::Type::new(x,y))
-            }
+impl<T: Simdable> Vec2<T> {
+    pub fn new(x: T,y: T) -> Self {
+        Vec2(Simd2::new([x,y]))
+    }
 
-            pub fn unit_x() -> Self {
-                Vec2(<$t as Simd2>::Type::new($o,$z))
-            }
+    pub fn unit_x() -> Self {
+        Vec2(Simd2::new([T::one(),T::zero()]))
+    }
 
-            pub fn unit_y() -> Self {
-                Vec2(<$t as Simd2>::Type::new($z,$o))
-            }
+    pub fn unit_y() -> Self {
+        Vec2(Simd2::new([T::zero(),T::one()]))
+    }
 
-            pub fn x(&self) -> $t {
-                self.0.get(0)
-            }
+    pub fn x(&self) -> T {
+        self.0.get(0)
+    }
 
-            pub fn y(&self) -> $t {
-                self.0.get(1)
-            }
+    pub fn y(&self) -> T {
+        self.0.get(1)
+    }
 
-            pub fn set_x(&mut self,x: $t) {
-                self.0.set(0,x);
-            }
+    pub fn set_x(&mut self,x: T) {
+        self.0.set(0,x);
+    }
 
-            pub fn set_y(&mut self,y: $t) {
-                self.0.set(1,y);
-            }
-        }
+    pub fn set_y(&mut self,y: T) {
+        self.0.set(1,y);
+    }
+}
 
-        // Vec2 == Vec2
-        impl PartialEq for Vec2<$t> {
-            fn eq(&self,other: &Self) -> bool {
-                <$t as Simd2>::Type::eq(&self.0,&other.0,0x3)
-            }
-        }
+impl<T: Simdable> PartialEq for Vec2<T> {
+    fn eq(&self,other: &Self) -> bool {
+        Simd2::<T>::eq(&self.0,&other.0,0x3)
+    }
+}
 
-        impl Zero for Vec2<$t> {
-            fn zero() -> Self {
-                Vec2(<$t as Simd2>::Type::zero())
-            }
-        }
+impl<T: Simdable> Zero for Vec2<T> {
+    fn zero() -> Self {
+        Vec2(Simd2::<T>::zero())
+    }
+}
 
-        impl Display for Vec2<$t> {
-            fn fmt(&self,f: &mut Formatter) -> Result {
-                write!(f,"({},{})",self.x(),self.y())
-            }
-        }
+impl<T: Simdable> Display for Vec2<T> {
+    fn fmt(&self,f: &mut Formatter) -> Result {
+        write!(f,"({},{})",self.x(),self.y())
+    }
+}
 
-        // Vec2 + Vec2
-        impl Add<Vec2<$t>> for Vec2<$t> {
-            type Output = Self;
-            fn add(self,other: Self) -> Self {
-                Vec2(<$t as Simd2>::Type::add(&self.0,&other.0))
-            }
-        }
+impl<T: Simdable> Add<Vec2<T>> for Vec2<T> {
+    type Output = Self;
+    fn add(self,other: Self) -> Self {
+        Vec2(Simd2::<T>::add(self.0,other.0))
+    }
+}
 
-        // Vec2 += Vec2
-        impl AddAssign<Vec2<$t>> for Vec2<$t> {
-            fn add_assign(&mut self,other: Self) {
-                self.0 = <$t as Simd2>::Type::add(&self.0,&other.0);
-            }
-        }
+impl<T: Simdable> AddAssign<Vec2<T>> for Vec2<T> {
+    fn add_assign(&mut self,other: Self) {
+        self.0 = Simd2::<T>::add(self.0,other.0);
+    }
+}
 
-        // Vec2 - Vec2
-        impl Sub<Vec2<$t>> for Vec2<$t> {
-            type Output = Self;
-            fn sub(self,other: Self) -> Self {
-                Vec2(<$t as Simd2>::Type::sub(&self.0,&other.0))
-            }
-        }
+impl<T: Simdable> Sub<Vec2<T>> for Vec2<T> {
+    type Output = Self;
+    fn sub(self,other: Self) -> Self {
+        Vec2(Simd2::<T>::sub(self.0,other.0))
+    }
+}
 
-        // Vec2 -= Vec2
-        impl SubAssign<Vec2<$t>> for Vec2<$t> {
-            fn sub_assign(&mut self,other: Self) {
-                self.0 = <$t as Simd2>::Type::sub(&self.0,&other.0);
-            }
-        }
+impl<T: Simdable> SubAssign<Vec2<T>> for Vec2<T> {
+    fn sub_assign(&mut self,other: Self) {
+        self.0 = Simd2::<T>::sub(self.0,other.0);
+    }
+}
 
-        // s * Vec2
+macro_rules! scalar_vec2_mul {
+    ($t:ty) => {
         impl Mul<Vec2<$t>> for $t {
             type Output = Vec2<$t>;
             fn mul(self,other: Vec2<$t>) -> Vec2<$t> {
-                Vec2(<$t as Simd2>::Type::mul(&<$t as Simd2>::Type::splat(self),&other.0))
-            }
-        }
-
-        // Vec2 * s
-        impl Mul<$t> for Vec2<$t> {
-            type Output = Self;
-            fn mul(self,other: $t) -> Self {
-                Vec2(<$t as Simd2>::Type::mul(&self.0,&<$t as Simd2>::Type::splat(other)))
-            }
-        }
-        
-        // Vec2 *= s
-        impl MulAssign<$t> for Vec2<$t> {
-            fn mul_assign(&mut self,other: $t) {
-                self.0 = <$t as Simd2>::Type::mul(&self.0,&<$t as Simd2>::Type::splat(other));
-            }
-        }        
-
-        // Vec2 / s
-        impl Div<$t> for Vec2<$t> {
-            type Output = Self;
-            fn div(self,other: $t) -> Self {
-                Vec2(<$t as Simd2>::Type::div(&self.0,&<$t as Simd2>::Type::splat(other)))
-            }
-        }
-        
-        // Vec2 /= s
-        impl DivAssign<$t> for Vec2<$t> {
-            fn div_assign(&mut self,other: $t) {
-                self.0 = <$t as Simd2>::Type::div(&self.0,&<$t as Simd2>::Type::splat(other));
+                Vec2(Simd2::<$t>::mul(Simd2::<$t>::splat(self),other.0))
             }
         }
     }
 }
 
-macro_rules! impl_vec2i {
-    ($t:ty; $o:expr; $z:expr) => {
-        impl_vec2u!($t; $o; $z);
+scalar_vec2_mul!(u8);
+scalar_vec2_mul!(i8);
+scalar_vec2_mul!(u16);
+scalar_vec2_mul!(i16);
+scalar_vec2_mul!(u32);
+scalar_vec2_mul!(i32);
+scalar_vec2_mul!(u64);
+scalar_vec2_mul!(i64);
+scalar_vec2_mul!(f32);
+scalar_vec2_mul!(f64);
+scalar_vec2_mul!(usize);
+scalar_vec2_mul!(isize);
 
-        // -Vec2
-        impl Neg for Vec2<$t> {
-            type Output = Self;
-            fn neg(self) -> Self {
-                Vec2(<$t as Simd2>::Type::sub(&<$t as Simd2>::Type::zero(),&self.0))
-            }
-        }
+impl<T: Simdable> Mul<T> for Vec2<T> {
+    type Output = Self;
+    fn mul(self,other: T) -> Self {
+        Vec2(Simd2::<T>::mul(self.0,Simd2::splat(other)))
+    }
+}
+    
+impl<T: Simdable> MulAssign<T> for Vec2<T> {
+    fn mul_assign(&mut self,other: T) {
+        self.0 = Simd2::<T>::mul(self.0,Simd2::splat(other));
+    }
+}        
+
+impl<T: Simdable> Div<T> for Vec2<T> {
+    type Output = Self;
+    fn div(self,other: T) -> Self {
+        Vec2(Simd2::<T>::div(self.0,Simd2::splat(other)))
+    }
+}
+    
+impl<T: Simdable> DivAssign<T> for Vec2<T> {
+    fn div_assign(&mut self,other: T) {
+        self.0 = Simd2::<T>::div(self.0,Simd2::splat(other));
     }
 }
 
-macro_rules! impl_vec2f {
-    ($t:ty; $o:expr; $z:expr) => {
-        impl_vec2i!($t; $o; $z);
-
-        impl Vec2<$t> {
-            pub fn dot(_a: &Self,_b: &Self) -> $t {
-                // TODO: a.x * b.x + a.y * b.y
-                $z
-            }
-
-            pub fn abs(&self) -> $t {
-                // TODO: (self.x * self.x + self.y * self.y).sqrt()
-                $z
-            }
-
-            pub fn norm(&self) -> Self {
-                // TODO:
-                /*
-                let d = self.abs();
-                if d != <$t>::zero() {
-                    *self / d
-                }
-                else {
-                    *self
-                }
-                */
-                Self::zero()
-            }
-        }
+impl<T: Simdable> Neg for Vec2<T> {
+    type Output = Self;
+    fn neg(self) -> Self {
+        Vec2(Simd2::<T>::sub(Simd2::zero(),self.0))
     }
 }
 
-impl_vec2u!(u8; 1; 0);
-impl_vec2i!(i8; 1; 0);
-impl_vec2u!(u16; 1; 0);
-impl_vec2i!(i16; 1; 0);
-impl_vec2u!(u32; 1; 0);
-impl_vec2i!(i32; 1; 0);
-impl_vec2u!(u64; 1; 0);
-impl_vec2i!(i64; 1; 0);
-impl_vec2u!(usize; 1; 0);
-impl_vec2i!(isize; 1; 0);
-impl_vec2f!(f32; 1.0; 0.0);
-impl_vec2f!(f64; 1.0; 0.0);
+impl<T: Simdable> Vec2<T> {
+    pub fn dot(_a: Self,_b: Self) -> T {
+        // TODO: a.x * b.x + a.y * b.y
+        T::zero()
+    }
+
+    pub fn abs(&self) -> T {
+        // TODO: (self.x * self.x + self.y * self.y).sqrt()
+        T::zero()
+    }
+
+    pub fn norm(&self) -> Self {
+        // TODO:
+        /*
+        let d = self.abs();
+        if d != <$t>::zero() {
+            *self / d
+        }
+        else {
+            *self
+        }
+        */
+        Self::zero()
+    }
+}
 
 #[macro_export]
 macro_rules! vec2 {
-    ($t:ty: $x:expr,$y:expr) => { Vec2::<$t>::new($x,$y) };
+    ($x:expr,$y:expr) => { Vec2::new($x,$y) };
 }

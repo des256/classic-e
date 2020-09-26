@@ -40,7 +40,7 @@ impl Button {
             button_color: 0xFF000000,
             hover_button_color: 0xFF333300,
             padding: Vec2::<i32>::zero(),
-            inner_padding: vec2!(i32: 4,2),
+            inner_padding: vec2!(4,2),
         }
     }
 }

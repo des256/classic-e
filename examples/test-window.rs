@@ -45,7 +45,7 @@ fn main() {
 
     // create application window
     let appwindow = AppWindow {
-        core: BaseWindow::new_frame(&system,rect!(i32: 50,50,640,350),"Test Window"),
+        core: BaseWindow::new_frame(&system,rect!(50,50,640,350),"Test Window"),
         running: Cell::new(true),
     };
 

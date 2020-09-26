@@ -11,7 +11,7 @@ fn main() {
 
     let text = Rc::new(ui::Text::new(&ui.state,"Hello, World!",&ui.state.font));
 
-    ui.open_frame(rect!(i32: 50,50,640,350),"Text Test",&Rc::clone(&text));
+    ui.open_frame(rect!(50,50,640,350),"Text Test",&Rc::clone(&text));
 
     ui.run();
 

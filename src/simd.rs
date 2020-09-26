@@ -9,44 +9,110 @@
 // stable Rust supports proper SIMD access.
 
 use {
-    crate::*,
-    std::fmt::{
-        Display,
-        Debug,
-        Formatter,
-        Result
+    std::{
+        fmt::{
+            Display,
+            Debug,
+            Formatter,
+            Result
+        },
+        ops::{
+            Add,
+            Sub,
+            Mul,
+            Div,
+            AddAssign,
+            SubAssign,
+            MulAssign,
+            DivAssign,
+        },
+        cmp::{
+            PartialEq,
+            PartialOrd,
+        },
     },
 };
 
+pub trait Zero {
+    fn zero() -> Self;
+}
+
+impl Zero for u8 { fn zero() -> Self { 0 } }
+impl Zero for i8 { fn zero() -> Self { 0 } }
+impl Zero for u16 { fn zero() -> Self { 0 } }
+impl Zero for i16 { fn zero() -> Self { 0 } }
+impl Zero for u32 { fn zero() -> Self { 0 } }
+impl Zero for i32 { fn zero() -> Self { 0 } }
+impl Zero for u64 { fn zero() -> Self { 0 } }
+impl Zero for i64 { fn zero() -> Self { 0 } }
+impl Zero for f32 { fn zero() -> Self { 0.0 } }
+impl Zero for f64 { fn zero() -> Self { 0.0 } }
+impl Zero for usize { fn zero() -> Self { 0 } }
+impl Zero for isize { fn zero() -> Self { 0 } }
+
+pub trait One {
+    fn one() -> Self;
+}
+
+impl One for u8 { fn one() -> Self { 1 } }
+impl One for i8 { fn one() -> Self { 1 } }
+impl One for u16 { fn one() -> Self { 1 } }
+impl One for i16 { fn one() -> Self { 1 } }
+impl One for u32 { fn one() -> Self { 1 } }
+impl One for i32 { fn one() -> Self { 1 } }
+impl One for u64 { fn one() -> Self { 1 } }
+impl One for i64 { fn one() -> Self { 1 } }
+impl One for f32 { fn one() -> Self { 1.0 } }
+impl One for f64 { fn one() -> Self { 1.0 } }
+impl One for usize { fn one() -> Self { 1 } }
+impl One for isize { fn one() -> Self { 1 } }
+
+pub trait Simdable: Sized + Copy + Clone + Zero + One + Display + Debug + PartialEq + PartialOrd + Add<Output=Self> + Sub<Output=Self> + Mul<Output=Self> + Div<Output=Self> + AddAssign + SubAssign + MulAssign + DivAssign { }
+
+impl Simdable for u8 { }
+impl Simdable for i8 { }
+impl Simdable for u16 { }
+impl Simdable for i16 { }
+impl Simdable for u32 { }
+impl Simdable for i32 { }
+impl Simdable for u64 { }
+impl Simdable for i64 { }
+impl Simdable for f32 { }
+impl Simdable for f64 { }
+impl Simdable for usize { }
+impl Simdable for isize { }
+
+pub trait SimdableFloat: Simdable { }
+
+impl SimdableFloat for f32 { }
+impl SimdableFloat for f64 { }
+
 macro_rules! impl_simd {
-    ([$t:ty; $n:expr]: $i:ident | $s:tt | $($xs:ident),*) => {
+    ($name:ident,$n:expr,$s:tt) => {
         #[derive(Copy,Clone)]
         #[allow(non_camel_case_types)]
-        pub struct $i {
-            v: [$t; $n],
-        }
-
-        impl $i {
-            pub fn new($($xs: $t),*) -> $i {
-                $i { v: [$($xs),*], }
+        pub struct $name<T>([T; $n]);
+        impl<T: Simdable> $name<T> {
+            pub fn new(v: [T; $n]) -> $name<T> {
+                $name(v)
             }
 
-            pub fn splat(v: $t) -> $i {
-                $i { v: [v; $n], }
+            pub fn splat(p: T) -> $name<T> {
+                $name([p; $n])
             }
 
-            pub fn set(&mut self,n: usize,v: $t) {
-                self.v[n] = v;
+            pub fn set(&mut self,n: usize,p: T) {
+                self.0[n] = p;
             }
 
-            pub fn get(&self,n: usize) -> $t {
-                self.v[n]
+            pub fn get(&self,n: usize) -> T {
+                self.0[n]
             }
 
             pub fn eq(&self,other: &Self,mask: u64) -> bool {
                 for i in 0..$n {
                     if (mask & (1 << i)) != 0 {
-                        if self.v[i] != other.v[i] {
+                        if self.0[i] != other.0[i] {
                             return false;
                         }
                     }
@@ -54,72 +120,66 @@ macro_rules! impl_simd {
                 true
             }
 
-            pub fn add(a: &$i,b: &$i) -> $i {
-                let mut v: [$t; $n] = a.v;
+            pub fn add(a: Self,b: Self) -> Self {
+                let mut v: [T; $n] = a.0;
                 for i in 0..$n {
-                    v[i] += b.v[i];
+                    v[i] += b.0[i];
                 }
-                $i { v: v, }
+                $name(v)
             }
 
-            pub fn sub(a: &$i,b: &$i) -> $i {
-                let mut v: [$t; $n] = a.v;
+            pub fn sub(a: Self,b: Self) -> Self {
+                let mut v: [T; $n] = a.0;
                 for i in 0..$n {
-                    v[i] -= b.v[i];
+                    v[i] -= b.0[i];
                 }
-                $i { v: v, }
+                $name(v)
             }
 
-            pub fn mul(a: &$i,b: &$i) -> $i {
-                let mut v: [$t; $n] = a.v;
+            pub fn mul(a: Self,b: Self) -> Self {
+                let mut v: [T; $n] = a.0;
                 for i in 0..$n {
-                    v[i] *= b.v[i];
+                    v[i] *= b.0[i];
                 }
-                $i { v: v, }
+                $name(v)
             }
 
-            pub fn div(a: &$i,b: &$i) -> $i {
-                let mut v: [$t; $n] = a.v;
+            pub fn div(a: Self,b: Self) -> Self {
+                let mut v: [T; $n] = a.0;
                 for i in 0..$n {
-                    v[i] /= b.v[i];
+                    v[i] /= b.0[i];
                 }
-                $i { v: v, }
+                $name(v)
             }
         }
 
-        impl Display for $i {
+        impl<T: Simdable> Debug for $name<T> {
             fn fmt(&self,f: &mut Formatter) -> Result {
-
-                let mut result = String::from(format!("simd_{}x{}({}",$s,$n,self.v[0]));
+                let mut result = String::from(format!("{}({}",$s,self.0[0]));
                 for i in 1..$n {
-                    result.push_str(&format!(",{}",self.v[i]));
+                    result.push_str(&format!(",{}",self.0[i]));
                 }
                 result.push_str(")");
                 write!(f,"{}",result)
             }
         }
 
-        impl Debug for $i {
-            fn fmt(&self,f: &mut Formatter) -> Result {
-
-                let mut result = String::from(format!("simd_{}x{}({}",$s,$n,self.v[0]));
-                for i in 1..$n {
-                    result.push_str(&format!(",{}",self.v[i]));
-                }
-                result.push_str(")");
-                write!(f,"{}",result)
-            }
-        }
-
-        impl Zero for $i {
-            fn zero() -> $i {
-                $i { v: [<$t>::zero(); $n], }
+        impl<T: Simdable> Zero for $name<T> {
+            fn zero() -> $name<T> {
+                $name([T::zero(); $n])
             }
         }
     }
 }
 
-// Instantiations
+impl_simd!(Simd2,2,"Simd2");
+impl_simd!(Simd4,4,"Simd4");
+impl_simd!(Simd8,8,"Simd8");
+impl_simd!(Simd16,16,"Simd16");
+impl_simd!(Simd32,32,"Simd32");
+impl_simd!(Simd64,64,"Simd64");
+
+/*// Instantiations
 
 // for peephole optimization, implement the specific SIMD intrinsic access where needed
 
@@ -272,3 +332,4 @@ impl Simd16 for usize { type Type = simd_usizex16; type T = usize; const N: usiz
 impl Simd16 for isize { type Type = simd_isizex16; type T = isize; const N: usize = 16; }
 impl Simd16 for f32 { type Type = simd_f32x16; type T = f32; const N: usize = 16; }
 impl Simd16 for f64 { type Type = simd_f64x16; type T = f64; const N: usize = 16; }
+*/

@@ -82,8 +82,8 @@ impl FontProto {
                 let a = get_i32(bref); bref = &bref[4..];
                 characters.push(Character {
                     n: n,
-                    r: rect!(i32: ox,oy,sx,sy),
-                    bearing: vec2!(i32: bx,by),
+                    r: rect!(ox,oy,sx,sy),
+                    bearing: vec2!(bx,by),
                     advance: a,
                 });
             }
@@ -94,10 +94,10 @@ impl FontProto {
                 characters: characters,
             });
         }
-        let mut mat = Mat::<pixel::R8>::new(vec2!(usize: atlas_size_x as usize,atlas_size_y as usize));
+        let mut mat = Mat::<pixel::R8>::new(vec2!(atlas_size_x as usize,atlas_size_y as usize));
         for y in 0..atlas_size_y as usize {
             for x in 0..atlas_size_x as usize {
-                mat.set(vec2!(usize: x,y),pixel::R8 { d: bref[y * (atlas_size_x as usize) + x] });
+                mat.set(vec2!(x,y),pixel::R8 { d: bref[y * (atlas_size_x as usize) + x] });
             }
         }
         let texture = gpu::Texture2D::new_from_mat(graphics,mat)?;
@@ -156,6 +156,6 @@ impl Font {
                 break;
             }
         }
-        vec2!(i32: x,height)
+        vec2!(x,height)
     }
 }
