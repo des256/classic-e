@@ -1,0 +1,12 @@
+[package]
+name = "imageformats"
+version = "0.1.0"
+authors = ["Desmond Germans <desmond@germansmedia.nl>"]
+edition = "2018"
+
+[lib]
+name = "imageformats"
+crate-type = ["rlib"]
+
+[dependencies]
+base = { version = "*", path = "../base" }

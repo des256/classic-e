@@ -3,7 +3,9 @@
 
 extern crate freetype;
 
-use e::*;
+use ebase::*;
+use ebase::pixel::Pixel;
+use eimage::*;
 use std::env;
 use std::path::Path;
 use std::fs::File;
@@ -36,7 +38,7 @@ struct ImageCharacter {
     size: u32,
     n: u32,
     image: Mat<u8>,
-    bearing: i32x2,
+    bearing: Vec2<i32>,
     advance: i32,
 }
 
@@ -48,8 +50,8 @@ struct ImageCharacterSet {
 
 struct Character {
     n: u32,
-    r: i32r,
-    bearing: i32x2,
+    r: Rect<i32>,
+    bearing: Vec2<i32>,
     advance: i32,
 }
 
@@ -95,12 +97,12 @@ fn exit_version() {
     std::process::exit(-1);
 }
 
-fn find_empty(size: &usizex2,haystack: &Mat<Mapped>,p: &mut Vec2<isize>) -> bool {
-    for hy in 0..haystack.size.y - size.y {
-        for hx in 0..haystack.size.x - size.x {
+fn find_empty(size: &Vec2<usize>,haystack: &Mat<Mapped>,p: &mut Vec2<isize>) -> bool {
+    for hy in 0..haystack.size.y() - size.y() {
+        for hx in 0..haystack.size.x() - size.x() {
             let mut found = true;
-            for y in 0..size.y {
-                for x in 0..size.x {
+            for y in 0..size.y() {
+                for x in 0..size.x() {
                     if haystack.get(vec2!(hx + x,hy + y)).used {
                         found = false;
                         break;
@@ -111,8 +113,8 @@ fn find_empty(size: &usizex2,haystack: &Mat<Mapped>,p: &mut Vec2<isize>) -> bool
                 }
             }
             if found {
-                p.x = hx as isize;
-                p.y = hy as isize;
+                p.set_x(hx as isize);
+                p.set_y(hy as isize);
                 return true;
             }
         }
@@ -121,11 +123,11 @@ fn find_empty(size: &usizex2,haystack: &Mat<Mapped>,p: &mut Vec2<isize>) -> bool
 }
 
 fn find_rect(needle: &Mat<u8>,haystack: &Mat<Mapped>,p: &mut Vec2<isize>) -> bool {
-    for hy in 0..haystack.size.y - needle.size.y {
-        for hx in 0..haystack.size.x - needle.size.x {
+    for hy in 0..haystack.size.y() - needle.size.y() {
+        for hx in 0..haystack.size.x() - needle.size.x() {
             let mut found = true;
-            for y in 0..needle.size.y {
-                for x in 0..needle.size.x {
+            for y in 0..needle.size.y() {
+                for x in 0..needle.size.x() {
                     if haystack.get(vec2!(hx + x,hy + y)).value != needle.get(vec2!(x,y)) {
                         found = false;
                         break;
@@ -136,8 +138,8 @@ fn find_rect(needle: &Mat<u8>,haystack: &Mat<Mapped>,p: &mut Vec2<isize>) -> boo
                 }
             }
             if found {
-                p.x = hx as isize;
-                p.y = hy as isize;
+                p.set_x(hx as isize);
+                p.set_y(hy as isize);
                 return true;
             }
         }
@@ -193,7 +195,7 @@ fn main() {
         }
     }
 
-    let padding: i32x2 = vec2!(1,1);
+    let padding: Vec2<i32> = vec2!(1,1);
 
     // initialize FreeType
     let ft = freetype::Library::init().unwrap();
@@ -218,13 +220,13 @@ fn main() {
                 let a = metrics.horiAdvance >> 6;
                 println!("{:04X}: {}x{}, bearing {},{}, advance {}",n,width,height,bx,by,a);
                 let mut cutout = Mat::<u8>::new(vec2!(
-                    (width + 2 * padding.x) as usize,
-                    (height + 2 * padding.y) as usize)
-                );
+                    (width + 2 * padding.x()) as usize,
+                    (height + 2 * padding.y()) as usize
+                ));
                 for y in 0..height {
                     for x in 0..width {
                         let b = buffer[(y * width + x) as usize];
-                        cutout.set(vec2!((x + padding.x) as usize,(y + padding.y) as usize),b);
+                        cutout.set(vec2!((x + padding.x()) as usize,(y + padding.y()) as usize),b);
                     }
                 }
                 image_characters.push(ImageCharacter {
@@ -252,7 +254,7 @@ fn main() {
     //Command::new("sh").arg("-c").arg(format!("rm output.png")).output().expect("unable to remove output.png");
 
     // sort image characters by height
-    image_characters.sort_by(|a,b| b.image.size.y.cmp(&a.image.size.y));
+    image_characters.sort_by(|a,b| b.image.size.y().cmp(&a.image.size.y()));
 
     // prepare atlas and character set structs
     let tsize = 1024;
@@ -275,9 +277,9 @@ fn main() {
         let mut p = vec2!(0,0);
         if !find_rect(&ch.image,&image,&mut p) {
             if find_empty(&ch.image.size,&image,&mut p) {
-                for y in 0..ch.image.size.y {
-                    for x in 0..ch.image.size.x {
-                        image.set(vec2!(p.x as usize + x,p.y as usize + y),Mapped { used: true,value: ch.image.get(vec2!(x,y)), });
+                for y in 0..ch.image.size.y() {
+                    for x in 0..ch.image.size.x() {
+                        image.set(vec2!(p.x() as usize + x,p.y() as usize + y),Mapped { used: true,value: ch.image.get(vec2!(x,y)), });
                     }
                 }
             }
@@ -287,10 +289,10 @@ fn main() {
             }
         }
         let r = rect!(
-            p.x as i32 + padding.x,
-            p.y as i32 + padding.y,
-            ch.image.size.x as i32 - 2 * padding.x,
-            ch.image.size.y as i32 - 2 * padding.y
+            p.x() as i32 + padding.x(),
+            p.y() as i32 + padding.y(),
+            ch.image.size.x() as i32 - 2 * padding.x(),
+            ch.image.size.y() as i32 - 2 * padding.y()
         );
         for cs in character_sets.iter_mut() {
             if cs.size == ch.size {
@@ -317,8 +319,8 @@ fn main() {
     buffer.push(0x30);
     buffer.push(0x33);
     buffer.push(0x00);
-    push_u32(&mut buffer,image.size.x as u32);  // texture atlas width
-    push_u32(&mut buffer,image.size.y as u32);  // texture atlas height
+    push_u32(&mut buffer,image.size.x() as u32);  // texture atlas width
+    push_u32(&mut buffer,image.size.y() as u32);  // texture atlas height
     push_u32(&mut buffer,character_sets.len() as u32);  // number of font sizes in texture
     for character_set in character_sets.iter() {
         push_u32(&mut buffer,character_set.size);  // font size
@@ -327,18 +329,18 @@ fn main() {
         push_u32(&mut buffer,character_set.characters.len() as u32);  // number of characters
         for ch in &character_set.characters {
             push_u32(&mut buffer,ch.n);
-            push_i32(&mut buffer,ch.r.o.x);
-            push_i32(&mut buffer,ch.r.o.y);
-            push_i32(&mut buffer,ch.r.s.x);
-            push_i32(&mut buffer,ch.r.s.y);
-            push_i32(&mut buffer,ch.bearing.x);
-            push_i32(&mut buffer,ch.bearing.y);
+            push_i32(&mut buffer,ch.r.ox());
+            push_i32(&mut buffer,ch.r.oy());
+            push_i32(&mut buffer,ch.r.sx());
+            push_i32(&mut buffer,ch.r.sy());
+            push_i32(&mut buffer,ch.bearing.x());
+            push_i32(&mut buffer,ch.bearing.y());
             push_i32(&mut buffer,ch.advance);
             //println!("{:04X}: {},{} ({}x{}); {},{}; {}",ch.n,ch.r.o.x,ch.r.o.y,ch.r.s.x,ch.r.s.y,ch.offset.x,ch.offset.y,ch.advance);
         }    
     }
-    for y in 0..image.size.y {
-        for x in 0..image.size.x {
+    for y in 0..image.size.y() {
+        for x in 0..image.size.x() {
             buffer.push(image.get(vec2!(x,y)).value);
         }
     }
@@ -347,14 +349,12 @@ fn main() {
     // also write debug output image
     let mut file = File::create("debug.bmp").expect("what?");
     let mut debug_image = Mat::<pixel::ARGB8>::new(image.size);
-    for y in 0..image.size.y {
-        for x in 0..image.size.x {
-            let b = image.get(vec2!(x,y)).value as u32;
-            let d = 0xFF000000 | (b << 16) | (b << 8) | b;
-            let p = pixel::ARGB8::from(d);
-            debug_image.set(vec2!(x,y),p);
+    for y in 0..image.size.y() {
+        for x in 0..image.size.x() {
+            let b = image.get(vec2!(x,y)).value;
+            debug_image.set(vec2!(x,y),pixel::ARGB8::from_rgba(b,b,b,255));
         }
     }
-    let debug_buffer = image::bmp::encode(&debug_image).expect("what?");
+    let debug_buffer = bmp::encode(&debug_image).expect("what?");
     file.write_all(&debug_buffer).expect("what?");
 }

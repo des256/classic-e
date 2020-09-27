@@ -1,0 +1,9 @@
+[package]
+name = "base"
+version = "0.1.0"
+authors = ["Desmond Germans <desmond@germansmedia.nl>"]
+edition = "2018"
+
+[lib]
+name = "base"
+crate-type = ["rlib"]

@@ -1,33 +1,23 @@
-[package]
-name = "e"
-version = "0.1.0"
-authors = ["Desmond Germans <desmond@germansmedia.nl>"]
-edition = "2018"
+[workspace]
 
-[lib]
-name = "e"
-crate-type = ["rlib"]
+members = [
+    "base",
+    "platform",
+    "gpu",
+    "imageformats",
+    "ui",
+]
 
+# compile as fast as possible, and make everything clear
 [profile.dev]
 opt-level = 0
 debug = true
 lto = true
 codegen-units = 14
 
+# improve the performance of the resulting code as much as possible:
 [profile.release]
-opt-level = 2
+opt-level = 3
 debug = false
-lto = false
-codegen-units = 14
-
-[target.'cfg(unix)'.dependencies]
-libc = "*"
-x11 = { version = "2.18.1", features = ["xlib","glx"] }
-xcb = { version = "0.8", features = ["xlib_xcb","dri2"] }
-gl = { version = "0.14.0" }
-alsa = { version = "0.3.0" }
-
-[target.'cfg(windows)'.dependencies]
-libc = "*"
-winapi = { version = "*", features = ["winuser","libloaderapi"] }
-gl = "*"
+lto = "fat"
+codegen-units = 1
