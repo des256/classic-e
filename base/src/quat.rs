@@ -23,42 +23,95 @@ use std::{
     },
 };
 
+/// Quaternion.
 #[derive(Copy,Clone,Debug)]
 pub struct Quat<T: SimdableFloat>(Simd4<T>);
 
 impl<T: SimdableFloat> Quat<T> {
+    /// Create new quaternion.
+    ///
+    /// **Arguments**
+    ///
+    /// * `r` - Real component.
+    /// * `i` - I-component.
+    /// * `j` - J-component.
+    /// * `k` - K-component.
+    ///
+    /// **Returns**
+    ///
+    /// New quaternion.
     pub fn new(r: T,i: T,j: T,k: T) -> Quat<T> {
         Quat(Simd4::new([r,i,j,k]))
     }
 
+    /// Get real component.
+    ///
+    /// **Returns**
+    ///
+    /// The real component of the quaternion.
     pub fn r(&self) -> T {
         self.0.get(0)
     }
 
+    /// Get I-component.
+    ///
+    /// **Returns**
+    ///
+    /// The I-component of the quaternion.
     pub fn i(&self) -> T {
         self.0.get(1)
     }
 
+    /// Get J-component.
+    ///
+    /// **Returns**
+    ///
+    /// The J-component of the quaternion.
     pub fn j(&self) -> T {
         self.0.get(2)
     }
 
+    /// Get K-component.
+    ///
+    /// **Returns**
+    ///
+    /// The K-component of the quaternion.
     pub fn k(&self) -> T {
         self.0.get(3)
     }
 
+    /// Set real component.
+    ///
+    /// **Arguments**
+    ///
+    /// * `r` - New real component.
     pub fn set_r(&mut self,r: T) {
         self.0.set(0,r);
     }
 
+    /// Set I-component.
+    ///
+    /// **Arguments**
+    ///
+    /// * `i` - New I-component.
     pub fn set_i(&mut self,i: T) {
         self.0.set(1,i);
     }
 
+    /// Set J-component.
+    ///
+    /// **Arguments**
+    ///
+    /// * `j` - New J-component.
     pub fn set_j(&mut self,j: T) {
         self.0.set(2,j);
     }
 
+    /// Set K-component.
+    ///
+    /// **Arguments**
+    ///
+    /// * `k` - New K-component.
     pub fn set_k(&mut self,k: T) {
         self.0.set(3,k);
     }

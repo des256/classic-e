@@ -23,11 +23,31 @@ use std::{
     },
 };
 
-/// Elementary 3-multivector.
+/// 4D multivector.
 #[derive(Copy,Clone,Debug)]
 pub struct MultiVec4<T: SimdableFloat>(Simd16<T>);
 
 impl<T: SimdableFloat> MultiVec4<T> {
+    /// Create new 4D multivector.
+    ///
+    /// **Arguments**
+    ///
+    /// * `r` - Scalar component.
+    /// * `x` - X-vector component.
+    /// * `y` - Y-vector component.
+    /// * `z` - Z-vector component.
+    /// * `w` - W-vector component.
+    /// * `xy` - XY-bivector component.
+    /// * `xz` - XY-bivector component.
+    /// * `xw` - XY-bivector component.
+    /// * `yz` - XY-bivector component.
+    /// * `yw` - XY-bivector component.
+    /// * `zw` - XY-bivector component.
+    /// * `xyz` - XYZ-trivector component.
+    /// * `xyw` - XYW-trivector component.
+    /// * `xzw` - XZW-trivector component.
+    /// * `yzw` - YZW-trivector component.
+    /// * `xyzw` - pseudoscalar component.
     pub fn new(
         r: T,
         x: T,y: T,z: T,w: T,
@@ -44,194 +64,434 @@ impl<T: SimdableFloat> MultiVec4<T> {
         ]))
     }
 
+    /// Create new multivector containing a unit scalar.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_r() -> Self {
         MultiVec4(Simd16::new([T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit X-vector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_x() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit Y-vector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_y() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit Z-vector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_z() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit W-vector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_w() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit XY-bivector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_xy() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit XZ-bivector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_xz() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit XW-bivector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_xw() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit YZ-bivector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_yz() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit YW-bivector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_yw() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit ZW-bivector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_zw() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit XYZ-trivector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_xyz() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit XYW-trivector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_xyw() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit XZW-bivector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_xzw() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit YZW-bivector.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_yzw() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero()]))
     }
 
+    /// Create new multivector containing a unit pseudoscalar.
+    ///
+    /// **Returns**
+    ///
+    /// The new multivector.
     pub fn unit_xyzw() -> Self {
         MultiVec4(Simd16::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one()]))
     }
 
+    /// Get scalar component.
+    ///
+    /// **Returns**
+    ///
+    /// The scalar component.
     pub fn r(&self) -> T {
         self.0.get(0)
     }
 
+    /// Get X-vector component.
+    ///
+    /// **Returns**
+    ///
+    /// The X-vector component.
     pub fn x(&self) -> T {
         self.0.get(1)
     }
 
+    /// Get Y-vector component.
+    ///
+    /// **Returns**
+    ///
+    /// The Y-vector component.
     pub fn y(&self) -> T {
         self.0.get(2)
     }
 
+    /// Get Z-vector component.
+    ///
+    /// **Returns**
+    ///
+    /// The Z-vector component.
     pub fn z(&self) -> T {
         self.0.get(3)
     }
 
+    /// Get W-vector component.
+    ///
+    /// **Returns**
+    ///
+    /// The W-vector component.
     pub fn w(&self) -> T {
         self.0.get(4)
     }
 
+    /// Get XY-bivector component.
+    ///
+    /// **Returns**
+    ///
+    /// The XY-bivector component.
     pub fn xy(&self) -> T {
         self.0.get(5)
     }
 
+    /// Get XZ-bivector component.
+    ///
+    /// **Returns**
+    ///
+    /// The XZ-bivector component.
     pub fn xz(&self) -> T {
         self.0.get(6)
     }
 
+    /// Get XW-bivector component.
+    ///
+    /// **Returns**
+    ///
+    /// The XW-bivector component.
     pub fn xw(&self) -> T {
         self.0.get(7)
     }
 
+    /// Get YZ-bivector component.
+    ///
+    /// **Returns**
+    ///
+    /// The YZ-bivector component.
     pub fn yz(&self) -> T {
         self.0.get(8)
     }
 
+    /// Get YW-bivector component.
+    ///
+    /// **Returns**
+    ///
+    /// The YW-bivector component.
     pub fn yw(&self) -> T {
         self.0.get(9)
     }
 
+    /// Get ZW-bivector component.
+    ///
+    /// **Returns**
+    ///
+    /// The ZW-bivector component.
     pub fn zw(&self) -> T {
         self.0.get(10)
     }
 
+    /// Get XYZ-trivector component.
+    ///
+    /// **Returns**
+    ///
+    /// The XYZ-trivector component.
     pub fn xyz(&self) -> T {
         self.0.get(11)
     }
 
+    /// Get XYW-trivector component.
+    ///
+    /// **Returns**
+    ///
+    /// The XYW-trivector component.
     pub fn xyw(&self) -> T {
         self.0.get(12)
     }
 
+    /// Get XZW-trivector component.
+    ///
+    /// **Returns**
+    ///
+    /// The XZW-trivector component.
     pub fn xzw(&self) -> T {
         self.0.get(13)
     }
 
+    /// Get YZW-trivector component.
+    ///
+    /// **Returns**
+    ///
+    /// The YZW-trivector component.
     pub fn yzw(&self) -> T {
         self.0.get(14)
     }
 
+    /// Get pseudoscalar component.
+    ///
+    /// **Returns**
+    ///
+    /// The pseudoscalar component.
     pub fn xyzw(&self) -> T {
         self.0.get(15)
     }
 
+    /// Set scalar component.
+    ///
+    /// **Arguments**
+    ///
+    /// `r` - New scalar component.
     pub fn set_r(&mut self,r: T) {
         self.0.set(0,r);
     }
 
+    /// Set X-vector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `x` - New X-vector component.
     pub fn set_x(&mut self,x: T) {
         self.0.set(1,x);
     }
 
+    /// Set Y-vector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `y` - New Y-vector component.
     pub fn set_y(&mut self,y: T) {
         self.0.set(2,y);
     }
 
+    /// Set Z-vector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `z` - New Z-vector component.
     pub fn set_z(&mut self,z: T) {
         self.0.set(3,z);
     }
 
+    /// Set W-vector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `w` - New W-vector component.
     pub fn set_w(&mut self,w: T) {
         self.0.set(4,w);
     }
 
+    /// Set XY-bivector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `xy` - New XY-bivector component.
     pub fn set_xy(&mut self,xy: T) {
         self.0.set(5,xy);
     }
 
+    /// Set XZ-bivector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `xz` - New XZ-bivector component.
     pub fn set_xz(&mut self,xz: T) {
         self.0.set(6,xz);
     }
 
+    /// Set XW-bivector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `xw` - New XW-bivector component.
     pub fn set_xw(&mut self,xw: T) {
         self.0.set(7,xw);
     }
 
+    /// Set YZ-bivector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `yz` - New YZ-bivector component.
     pub fn set_yz(&mut self,yz: T) {
         self.0.set(8,yz);
     }
 
+    /// Set YW-bivector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `yw` - New YW-bivector component.
     pub fn set_yw(&mut self,yw: T) {
         self.0.set(9,yw);
     }
 
+    /// Set ZW-bivector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `zw` - New ZW-bivector component.
     pub fn set_zw(&mut self,zw: T) {
         self.0.set(10,zw);
     }
 
+    /// Set XYZ-trivector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `xyz` - New XYZ-trivector component.
     pub fn set_xyz(&mut self,xyz: T) {
         self.0.set(11,xyz);
     }
 
+    /// Set XYW-trivector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `xyw` - New XYW-trivector component.
     pub fn set_xyw(&mut self,xyw: T) {
         self.0.set(12,xyw);
     }
 
+    /// Set XZW-trivector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `xzw` - New XZW-trivector component.
     pub fn set_xzw(&mut self,xzw: T) {
         self.0.set(13,xzw);
     }
 
+    /// Set YZW-trivector component.
+    ///
+    /// **Arguments**
+    ///
+    /// `yzw` - New YZW-trivector component.
     pub fn set_yzw(&mut self,yzw: T) {
         self.0.set(14,yzw);
     }
 
+    /// Set pseudoscalar component.
+    ///
+    /// **Arguments**
+    ///
+    /// `xyzw` - New pseudoscalar component.
     pub fn set_xyzw(&mut self,xyzw: T) {
         self.0.set(15,xyzw);
     }

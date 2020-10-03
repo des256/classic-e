@@ -13,9 +13,13 @@ pub struct Ten<T: Clone + Copy + Zero> {
 
 impl<T: Clone + Copy + Zero> Ten<T> {
     /// Create new 3D array.
-    /// # Arguments
+    ///
+    /// **Arguments**
+    ///
     /// * `size` - Size of the array.
-    /// # Returns
+    ///
+    /// **Returns**
+    ///
     /// The new array, filled with `zero()`.
     pub fn new(size: Vec3<usize>) -> Ten<T> {
         Ten {
@@ -26,7 +30,9 @@ impl<T: Clone + Copy + Zero> Ten<T> {
     }
 
     /// (maybe) Set element in the array.
-    /// # Arguments
+    ///
+    /// **Arguments**
+    ///
     /// * `p` - Coordinates of the element.
     /// * `v` - Element value.
     pub fn set(&mut self,p: Vec3<usize>,v: T) {
@@ -34,9 +40,13 @@ impl<T: Clone + Copy + Zero> Ten<T> {
     }
 
     /// (maybe) Get element from the array.
-    /// # Arguments
+    ///
+    /// **Arguments**
+    ///
     /// * `p` - Coordinates of the element.
-    /// # Returns
+    ///
+    /// **Returns**
+    ///
     /// Element value.
     pub fn get(&self,p: Vec3<usize>) -> T {
         self.data[(p.z() * self.size.y() + p.y()) * self.size.x() + p.x()]

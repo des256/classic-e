@@ -1,38 +1,29 @@
-// E - Image test
+// E - Text image
 // Desmond Germans, 2020
 
-//use base::*;
-//use platform::*;
-//use gpu::*;
-//use ui::*;
-//use std::rc::Rc;
-//use std::fs::File;
-//use std::io::prelude::*;
+use base::*;
+use platform::*;
+use gpu::*;
+use ui::*;
+use std::rc::Rc;
 
-fn main() {
+const FONT_DIR: &str = "/home/desmond/e/static/fonts";
+const IMAGE_PATH: &str = "/home/desmond/e/static/images/world.png";
 
-    /*// initialize system
-    let system = Rc::new(System::new().expect("Cannot open system."));
+fn main() -> Result<(),SystemError> {
+    let system = Rc::new(System::new()?);
+    let graphics = Rc::new(Graphics::new(&system)?);
+    let mut ui = UI::new(&system,&graphics,FONT_DIR)?;
 
-    // initialize graphics context
-    let graphics = Rc::new(Graphics::new(&system).expect("Cannot open GPU."));
+    let mat = imageformats::load::<pixel::ARGB8>(IMAGE_PATH)?;
 
-    // initialize UI
-    let ui = Rc::new(UI::new(&system,&graphics,"../static/fonts").expect("Cannot open UI."));
+    let image = Rc::new(Image::new(&ui.state,mat)?);
 
-    // load image into texture
-    let mut file = File::open("static/images/world.png").expect("cannot open file");
-    let mut buffer: Vec<u8> = Vec::new();
-    file.read_to_end(&mut buffer).expect("unable to read file");
-    let mat = image::decode::<pixel::ARGB8>(&buffer).expect("unable to decode");
-    let texture = Rc::new(gpu::Texture2D::new_from_mat(&graphics,mat).expect("unable to create texture"));
+    ui.open_frame(rect!(50,50,640,350),"Image Test",&Rc::clone(&image));
 
-    // create image widget
-    let widget = Rc::new(Image::new(&ui,&texture).expect("Cannot create image."));
+    ui.run();
 
-    // open window to host the text widget
-    ui.open(&(widget as Rc<dyn Widget>),rect!(50,50,640,360),"Test Window");
+    ui.close(&image);
 
-    // run UI loop
-    ui.run();*/
+    Ok(())
 }

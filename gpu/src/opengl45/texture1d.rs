@@ -10,13 +10,13 @@ use std::{
 use gl::types::GLuint;
 
 /// 1D texture GPU resource.
-pub struct Texture1D<T: GLFormat> {
+pub struct Texture1D<T: GPUDataFormat> {
     pub tex: GLuint,
-    pub size: usize,
+    size: usize,
     phantom: PhantomData<T>,
 }
 
-impl<T: GLFormat> Texture1D<T> {
+impl<T: GPUDataFormat> Texture1D<T> {
     /// (temporary) Create new empty 1D texture.
     /// 
     /// **Arguments**
@@ -109,9 +109,13 @@ impl<T: GLFormat> Texture1D<T> {
             TextureWrap::Mirror => unsafe { gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_WRAP_S,gl::MIRRORED_REPEAT as i32); },            
         }
     }
+
+    pub fn size(&self) -> usize {
+        self.size
+    }
 }
 
-impl<T: GLFormat> Drop for Texture1D<T> {
+impl<T: GPUDataFormat> Drop for Texture1D<T> {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteTextures(1,&self.tex);

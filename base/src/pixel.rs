@@ -5,10 +5,17 @@
 
 use crate::*;
 
+/// Pixel format trait.
 pub trait Pixel: Copy + Clone + Zero {
+    /// Convert four `u8`s into this pixel format.
     fn from_rgba(r: u8,g: u8,b: u8,a: u8) -> Self;
+
+    /// Convert a `Vec4<u8>` into this pixel format.
     fn from_vec4(v: Vec4<u8>) -> Self;
+
+    /// Convert this pixel format into a `Vec4<u8>`.
     fn as_vec4(&self) -> Vec4<u8>;
+
     // could also consider from_vec4f and as_vec4f for more exotic formats
 }
 

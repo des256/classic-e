@@ -2,14 +2,12 @@
 // Desmond Germans, 2020
 
 use crate::*;
-//use base::*;
-//use platform::*;
-//use gpu::*;
 
 use std::{
     rc::Rc,
     cell::{
         Cell,
+        RefCell,
     },
 };
 
@@ -35,25 +33,22 @@ pub struct DrawContext {
 }
 
 pub struct UIState {
-    pub system: Rc<System>,
-    pub graphics: Rc<Graphics>,
-    pub flat_shader: Shader,
+    pub system: Rc<System>,  // system reference
+    pub graphics: Rc<Graphics>,  // graphics reference
+    pub flat_shader: Shader,  // the shaders
     pub alpha_shader: Shader,
     pub color_shader: Shader,
-    pub proto_sans: Rc<FontProto>,
-    pub proto_serif: Rc<FontProto>,
-    pub proto_mono: Rc<FontProto>,
-    pub font: Rc<Font>,
-    pub rect_vb: VertexBuffer<Vec2<f32>>,
-    pub draw_ub: UniformBuffer<UIRect>,
-    pub running: Cell<bool>,
-    pub two_over_current_window_size: Cell<Vec2<f32>>,
-    pub current_capturing_id: Cell<Option<u64>>,
-    pub follow_with_render: Cell<bool>,
+    pub rect_vb: VertexBuffer<Vec2<f32>>,  // vertexbuffer containing fixed unit rectangle
+    pub draw_ub: UniformBuffer<UIRect>,  // uniform buffer with actual rectangle specfications
+    pub styles: RefCell<Styles>,  // fonts, colors, paddings, spacings, etc. for the style of the UI
+    pub running: Cell<bool>,  // whether or not the UI is running
+    pub two_over_current_window_size: Cell<Vec2<f32>>,  // 2/w,2/h of the current window
+    pub current_capturing_id: Cell<Option<u64>>,  // window that is currently capturing the mouse (TBD)
+    pub offset: Cell<Vec2<i32>>,  // drawing offset (TBD)
 }
 
 impl UIState {
-    pub fn new(system: &Rc<System>,graphics: &Rc<Graphics>,font_dir: &str) -> Result<UIState,SystemError> {
+    pub fn new(system: &Rc<System>,graphics: &Rc<Graphics>,font_path: &str) -> Result<UIState,SystemError> {
 
         // generic vertex shader
         let vs = r#"
@@ -150,28 +145,6 @@ impl UIState {
         let alpha_shader = Shader::new(graphics,vs,None,alpha_fs).expect("Unable to create alpha shader.");
         let color_shader = Shader::new(graphics,vs,None,color_fs).expect("Unable to create color shader.");
 
-        let proto_sans = Rc::new(
-            FontProto::new(
-                graphics,
-                &format!("{}/sans.fnt",font_dir)
-            ).expect("Unable to load font")
-        );
-        let proto_serif = Rc::new(
-            FontProto::new(
-                graphics,
-                &format!("{}/serif.fnt",font_dir)
-            ).expect("Unable to load font")
-        );
-        let proto_mono = Rc::new(
-            FontProto::new(
-                graphics,
-                &format!("{}/mono.fnt",font_dir)
-            ).expect("Unable to load font")
-        );
-
-        // create default font
-        let font = Rc::new(Font::new(&proto_sans,16).expect("unable to load font"));
-
         // create vertex buffer for one rectangle
         let rect_vb = VertexBuffer::<Vec2<f32>>::new_from_vec(graphics,vec![
             vec2!(0.0,0.0),
@@ -183,22 +156,22 @@ impl UIState {
         // create draw uniform buffer
         let draw_ub = UniformBuffer::<UIRect>::new(graphics).expect("unable to create uniform buffer");
 
+        // create default styles
+        let styles = Styles::new_default(graphics,font_path)?;
+
         Ok(UIState {
             system: Rc::clone(system),
             graphics: Rc::clone(graphics),
             flat_shader: flat_shader,
             alpha_shader: alpha_shader,
             color_shader: color_shader,
-            proto_sans: proto_sans,
-            proto_serif: proto_serif,
-            proto_mono: proto_mono,
-            font: font,
             rect_vb: rect_vb,
             draw_ub: draw_ub,
+            styles: RefCell::new(styles),
             running: Cell::new(true),
             two_over_current_window_size: Cell::new(Vec2::<f32>::zero()),
             current_capturing_id: Cell::new(None),
-            follow_with_render: Cell::new(false),
+            offset: Cell::new(vec2!(0i32,0i32)),
         })
     }
 
@@ -206,14 +179,16 @@ impl UIState {
         self.two_over_current_window_size.set(vec2!(2.0 / (size.x() as f32),2.0 / (size.y() as f32)));
     }
 
-    pub fn invalidate(&self) {
-        self.follow_with_render.set(true);
+    pub fn delta_offset(&self,o: Vec2<i32>) {
+        let old_offset = self.offset.get();
+        self.offset.set(old_offset + o);
     }
 
     /// Draw rectangle.
     pub fn draw_rectangle<C: ColorParameter>(&self,r: Rect<i32>,color: C,blend_mode: BlendMode) {
+        let ofs = self.offset.get();
         self.draw_ub.load(0,&vec![UIRect {
-            r: vec4!(r.ox() as f32,r.oy() as f32,r.sx() as f32,r.sy() as f32),
+            r: vec4!((r.ox() + ofs.x()) as f32,(r.oy() + ofs.y()) as f32,r.sx() as f32,r.sy() as f32),
             t: Vec4::<f32>::zero(),
         }]);
         self.graphics.set_blend(blend_mode);
@@ -226,12 +201,32 @@ impl UIState {
         self.graphics.draw_instanced_triangle_fan(4,1);
     }
 
+    /// Draw texture.
+    pub fn draw_texture<T: GPUDataFormat>(&self,p: Vec2<i32>,texture: &Texture2D<T>,blend_mode: BlendMode) {
+        let ofs = self.offset.get();
+        self.draw_ub.load(0,&vec![UIRect {
+            r: vec4!((p.x() + ofs.x()) as f32,(p.y() + ofs.y()) as f32,texture.size().x() as f32,texture.size().y() as f32),
+            t: vec4!(0.0,0.0,1.0,1.0),
+        }]);
+        self.graphics.set_blend(blend_mode);
+        self.graphics.bind_shader(&self.color_shader);
+        self.graphics.bind_vertexbuffer(&self.rect_vb);
+        self.graphics.bind_uniformbuffer(1,"rect_block",&self.draw_ub);
+        let tows = self.two_over_current_window_size.get();
+        self.graphics.set_uniform("tows",tows);
+        self.graphics.set_uniform("color",vec4!(1.0,1.0,1.0,1.0));
+        self.graphics.bind_texture(0,texture);
+        self.graphics.set_uniform("color_texture",0);
+        self.graphics.draw_instanced_triangle_fan(4,1);
+    }
+
     /// Draw text.
     pub fn draw_text<C: ColorParameter>(&self,p: Vec2<i32>,text: &str,color: C,font: &Font) {
+        let ofs = self.offset.get();
         let mut buffer: Vec<UIRect> = Vec::new();
         for s in font.proto.sets.iter() {
             if s.font_size == font.font_size {
-                let mut v = vec2!(p.x(),p.y() + (font.ratio * (s.y_bearing as f32)) as i32);
+                let mut v = vec2!(p.x() + ofs.x(),p.y() + ofs.y() + (font.ratio * (s.y_bearing as f32)) as i32);
                 for c in text.chars() {
                     let code = c as u32;
                     for ch in s.characters.iter() {
@@ -244,10 +239,10 @@ impl UIState {
                                     ((font.ratio * (ch.r.sy() as f32)) as i32) as f32
                                 ),
                                 t: vec4!(
-                                    (ch.r.ox() as f32) / (font.proto.texture.size.x() as f32),
-                                    (ch.r.oy() as f32) / (font.proto.texture.size.y() as f32),
-                                    (ch.r.sx() as f32) / (font.proto.texture.size.x() as f32),
-                                    (ch.r.sy() as f32) / (font.proto.texture.size.y() as f32)
+                                    (ch.r.ox() as f32) / (font.proto.texture.size().x() as f32),
+                                    (ch.r.oy() as f32) / (font.proto.texture.size().y() as f32),
+                                    (ch.r.sx() as f32) / (font.proto.texture.size().x() as f32),
+                                    (ch.r.sy() as f32) / (font.proto.texture.size().y() as f32)
                                 ),
                             });
                             v.set_x(v.x() + (font.ratio * (ch.advance as f32)) as i32);
@@ -274,7 +269,7 @@ impl UIState {
 
 pub struct WidgetWindow {
     pub state: Rc<UIState>,
-    pub core: BaseWindow,
+    pub window: PlatformWindow,
     pub widget: Rc<dyn Widget>,
 }
 
@@ -303,12 +298,12 @@ impl UI {
     /// **Returns**
     /// Unique ID for this frame.
     pub fn open_frame<T: Widget + 'static>(&mut self,r: Rect<i32>,title: &str,widget: &Rc<T>) {
-        let core = BaseWindow::new_frame(&self.state.system,r,title);
+        let window = PlatformWindow::new_frame(&self.state.system,r,title);
         let widget = Rc::clone(widget);
         widget.set_rect(Rect::<i32>::new_os(Vec2::<i32>::zero(),r.s()));
         self.windows.push(WidgetWindow {
             state: Rc::clone(&self.state),
-            core: core,
+            window: window,
             widget: widget,
         });
     }
@@ -325,42 +320,35 @@ impl UI {
         self.state.running.set(true);
         while self.state.running.get() {
             self.state.system.wait();
-            // TBD: need to make vector of references from vector of WidgetWindows
             let mut windows: Vec<&WidgetWindow> = Vec::new();
-            for w in self.windows.iter() {
-                windows.push(w);
+            for window in self.windows.iter() {
+                windows.push(&window);
             }
-            self.state.follow_with_render.set(false);
             self.state.system.flush(&windows);
-            if self.state.follow_with_render.get() {
-                for w in windows {
-                    w.handle(Event::Render);
-                }
+            for window in windows {
+                self.state.graphics.bind_target(window);
+                self.state.graphics.clear(0xFF001122);
+                self.state.set_current_window_size(window.widget.rect().s());
+                self.state.offset.set(vec2!(0i32,0i32));
+                window.widget.draw();
+                self.state.graphics.flush();
+                self.state.graphics.present(window.id());
             }
         }
     }
 }
 
-impl Window for WidgetWindow {
+impl HandleEvent for WidgetWindow {
     fn handle(&self,event: Event) {
         match event {
 
             Event::Render => {
-                self.state.graphics.bind_target(self);
-                self.state.graphics.clear(0xFF001122);
-                let context = Vec2::<i32>::zero();
-                self.state.set_current_window_size(self.core.r.get().s());
-                self.widget.draw(context);
-                self.state.graphics.flush();
-                self.state.graphics.present(self.id());
+                // redrawing is always happening anyway, so ignore this
             },
 
-            Event::Size(s) => {
-                self.widget.set_rect(Rect::<i32>::new_os(Vec2::<i32>::zero(),s));
-            },
-
-            Event::Move(_o) => {
-            },
+            Event::Configure(r) => {
+                self.widget.set_rect(rect!(vec2!(0i32,0i32),r.s()));
+            }
 
             Event::Close => {
                 self.state.running.set(false);  // TODO: closing other windows doesn't automatically mean end program; API user might want to ask something before actually quitting
@@ -385,37 +373,12 @@ impl Window for WidgetWindow {
             },
 
             Event::MouseMove(p) => {
-                if self.widget.handle_mouse_move(p) {
-                    if let Some(id) = self.state.current_capturing_id.get() {
-                        if id != self.core.id {
-                            self.state.system.capture_mouse(id);
-                            self.state.current_capturing_id.set(Some(self.core.id));
-                        }
-                    }
-                    else {
-                        self.state.system.capture_mouse(self.core.id);
-                        self.state.current_capturing_id.set(Some(self.core.id));
-                    }
-                }
-                else {
-                    if let Some(_id) = self.state.current_capturing_id.get() {
-                        self.state.system.release_mouse();
-                        self.state.current_capturing_id.set(None);
-                    }
-                }
+                self.widget.handle_mouse_move(p);
             },
         }
     }
 
-    fn rect(&self) -> Rect<i32> {
-        self.core.r.get()
-    }
-
-    fn set_rect(&self,r: Rect<i32>) {
-        self.core.r.set(r);
-    }
-
     fn id(&self) -> u64 {
-        self.core.id
+        self.window.id
     }
 }

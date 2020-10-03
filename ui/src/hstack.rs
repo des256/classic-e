@@ -9,34 +9,36 @@ use std::{
 
 /// Horizontal stack widget.
 pub struct HStack {
-    pub r: Cell<Rect<i32>>,
+    state: Rc<UIState>,
+    r: Cell<Rect<i32>>,
     pub widgets: Vec<Box<dyn Widget>>,
+    pub valign: Cell<VAlignment>,
     pub padding: Vec2<i32>,
-    pub valign: VAlignment,
 }
 
 impl HStack {
-    pub fn new_from_vec(_state: &Rc<UIState>,widgets: Vec<Box<dyn Widget>>) -> HStack {
-        HStack {
+    pub fn new_from_vec(state: &Rc<UIState>,widgets: Vec<Box<dyn Widget>>) -> Result<HStack,SystemError> {
+        Ok(HStack {
+            state: Rc::clone(&state),
             r: Cell::new(Rect::<i32>::zero()),
             widgets: widgets,
+            valign: Cell::new(VAlignment::Top),
             padding: Vec2::<i32>::zero(),
-            valign: VAlignment::Top,
-        }
+        })
     }
 }
 
 impl Widget for HStack {
-    fn get_rect(&self) -> Rect<i32> {
+    fn rect(&self) -> Rect<i32> {
         self.r.get()
     }
-
+    
     fn set_rect(&self,r: Rect<i32>) {
         self.r.set(r);
         let mut ox = 0;
         for widget in self.widgets.iter() {
             let size = widget.calc_min_size();
-            let (oy,sy) = match self.valign {
+            let (oy,sy) = match self.valign.get() {
                 VAlignment::Top => { (r.oy(),size.y()) },
                 VAlignment::Bottom => { (r.oy() + r.sy() - size.y(),size.y()) },
                 VAlignment::Center => { (r.oy() + (r.sy() - size.y()) / 2,size.y() / 2) },
@@ -64,10 +66,11 @@ impl Widget for HStack {
         total_size + 2 * self.padding
     }
 
-    fn draw(&self,context: Vec2<i32>) {
-        let local_context = context + self.r.get().o();
+    fn draw(&self) {
         for widget in self.widgets.iter() {
-            widget.draw(local_context);
+            self.state.delta_offset(widget.rect().o());
+            widget.draw();
+            self.state.delta_offset(-widget.rect().o());
         }
     }
 
@@ -83,14 +86,13 @@ impl Widget for HStack {
         }*/
     }
 
-    fn handle_mouse_move(&self,_p: Vec2<i32>) -> bool {
+    fn handle_mouse_move(&self,_p: Vec2<i32>) {
         /*if !self.core.capturing_mouse_move(p) {
             self.core.other_mouse_move(p)
         }
         else {
             true
         }*/
-        false
     }
 
     fn handle_mouse_wheel(&self,_w: MouseWheel) {

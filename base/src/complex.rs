@@ -23,26 +23,57 @@ use std::{
     },
 };
 
+/// Complex number.
 #[derive(Copy,Clone,Debug)]
 pub struct Complex<T: SimdableFloat>(Simd2<T>);
 
 impl<T: SimdableFloat> Complex<T> {
+    /// Create new complex number.
+    ///
+    /// **Arguments**
+    ///
+    /// * `r` - Real component.
+    /// * `i` - Imaginary component.
+    ///
+    /// **Returns**
+    ///
+    /// New complex number.
     pub fn new(r: T,i: T) -> Complex<T> {
         Complex(Simd2::new([r,i]))
     }
 
+    /// Get real component.
+    ///
+    /// **Returns**
+    ///
+    /// The real component of the complex number.
     pub fn r(&self) -> T {
         self.0.get(0)
     }
 
+    /// Get imaginary component.
+    ///
+    /// **Returns**
+    ///
+    /// The imaginary component of the complex number.
     pub fn i(&self) -> T {
         self.0.get(1)
     }
 
+    /// Set real component.
+    ///
+    /// **Arguments**
+    ///
+    /// * `r` - New real component.
     pub fn set_r(&mut self,r: T) {
         self.0.set(0,r);
     }
 
+    /// Set imaginary component.
+    ///
+    /// **Arguments**
+    ///
+    /// * `i` - New imaginary component.
     pub fn set_i(&mut self,i: T) {
         self.0.set(1,i);
     }

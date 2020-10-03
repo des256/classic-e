@@ -16,11 +16,12 @@ use gl::types::{
     GLenum,
 };
 #[cfg(target_os="linux")]
-use x11::{
-    glx::{
+use {
+    x11::glx::{
         glXMakeCurrent,
         glXSwapBuffers,
     },
+    xcb::xproto::get_geometry,
 };
 #[cfg(target_os="windows")]
 use {
@@ -148,7 +149,7 @@ impl GLBindTexture for Framebuffer {
     }
 }
 
-impl<T: GLFormat> GLBindTexture for Texture1D<T> {
+impl<T: GPUDataFormat> GLBindTexture for Texture1D<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
@@ -157,7 +158,7 @@ impl<T: GLFormat> GLBindTexture for Texture1D<T> {
     }
 }
 
-impl<T: GLFormat> GLBindTexture for Texture2D<T> {
+impl<T: GPUDataFormat> GLBindTexture for Texture2D<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
@@ -166,7 +167,7 @@ impl<T: GLFormat> GLBindTexture for Texture2D<T> {
     }
 }
 
-impl<T: GLFormat> GLBindTexture for Texture3D<T> {
+impl<T: GPUDataFormat> GLBindTexture for Texture3D<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
@@ -175,7 +176,7 @@ impl<T: GLFormat> GLBindTexture for Texture3D<T> {
     }
 }
 
-impl<T: GLFormat> GLBindTexture for TextureCube<T> {
+impl<T: GPUDataFormat> GLBindTexture for TextureCube<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
@@ -184,7 +185,7 @@ impl<T: GLFormat> GLBindTexture for TextureCube<T> {
     }
 }
 
-impl<T: GLFormat> GLBindTexture for Texture2DArray<T> {
+impl<T: GPUDataFormat> GLBindTexture for Texture2DArray<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
@@ -212,7 +213,7 @@ impl BindTarget for Framebuffer {
     }
 }
 
-impl<T: Window> BindTarget for T {
+impl<T: HandleEvent> BindTarget for T {
 #[allow(unused_variables)]
     fn do_bind(&self,graphics: &Graphics) {
         unsafe {
@@ -221,7 +222,21 @@ impl<T: Window> BindTarget for T {
 #[cfg(target_os="windows")]
             wglMakeCurrent(self.hdc,self.anchor.hglrc);
             gl::BindFramebuffer(gl::FRAMEBUFFER,0);
-            let r = self.rect();
+            let mut r = rect!(0i32,0i32,0i32,0i32);
+#[cfg(target_os="linux")]
+            {
+                let geometry_com = get_geometry(&graphics.system.connection,self.id() as u32);
+                let geometry = match geometry_com.get_reply() {
+                    Ok(geometry) => *geometry.ptr,
+                    Err(_) => { return; },
+                };
+                r = rect!(
+                    geometry.x as i32,
+                    geometry.y as i32,
+                    geometry.width as i32,
+                    geometry.height as i32
+                );
+            }
             gl::Viewport(0,0,r.s().x(),r.s().y());
             gl::Scissor(0,0,r.s().x(),r.s().y());
         }
@@ -448,10 +463,10 @@ impl Graphics {
     /// * `window` - Window to set VSync for.
     /// * `state` - Whether or not VSync should be enabled.
     #[allow(unused_variables)]
-    pub fn set_vsync(&self,window: &dyn Window,state: bool) {
+    pub fn set_vsync(&self,handler: &dyn HandleEvent,state: bool) {
         unsafe {
     #[cfg(target_os="linux")]
-            (self.system.glx_swap_interval)(self.system.connection.get_raw_dpy(),window.id(),if state { 1 } else { 0 });
+            (self.system.glx_swap_interval)(self.system.connection.get_raw_dpy(),handler.id(),if state { 1 } else { 0 });
     #[cfg(target_os="windows")]
             (self.system.wgl_swap_interval)(if state { 1 } else { 0 });
         }

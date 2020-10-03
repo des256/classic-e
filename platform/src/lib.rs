@@ -35,28 +35,21 @@ pub enum Event {
     MouseWheel(MouseWheel),
     /// Mouse was moved.
     MouseMove(Vec2<i32>),
-    /// Window was resized.
-    Size(Vec2<i32>),
-    /// Window was moved.
-    Move(Vec2<i32>),
+    /// Window was moved or resized.
+    Configure(Rect<i32>),
     /// The window requires redrawing.
     Render,
     /// Window close button was pressed.
     Close,
 }
 
-/// System error result.
-#[derive(Copy,Clone,Debug)]
-pub enum SystemError {
-    /// (temporary) Generic error.
-    Generic,
-}
+/// PlatformWindow trait.
+pub trait HandleEvent {
 
-/// Window trait.
-pub trait Window {
+    /// Handle incoming event.
     fn handle(&self,event: Event);
-    fn rect(&self) -> Rect<i32>;
-    fn set_rect(&self,r: Rect<i32>);
+
+    /// Return unique window ID.
     fn id(&self) -> u64;
 }
 
@@ -85,3 +78,8 @@ pub use android::*;
 mod ios;
 #[cfg(target_os="ios")]
 pub use ios::*;
+
+#[cfg(target_arch="wasm32")]
+mod web;
+#[cfg(target_arch="wasm32")]
+pub use web::*;

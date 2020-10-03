@@ -5,6 +5,13 @@
 //!
 //! It's E. E for everything.
 
+/// System error result.
+#[derive(Copy,Clone,Debug)]
+pub enum SystemError {
+    /// (temporary) Generic error.
+    Generic,
+}
+
 /// Trait for anything that needs a color specification.
 pub trait ColorParameter {
 

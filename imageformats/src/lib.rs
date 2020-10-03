@@ -103,16 +103,19 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
 }
 
 /// Load and decode
-pub fn load<T: pixel::Pixel>(filename: &str) -> Option<Mat<T>> {
+pub fn load<T: pixel::Pixel>(filename: &str) -> Result<Mat<T>,SystemError> {
     let mut file = match File::open(filename) {
         Ok(file) => file,
-        Err(_) => { return None; },
+        Err(_) => { return Err(SystemError::Generic); },
     };
     let mut buffer: Vec<u8> = Vec::new();
     if let Ok(_) = file.read_to_end(&mut buffer) {
-        decode::<T>(&buffer)
+        match decode::<T>(&buffer) {
+            Some(mat) => Ok(mat),
+            None => Err(SystemError::Generic),
+        }
     }
     else {
-        None
+        Err(SystemError::Generic)
     }
 }

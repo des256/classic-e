@@ -7,16 +7,20 @@ use gpu::*;
 use ui::*;
 use std::rc::Rc;
 
-fn main() {
-    let system = Rc::new(System::new().expect("Cannot open system."));
-    let graphics = Rc::new(Graphics::new(&system).expect("Cannot open GPU."));
-    let mut ui = UI::new(&system,&graphics,"../static/fonts").expect("Cannot open UI.");
+const FONT_DIR: &str = "/home/desmond/e/static/fonts";
 
-    let text = Rc::new(Text::new(&ui.state,"Hello, World!",&ui.state.font));
+fn main() -> Result<(),SystemError> {
+    let system = Rc::new(System::new()?);
+    let graphics = Rc::new(Graphics::new(&system)?);
+    let mut ui = UI::new(&system,&graphics,FONT_DIR)?;
+
+    let text = Rc::new(Text::new(&ui.state,"Hello, World!")?);
 
     ui.open_frame(rect!(50,50,640,350),"Text Test",&Rc::clone(&text));
 
     ui.run();
 
     ui.close(&text);
+
+    Ok(())
 }

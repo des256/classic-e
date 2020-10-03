@@ -7,12 +7,14 @@ use gpu::*;
 use ui::*;
 use std::rc::Rc;
 
-fn main() {
-    let system = Rc::new(System::new().expect("Cannot open system."));
-    let graphics = Rc::new(Graphics::new(&system).expect("Cannot open GPU."));
-    let mut ui = UI::new(&system,&graphics,"../static/fonts").expect("Cannot open UI.");
+const FONT_DIR: &str = "/home/desmond/e/static/fonts";
 
-    let mut button = Button::new(&ui.state,"Click",&ui.state.font);
+fn main() -> Result<(),SystemError> {
+    let system = Rc::new(System::new()?);
+    let graphics = Rc::new(Graphics::new(&system)?);
+    let mut ui = UI::new(&system,&graphics,FONT_DIR)?;
+
+    let mut button = Button::new(&ui.state,"Click")?;
     button.padding = vec2!(40,20);
 
     let widget = Rc::new(button);
@@ -21,4 +23,6 @@ fn main() {
     ui.run();
 
     ui.close(&widget);
+
+    Ok(())
 }

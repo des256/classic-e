@@ -9,11 +9,11 @@ use std::{
 };
 
 struct AppWindow {
-    pub core: BaseWindow,
+    pub window: PlatformWindow,
     running: Cell<bool>,
 }
 
-impl Window for AppWindow {
+impl HandleEvent for AppWindow {
     fn handle(&self,event: Event) {
         match event {
             Event::Close => {
@@ -23,16 +23,8 @@ impl Window for AppWindow {
         }
     }
 
-    fn rect(&self) -> Rect<i32> {
-        self.core.r.get()
-    }
-
-    fn set_rect(&self,r: Rect<i32>) {
-        self.core.r.set(r);
-    }
-
     fn id(&self) -> u64 {
-        self.core.id
+        self.window.id
     }
 }
 
@@ -43,7 +35,7 @@ fn main() {
 
     // create application window
     let appwindow = AppWindow {
-        core: BaseWindow::new_frame(&system,rect!(50,50,640,350),"Test Window"),
+        window: PlatformWindow::new_frame(&system,rect!(50,50,640,350),"Test Window"),
         running: Cell::new(true),
     };
 

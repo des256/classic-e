@@ -25,6 +25,11 @@ use std::{
     },
 };
 
+/// Packed 3D vector.
+///
+/// The vector is exactly as big as the 3 components packed together, and not
+/// based on underlying SIMD access. Use this for storage, not for
+/// performance.
 #[derive(Copy,Clone,Debug)]
 pub struct Vec3<T: Simdable> {
     _x: T,
@@ -33,42 +38,98 @@ pub struct Vec3<T: Simdable> {
 }
 
 impl<T: Simdable> Vec3<T> {
+    /// Create new vector.
+    ///
+    /// **Arguments**
+    ///
+    /// * `x` - X-coordinate.
+    /// * `y` - Y-coordinate.
+    /// * `z` - Z-coordinate.
+    ///
+    /// **Returns**
+    ///
+    /// The new vector.
     pub fn new(x: T,y: T,z: T) -> Self {
         Vec3 { _x: x,_y: y,_z: z, }
     }
 
+    /// Create new X-axis unit vector.
+    ///
+    /// **Returns**
+    ///
+    /// The new vector.
     pub fn unit_x() -> Self {
         Vec3 { _x: T::one(),_y: T::zero(),_z: T::zero(), }
     }
 
+    /// Create new Y-axis unit vector.
+    ///
+    /// **Returns**
+    ///
+    /// The new vector.
     pub fn unit_y() -> Self {
         Vec3 { _x: T::zero(),_y: T::one(),_z: T::zero(), }
     }
 
+    /// Create new Z-axis unit vector.
+    ///
+    /// **Returns**
+    ///
+    /// The new vector.
     pub fn unit_z() -> Self {
         Vec3 { _x: T::zero(),_y: T::zero(),_z: T::one(), }
     }
 
+    /// Get X-coordinate.
+    ///
+    /// **Returns**
+    ///
+    /// The X-coordinate.
     pub fn x(&self) -> T {
         self._x
     }
 
+    /// Get Y-coordinate.
+    ///
+    /// **Returns**
+    ///
+    /// The Y-coordinate.
     pub fn y(&self) -> T {
         self._y
     }
 
+    /// Get Z-coordinate.
+    ///
+    /// **Returns**
+    ///
+    /// The Z-coordinate.
     pub fn z(&self) -> T {
         self._z
     }
 
+    /// Set X-coordinate.
+    ///
+    /// **Arguments**
+    ///
+    /// `x` - New X-coordinate.
     pub fn set_x(&mut self,x: T) {
         self._x = x;
     }
 
+    /// Set Y-coordinate.
+    ///
+    /// **Arguments**
+    ///
+    /// `y` - New Y-coordinate.
     pub fn set_y(&mut self,y: T) {
         self._y = y;
     }
 
+    /// Set Z-coordinate.
+    ///
+    /// **Arguments**
+    ///
+    /// `z` - New Z-coordinate.
     pub fn set_z(&mut self,z: T) {
         self._z = z;
     }

@@ -25,34 +25,75 @@ use std::{
     },
 };
 
+/// 2D Vector.
 #[derive(Copy,Clone,Debug)]
 pub struct Vec2<T: Simdable>(Simd2<T>);
 
 impl<T: Simdable> Vec2<T> {
+    /// Create new vector.
+    ///
+    /// **Arguments**
+    ///
+    /// * `x` - X-coordinate.
+    /// * `y` - Y-coordinate.
+    ///
+    /// **Returns**
+    ///
+    /// The new vector.
     pub fn new(x: T,y: T) -> Self {
         Vec2(Simd2::new([x,y]))
     }
 
+    /// Create new X-axis unit vector.
+    ///
+    /// **Returns**
+    ///
+    /// The new vector.
     pub fn unit_x() -> Self {
         Vec2(Simd2::new([T::one(),T::zero()]))
     }
 
+    /// Create new Y-axis unit vector.
+    ///
+    /// **Returns**
+    ///
+    /// The new vector.
     pub fn unit_y() -> Self {
         Vec2(Simd2::new([T::zero(),T::one()]))
     }
 
+    /// Get X-coordinate.
+    ///
+    /// **Returns**
+    ///
+    /// The X-coordinate.
     pub fn x(&self) -> T {
         self.0.get(0)
     }
 
+    /// Get Y-coordinate.
+    ///
+    /// **Returns**
+    ///
+    /// The Y-coordinate.
     pub fn y(&self) -> T {
         self.0.get(1)
     }
 
+    /// Set X-coordinate.
+    ///
+    /// **Arguments**
+    ///
+    /// `x` - New X-coordinate.
     pub fn set_x(&mut self,x: T) {
         self.0.set(0,x);
     }
 
+    /// Set Y-coordinate.
+    ///
+    /// **Arguments**
+    ///
+    /// `y` - New Y-coordinate.
     pub fn set_y(&mut self,y: T) {
         self.0.set(1,y);
     }

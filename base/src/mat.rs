@@ -14,9 +14,13 @@ pub struct Mat<T: Clone + Copy + Zero> {
 
 impl<T: Clone + Copy + Zero> Mat<T> {
     /// Create new 2D array.
-    /// # Arguments
+    ///
+    /// **Arguments**
+    ///
     /// * `size` - Size of the array.
-    /// # Returns
+    ///
+    /// **Returns**
+    ///
     /// The new array, filled with `zero()`.
     pub fn new(size: Vec2<usize>) -> Mat<T> {
         Mat {
@@ -27,7 +31,9 @@ impl<T: Clone + Copy + Zero> Mat<T> {
     }
 
     /// (maybe) Set element in the array.
-    /// # Arguments
+    ///
+    /// **Arguments**
+    ///
     /// * `p` - Coordinates of the element.
     /// * `v` - Element value.
     pub fn set(&mut self,p: Vec2<usize>,v: T) {
@@ -35,9 +41,13 @@ impl<T: Clone + Copy + Zero> Mat<T> {
     }
 
     /// (maybe) Get element from the array.
-    /// # Arguments
+    ///
+    /// **Arguments**
+    ///
     /// * `p` - Coordinates of the element.
-    /// # Returns
+    ///
+    /// **Returns**
+    ///
     /// Element value.
     pub fn get(&self,p: Vec2<usize>) -> T {
         self.data[p.y() * self.size.x() + p.x()]

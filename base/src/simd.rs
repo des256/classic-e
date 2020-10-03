@@ -190,19 +190,15 @@ impl_simd!(Simd32,32,"Simd32");
 impl_simd!(Simd64,64,"Simd64");
 
 /*// Instantiations
-
 // for peephole optimization, implement the specific SIMD intrinsic access where needed
-
 // 16 bits
 impl_simd!([u8; 2]: simd_u8x2 | "u8" | x0,x1);
 impl_simd!([i8; 2]: simd_i8x2 | "i8" | x0,x1);
-
 // 32 bits
 impl_simd!([u8; 4]: simd_u8x4 | "u8" | x0,x1,x2,x3);
 impl_simd!([i8; 4]: simd_i8x4 | "i8" | x0,x1,x2,x3);
 impl_simd!([u16; 2]: simd_u16x2 | "u16" | x0,x1);
 impl_simd!([i16; 2]: simd_i16x2 | "i16" | x0,x1);
-
 // 64 bits (MMX)
 impl_simd!([u8; 8]: simd_u8x8 | "u8" | x0,x1,x2,x3,x4,x5,x6,x7);
 impl_simd!([i8; 8]: simd_i8x8 | "i8" | x0,x1,x2,x3,x4,x5,x6,x7);
@@ -215,7 +211,6 @@ impl_simd!([f32; 2]: simd_f32x2 | "f32" | x0,x1);
 impl_simd!([usize; 2]: simd_usizex2 | "usize" | x0,x1);
 #[cfg(target_pointer_width="32")]
 impl_simd!([isize; 2]: simd_isizex2 | "isize" | x0,x1);
-
 // 128 bits (SSE)
 impl_simd!([u8; 16]: simd_u8x16 | "u8" | x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15);
 impl_simd!([i8; 16]: simd_i8x16 | "i8" | x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15);
@@ -235,7 +230,6 @@ impl_simd!([isize; 4]: simd_isizex4 | "isize" | x0,x1,x2,x3);
 impl_simd!([usize; 2]: simd_usizex2 | "usize" | x0,x1);
 #[cfg(target_pointer_width="64")]
 impl_simd!([isize; 2]: simd_isizex2 | "isize" | x0,x1);
-
 // 256 bits (AVX)
 impl_simd!([u8; 32]: simd_u8x32 | "u8" | x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20,x21,x22,x23,x24,x25,x26,x27,x28,x29,x30,x31);
 impl_simd!([i8; 32]: simd_i8x32 | "i8" | x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20,x21,x22,x23,x24,x25,x26,x27,x28,x29,x30,x31);
@@ -255,7 +249,6 @@ impl_simd!([isize; 8]: simd_isizex8 | "isize" | x0,x1,x2,x3,x4,x5,x6,x7);
 impl_simd!([usize; 4]: simd_usizex4 | "usize" | x0,x1,x2,x3);
 #[cfg(target_pointer_width="64")]
 impl_simd!([isize; 4]: simd_isizex4 | "isize" | x0,x1,x2,x3);
-
 // 512 bits (AVX-512)
 impl_simd!([u8; 64]: simd_u8x64 | "u8" | x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20,x21,x22,x23,x24,x25,x26,x27,x28,x29,x30,x31,x32,x33,x34,x35,x36,x37,x38,x39,x40,x41,x42,x43,x44,x45,x46,x47,x48,x49,x50,x51,x52,x53,x54,x55,x56,x57,x58,x59,x60,x61,x62,x63);
 impl_simd!([i8; 64]: simd_i8x64 | "i8" | x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x20,x21,x22,x23,x24,x25,x26,x27,x28,x29,x30,x31,x32,x33,x34,x35,x36,x37,x38,x39,x40,x41,x42,x43,x44,x45,x46,x47,x48,x49,x50,x51,x52,x53,x54,x55,x56,x57,x58,x59,x60,x61,x62,x63);
@@ -275,7 +268,6 @@ impl_simd!([isize; 16]: simd_isizex16 | "isize" | x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,
 impl_simd!([usize; 8]: simd_usizex8 | "usize" | x0,x1,x2,x3,x4,x5,x6,x7);
 #[cfg(target_pointer_width="64")]
 impl_simd!([isize; 8]: simd_isizex8 | "isize" | x0,x1,x2,x3,x4,x5,x6,x7);
-
 // 1024 bits for specific cases
 impl_simd!([u64; 16]: simd_u64x16 | "u64" | x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15);
 impl_simd!([i64; 16]: simd_i64x16 | "i64" | x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15);
@@ -284,13 +276,11 @@ impl_simd!([f64; 16]: simd_f64x16 | "f64" | x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x1
 impl_simd!([usize; 16]: simd_usizex16 | "usize" | x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15);
 #[cfg(target_pointer_width="64")]
 impl_simd!([isize; 16]: simd_isizex16 | "isize" | x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15);
-
 // traits to allow for generic implementations of higher structures, like Vec2<T>, Rect<T>, etc.
 pub trait Simd2 { type Type: Copy + Clone + Debug; type T; const N: usize; }
 pub trait Simd4 { type Type: Copy + Clone + Debug; type T; const N: usize; }
 pub trait Simd8 { type Type: Copy + Clone + Debug; type T; const N: usize; }
 pub trait Simd16 { type Type: Copy + Clone + Debug; type T; const N: usize; }
-
 impl Simd2 for u8 { type Type = simd_u8x2; type T = u8; const N: usize = 2; }
 impl Simd2 for i8 { type Type = simd_i8x2; type T = i8; const N: usize = 2; }
 impl Simd2 for u16 { type Type = simd_u16x2; type T = u16; const N: usize = 2; }
@@ -303,7 +293,6 @@ impl Simd2 for usize { type Type = simd_usizex2; type T = usize; const N: usize 
 impl Simd2 for isize { type Type = simd_isizex2; type T = isize; const N: usize = 2; }
 impl Simd2 for f32 { type Type = simd_f32x2; type T = f32; const N: usize = 2; }
 impl Simd2 for f64 { type Type = simd_f64x2; type T = f64; const N: usize = 2; }
-
 impl Simd4 for u8 { type Type = simd_u8x4; type T = u8; const N: usize = 4; }
 impl Simd4 for i8 { type Type = simd_i8x4; type T = i8; const N: usize = 4; }
 impl Simd4 for u16 { type Type = simd_u16x4; type T = u16; const N: usize = 4; }
@@ -316,7 +305,6 @@ impl Simd4 for usize { type Type = simd_usizex4; type T = usize; const N: usize 
 impl Simd4 for isize { type Type = simd_isizex4; type T = isize; const N: usize = 4; }
 impl Simd4 for f32 { type Type = simd_f32x4; type T = f32; const N: usize = 4; }
 impl Simd4 for f64 { type Type = simd_f64x4; type T = f64; const N: usize = 4; }
-
 impl Simd8 for u8 { type Type = simd_u8x8; type T = u8; const N: usize = 8; }
 impl Simd8 for i8 { type Type = simd_i8x8; type T = i8; const N: usize = 8; }
 impl Simd8 for u16 { type Type = simd_u16x8; type T = u16; const N: usize = 8; }
@@ -329,7 +317,6 @@ impl Simd8 for usize { type Type = simd_usizex8; type T = usize; const N: usize 
 impl Simd8 for isize { type Type = simd_isizex8; type T = isize; const N: usize = 8; }
 impl Simd8 for f32 { type Type = simd_f32x8; type T = f32; const N: usize = 8; }
 impl Simd8 for f64 { type Type = simd_f64x8; type T = f64; const N: usize = 8; }
-
 impl Simd16 for u8 { type Type = simd_u8x16; type T = u8; const N: usize = 16; }
 impl Simd16 for i8 { type Type = simd_i8x16; type T = i8; const N: usize = 16; }
 impl Simd16 for u16 { type Type = simd_u16x16; type T = u16; const N: usize = 16; }

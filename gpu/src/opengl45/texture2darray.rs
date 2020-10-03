@@ -10,13 +10,13 @@ use std::{
 use gl::types::GLuint;
 
 /// 2D texture array GPU resource.
-pub struct Texture2DArray<T: GLFormat> {  // start with one layer, rebuild later
+pub struct Texture2DArray<T: GPUDataFormat> {  // start with one layer, rebuild later
     pub tex: GLuint,
-    pub size: Vec3<usize>,
+    size: Vec3<usize>,
     phantom: PhantomData<T>,
 }
 
-impl<T: GLFormat> Texture2DArray<T> {
+impl<T: GPUDataFormat> Texture2DArray<T> {
     /// (temporary) Create new empty 2D texture array.
     /// 
     /// **Arguments**
@@ -138,9 +138,13 @@ impl<T: GLFormat> Texture2DArray<T> {
             TextureWrap::Mirror => unsafe { gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_WRAP_T,gl::MIRRORED_REPEAT as i32); },            
         }
     }
+
+    pub fn size(&self) -> Vec3<usize> {
+        self.size
+    }
 }
 
-impl<T: GLFormat> Drop for Texture2DArray<T> {
+impl<T: GPUDataFormat> Drop for Texture2DArray<T> {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteTextures(1,&self.tex);

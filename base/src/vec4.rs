@@ -29,54 +29,126 @@ use std::{
 pub struct Vec4<T: Simdable>(Simd4<T>);
 
 impl<T: Simdable> Vec4<T> {
+    /// Create new vector.
+    ///
+    /// **Arguments**
+    ///
+    /// * `x` - X-coordinate.
+    /// * `y` - Y-coordinate.
+    /// * `z` - Z-coordinate.
+    /// * `w` - W-coordinate.
+    ///
+    /// **Returns**
+    ///
+    /// The new vector.
     pub fn new(x: T,y: T,z: T,w: T) -> Self {
         Vec4(Simd4::new([x,y,z,w]))
     }
 
+    /// Create new X-axis unit vector.
+    ///
+    /// **Returns**
+    ///
+    /// The new vector.
     pub fn unit_x() -> Self {
         Vec4(Simd4::new([T::one(),T::zero(),T::zero(),T::zero()]))
     }
 
+    /// Create new Y-axis unit vector.
+    ///
+    /// **Returns**
+    ///
+    /// The new vector.
     pub fn unit_y() -> Self {
         Vec4(Simd4::new([T::zero(),T::one(),T::zero(),T::zero()]))
     }
 
+    /// Create new Z-axis unit vector.
+    ///
+    /// **Returns**
+    ///
+    /// The new vector.
     pub fn unit_z() -> Self {
         Vec4(Simd4::new([T::zero(),T::zero(),T::one(),T::zero()]))
     }
 
+    /// Create new W-axis unit vector.
+    ///
+    /// **Returns**
+    ///
+    /// The new vector.
     pub fn unit_w() -> Self {
         Vec4(Simd4::new([T::zero(),T::zero(),T::zero(),T::one()]))
     }
 
+    /// Get X-coordinate.
+    ///
+    /// **Returns**
+    ///
+    /// The X-coordinate.
     pub fn x(&self) -> T {
         self.0.get(0)
     }
 
+    /// Get Y-coordinate.
+    ///
+    /// **Returns**
+    ///
+    /// The Y-coordinate.
     pub fn y(&self) -> T {
         self.0.get(1)
     }
 
+    /// Get Z-coordinate.
+    ///
+    /// **Returns**
+    ///
+    /// The Z-coordinate.
     pub fn z(&self) -> T {
         self.0.get(2)
     }
 
+    /// Get W-coordinate.
+    ///
+    /// **Returns**
+    ///
+    /// The W-coordinate.
     pub fn w(&self) -> T {
         self.0.get(3)
     }
 
+    /// Set X-coordinate.
+    ///
+    /// **Arguments**
+    ///
+    /// `x` - New X-coordinate.
     pub fn set_x(&mut self,x: T) {
         self.0.set(0,x);
     }
 
+    /// Set Y-coordinate.
+    ///
+    /// **Arguments**
+    ///
+    /// `y` - New Y-coordinate.
     pub fn set_y(&mut self,y: T) {
         self.0.set(1,y);
     }
 
+    /// Set Z-coordinate.
+    ///
+    /// **Arguments**
+    ///
+    /// `z` - New Z-coordinate.
     pub fn set_z(&mut self,z: T) {
         self.0.set(2,z);
     }
 
+    /// Set W-coordinate.
+    ///
+    /// **Arguments**
+    ///
+    /// `w` - New W-coordinate.
     pub fn set_w(&mut self,w: T) {
         self.0.set(3,w);
     }

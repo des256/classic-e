@@ -1,10 +1,11 @@
-// E - UI - Book
+// E - UI - MenuBar
 // Desmond Germans, 2020
 
-/*use crate::*;
-use std::rc::Rc;
-use std::cell::Cell;
-use std::cell::RefCell;
+use crate::*;
+use std::{
+    rc::Rc,
+    cell::Cell,
+};
 
 /// MenuBar hit test possibilities.
 #[derive(Copy,Clone,Debug)]
@@ -16,6 +17,68 @@ pub enum MenuBarHit {
     /// Mouse is over an item.
     Item(usize),
 }
+/// MenuBar widget.
+pub struct MenuBar {
+    state: Rc<UIState>,
+    r: Cell<Rect<i32>>,
+    hit: Cell<MenuBarHit>,
+    items: Vec<String>,
+    pub padding: Vec2<i32>,
+}
+
+impl MenuBar {
+    pub fn new(state: &Rc<UIState>,items: Vec<String>) -> Result<MenuBar,SystemError> {
+        Ok(MenuBar {
+            state: Rc::clone(state),
+            r: Cell::new(Rect::<i32>::zero()),
+            hit: Cell::new(MenuBarHit::Outside),
+            items: items,
+            padding: Vec2::<i32>::zero(),
+        })
+    }
+}
+
+impl Widget for MenuBar {
+    fn rect(&self) -> Rect<i32> {
+        self.r.get()
+    }
+
+    fn set_rect(&self,r: Rect<i32>) {
+        self.r.set(r);
+    }
+
+    fn calc_min_size(&self) -> Vec2<i32> {
+        let styles = self.state.styles.borrow();
+        styles.font.measure("TODO: menuitems") + 2 * self.padding
+    }
+
+    fn draw(&self) {
+        let styles = self.state.styles.borrow();
+        self.state.draw_text(self.padding,"TODO: menuitems",styles.menubar_text_color,&styles.font);
+    }
+
+    fn handle_mouse_press(&self,_p: Vec2<i32>,_b: MouseButton) {
+    }
+
+    fn handle_mouse_release(&self,_p: Vec2<i32>,_b: MouseButton) {
+    }
+
+    fn handle_mouse_move(&self,_p: Vec2<i32>) {
+    }
+
+    fn handle_mouse_wheel(&self,_w: MouseWheel) {
+    }
+}
+
+
+// E - UI - Book
+// Desmond Germans, 2020
+
+/*use crate::*;
+use std::rc::Rc;
+use std::cell::Cell;
+use std::cell::RefCell;
+
 
 /// MenuBar widget.
 pub struct MenuBar {
