@@ -1,6 +1,9 @@
 // E - UI - Action
 // Desmond Germans, 2020
 
+// An Action is a placeholder in the application with a specific function. An
+// action can be represented as a menu item, toolbar item or button.
+
 use {
     crate::*,
 };

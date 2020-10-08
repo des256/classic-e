@@ -1,10 +1,11 @@
 // E - UI - Page
 // Desmond Germans, 2020
 
+// A font manages the font texture atlas.
+
 use crate::*;
 use std::{
     rc::Rc,
-    //cell::RefCell,
     fs::File,
     io::prelude::*,
 };

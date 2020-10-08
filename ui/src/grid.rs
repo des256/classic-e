@@ -1,6 +1,8 @@
 // E - UI - Grid
 // Desmond Germans, 2020
 
+// A grid is an organized rectangle of widgets.
+
 use{
     crate::*,
     std::{

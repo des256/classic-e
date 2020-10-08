@@ -1,6 +1,9 @@
 // E - UI - Progress
 // Desmond Germans, 2020
 
+// A progress indicator is a bar that fills up to indicate the progress of
+// something.
+
 use{
     crate::*,
     std::cell::Cell,

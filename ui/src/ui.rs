@@ -1,6 +1,8 @@
 // E - UI
 // Desmond Germans, 2020
 
+// The UI manages the various open windows of the interface.
+
 use crate::*;
 use std::{
     cell::{

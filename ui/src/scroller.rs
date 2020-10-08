@@ -1,6 +1,8 @@
 // E - UI - Scroller
 // Desmond Germans, 2020
 
+// A scroller is a window onto a virtually much larger area.
+
 use{
     crate::*,
     std::cell::Cell,

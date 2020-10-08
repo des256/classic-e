@@ -1,6 +1,8 @@
 // E - UI - List
 // Desmond Germans, 2020
 
+// A list is a vertical list of items. TBD.
+
 use{
     crate::*,
     std::{

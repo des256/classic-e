@@ -1,6 +1,8 @@
 // E - UI - Stack
 // Desmond Germans, 2020
 
+// A stack is a horizontal or vertical bunch of widgets.
+
 use{
     crate::*,
     std::{

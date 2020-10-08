@@ -1,6 +1,8 @@
 // E - UI - Slider
 // Desmond Germans, 2020
 
+// A slider is a horizontal or vertical control to indicate a value.
+
 use{
     crate::*,
     std::cell::Cell,

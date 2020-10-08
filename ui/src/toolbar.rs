@@ -1,6 +1,8 @@
 // E - UI - ToolBar
 // Desmond Germans, 2020
 
+// A toolbar is a bar with clickable icons, often connected to actions.
+
 use{
     crate::*,
     std::cell::Cell,

@@ -1,6 +1,8 @@
 // E - UI - Toggle
 // Desmond Germans, 2020
 
+// A toggle allows the user to select or unselect a control.
+
 use{
     crate::*,
     std::cell::Cell,

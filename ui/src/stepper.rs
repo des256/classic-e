@@ -1,6 +1,8 @@
 // E - UI - Stepper
 // Desmond Germans, 2020
 
+// A stepper is an up/down control to precisely specify a numerical value.
+
 use{
     crate::*,
     std::cell::Cell,

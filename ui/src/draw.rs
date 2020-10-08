@@ -1,6 +1,8 @@
 // E - UI - Draw
 // Desmond Germans, 2020
 
+// The Draw context manages all drawing-related activities.
+
 use {
     crate::*,
     std::{

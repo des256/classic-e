@@ -1,6 +1,8 @@
 // E - UI - Text
 // Desmond Germans, 2020
 
+// Text is exactly that, text.
+
 use crate::*;
 use std::cell::Cell;
 

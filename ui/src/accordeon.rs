@@ -1,6 +1,9 @@
 // E - UI - Accordeon
 // Desmond Germans, 2020
 
+// An Accordeon is a group of horizontal or vertical tabs of which one is
+// open, showing the widget contents. Very similar to a Book.
+
 use{
     crate::*,
     std::{

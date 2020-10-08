@@ -1,6 +1,9 @@
 // E - UI - ScrollBar
 // Desmond Germans, 2020
 
+// A scroll bar is a horizontal or vertical control around a scroller that
+// pans the scroller around on a virtually much larger area.
+
 use{
     crate::*,
     std::cell::Cell,

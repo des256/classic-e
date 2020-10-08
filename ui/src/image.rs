@@ -1,6 +1,8 @@
 // E - UI - Image
 // Desmond Germans, 2020
 
+// An image is just that, an image.
+
 use{
     crate::*,
     std::cell::Cell,

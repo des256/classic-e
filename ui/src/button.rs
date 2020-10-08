@@ -1,6 +1,9 @@
 // E - UI - Button
 // Desmond Germans, 2020
 
+// A button is a rectangle with a text, image or action reference that can be
+// clicked.
+
 use{
     crate::*,
     std::cell::Cell,

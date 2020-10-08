@@ -1,6 +1,8 @@
 // E - UI - DatePicker
 // Desmond Germans, 2020
 
+// A date picker allows the user to select a date.
+
 use{
     crate::*,
     std::cell::Cell,

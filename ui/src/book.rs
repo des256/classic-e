@@ -1,6 +1,9 @@
 // E - UI - Book
 // Desmond Germans, 2020
 
+// A book is an area with tabs at the top. The currently selected tab dictates
+// the widgets in the rest of the area.
+
 use {
     crate::*,
     std::{

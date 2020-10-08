@@ -1,6 +1,8 @@
 // E - UI - Styles
 // Desmond Germans, 2020
 
+// This contains all the styles for each control.
+
 use crate::*;
 use std::rc::Rc;
 

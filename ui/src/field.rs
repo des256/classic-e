@@ -1,6 +1,8 @@
 // E - UI - Field
 // Desmond Germans, 2020
 
+// A field is one line of text input.
+
 use{
     crate::*,
     std::{

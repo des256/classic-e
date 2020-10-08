@@ -1,6 +1,8 @@
 // E - UI - Menu
 // Desmond Germans, 2020
 
+// A menu is a popup window containing a list of menu items. TBD.
+
 use{
     crate::*,
     std::cell::Cell,

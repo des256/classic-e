@@ -1,6 +1,8 @@
 // E - UI - MenuBar
 // Desmond Germans, 2020
 
+// A menu bar is a horizontal bar with drop down menus.
+
 use{
     crate::*,
     std::cell::Cell,

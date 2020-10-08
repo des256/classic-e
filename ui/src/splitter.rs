@@ -1,6 +1,9 @@
 // E - UI - Splitter
 // Desmond Germans, 2020
 
+// A splitter is a horizontal or vertical arrangement of two widgets where the
+// bar between can be moved to give the widgets different space.
+
 use{
     crate::*,
     std::{

@@ -1,6 +1,8 @@
 // E - UI - Tree
 // Desmond Germans, 2020
 
+// A tree is a vertical list of items with subitems. TBD.
+
 use{
     crate::*,
     std::cell::Cell,
