@@ -2,26 +2,19 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use std::{
-    rc::Rc,
-    cell::Cell,
-};
+use std::cell::Cell;
 
-/// Text widget.
+/// Text.
 pub struct Text {
-    state: Rc<UIState>,
     r: Cell<Rect<i32>>,
-    pub text: String,
-    pub padding: Vec2<i32>,
+    text: String,
 }
 
 impl Text {
-    pub fn new(state: &Rc<UIState>,text: &str) -> Result<Text,SystemError> {
+    pub fn new(text: &str) -> Result<Text,SystemError> {
         Ok(Text {
-            state: Rc::clone(state),
-            r: Cell::new(Rect::<i32>::zero()),
-            text: String::from(text),
-            padding: Vec2::<i32>::zero(),
+            r: Cell::new(rect!(0,0,0,0)),
+            text: text.to_string(),
         })
     }
 }
@@ -35,25 +28,16 @@ impl Widget for Text {
         self.r.set(r);
     }
 
-    fn calc_min_size(&self) -> Vec2<i32> {
-        let styles = self.state.styles.borrow();
-        styles.font.measure(&self.text) + 2 * self.padding
+    fn calc_min_size(&self,draw: &Draw) -> Vec2<i32> {
+        let styles = draw.styles.borrow();
+        styles.font.measure(self.text.as_str())
     }
 
-    fn draw(&self) {
-        let styles = self.state.styles.borrow();
-        self.state.draw_text(self.padding,&self.text,styles.text_color,&styles.font);
+    fn draw(&self,draw: &Draw) {
+        let styles = draw.styles.borrow();
+        draw.draw_text(vec2!(0,0),&self.text,styles.text_color,&styles.font);
     }
 
-    fn handle_mouse_press(&self,_p: Vec2<i32>,_b: MouseButton) {
-    }
-
-    fn handle_mouse_release(&self,_p: Vec2<i32>,_b: MouseButton) {
-    }
-
-    fn handle_mouse_move(&self,_p: Vec2<i32>) {
-    }
-
-    fn handle_mouse_wheel(&self,_w: MouseWheel) {
+    fn handle(&self,_ui: &UI,_window: &Window,_event: Event) {
     }
 }

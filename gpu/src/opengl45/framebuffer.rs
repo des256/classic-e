@@ -2,7 +2,6 @@
 // Desmond Germans, 2020
 
 use crate::*;
-use std::rc::Rc;
 use gl::types::GLuint;
 
 /// Framebuffer GPU resource.
@@ -12,7 +11,7 @@ pub struct Framebuffer {
     pub size: Vec2<usize>,
 }
 
-impl Framebuffer {
+impl Graphics {
     /// Create new framebuffer for a graphics context.
     /// 
     /// **Arguments**
@@ -24,7 +23,7 @@ impl Framebuffer {
     /// 
     /// * `Ok(Framebuffer)` - The new framebuffer.
     /// * `Err(SystemError)` - The framebuffer could not be created.
-    pub fn new(_graphics: &Rc<Graphics>,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
+    pub fn create_framebuffer(&self,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
         let mut fbo: GLuint = 0;
         let mut tex: GLuint = 0;
         unsafe {

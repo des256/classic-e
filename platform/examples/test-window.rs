@@ -8,40 +8,33 @@ use std::{
     cell::Cell,
 };
 
-struct AppWindow {
-    pub window: PlatformWindow,
-    running: Cell<bool>,
-}
-
-impl HandleEvent for AppWindow {
-    fn handle(&self,event: Event) {
-        match event {
-            Event::Close => {
-                self.running.set(false);
-            },
-            _ => { },
-        }
-    }
-
-    fn id(&self) -> u64 {
-        self.window.id
-    }
-}
-
-fn main() {
+fn main() -> Result<(),SystemError> {
 
     // initialize system
-    let system = Rc::new(System::new().expect("Cannot open system."));
+    let system = Rc::new(System::new()?);
+
+    // the running variable
+    let running = Rc::new(Cell::new(true));
+    let window_running = Rc::clone(&running);
 
     // create application window
-    let appwindow = AppWindow {
-        window: PlatformWindow::new_frame(&system,rect!(50,50,640,350),"Test Window"),
-        running: Cell::new(true),
-    };
+    let window = Window::new_frame(&system,rect!(50,50,640,350),"Test Window")?;
+    window.set_handler(move |event| {
+        match event {
+            Event::Close => {
+                window_running.set(false);
+            },
+            _ => {
+                println!("{}",event);
+            },
+        }
+    });
 
     // run the show
-    while appwindow.running.get() {
+    while running.get() {
         system.wait();
-        system.flush(&vec![&appwindow]);
+        system.flush(&window);
     }
+
+    Ok(())
 }

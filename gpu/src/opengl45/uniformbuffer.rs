@@ -3,7 +3,6 @@
 
 use crate::*;
 use std::{
-    rc::Rc,
     ffi::c_void,
     marker::PhantomData,
     ptr::null,
@@ -12,30 +11,13 @@ use gl::types::{
     GLuint,
 };
 
-#[doc(hidden)]
-pub trait GLUniform {
-    fn len() -> isize;
-}
-
-impl GLUniform for Vec2<f32> {
-    fn len() -> isize {
-        8
-    }
-}
-
-impl GLUniform for Vec4<f32> {
-    fn len() -> isize {
-        16
-    }
-}
-
 /// Uniform buffer GPU resource.
-pub struct UniformBuffer<T: GLUniform> {
+pub struct UniformBuffer<T: GPUUniformFormat> {
     pub(crate) ubo: GLuint,
     phantom: PhantomData<T>,
 }
 
-impl<T: GLUniform> UniformBuffer<T> {
+impl Graphics {
     /// (temporary) Create new uniform buffer.
     /// 
     /// **Arguments**
@@ -46,7 +28,7 @@ impl<T: GLUniform> UniformBuffer<T> {
     /// 
     /// * `Ok(UniformBuffer)` - The new uniform buffer.
     /// * `Err(SystemError)` - The uniform buffer could not be created.
-    pub fn new(_graphics: &Rc<Graphics>) -> Result<UniformBuffer<T>,SystemError> {
+    pub fn create_uniformbuffer<T: GPUUniformFormat>(&self) -> Result<UniformBuffer<T>,SystemError> {
         let mut ubo: GLuint = 0;
         unsafe {
             gl::GenBuffers(1,&mut ubo);
@@ -70,12 +52,14 @@ impl<T: GLUniform> UniformBuffer<T> {
     /// 
     /// * `Ok(UniformBuffer)` - The new uniform buffer.
     /// * `Err(SystemError)` - The uniform buffer could not be created.
-    pub fn new_from_vec(_graphics: &Rc<Graphics>,src: Vec<T>) -> Result<UniformBuffer<T>,SystemError> {
-        let uniformbuffer = UniformBuffer::new(_graphics)?;
+    pub fn create_uniformbuffer_from_vec<T: GPUUniformFormat>(&self,src: Vec<T>) -> Result<UniformBuffer<T>,SystemError> {
+        let uniformbuffer = self.create_uniformbuffer()?;
         uniformbuffer.load(0,&src);
         Ok(uniformbuffer)
     }
+}
 
+impl<T: GPUUniformFormat> UniformBuffer<T> {
     /// (temporary) Load data into uniform buffer
     /// 
     /// **Arguments**
@@ -85,18 +69,18 @@ impl<T: GLUniform> UniformBuffer<T> {
     pub fn load(&self,o: usize,src: &Vec<T>) {
         unsafe { 
             gl::BindBuffer(gl::UNIFORM_BUFFER,self.ubo);
-            gl::BufferData(gl::UNIFORM_BUFFER,T::len() * (o + src.len()) as isize,null() as *const c_void,gl::STATIC_DRAW);
+            gl::BufferData(gl::UNIFORM_BUFFER,((o + src.len()) * T::len()) as isize,null() as *const c_void,gl::STATIC_DRAW);
             gl::BufferSubData(
                 gl::UNIFORM_BUFFER,
-                T::len() * (o as isize),
-                T::len() * src.len() as isize,
+                (T::len() * o) as isize,
+                (T::len() * src.len()) as isize,
                 src.as_ptr() as *const c_void
             );
         }
     }
 }
 
-impl<T: GLUniform> Drop for UniformBuffer<T> {
+impl<T: GPUUniformFormat> Drop for UniformBuffer<T> {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteBuffers(1,&self.ubo);

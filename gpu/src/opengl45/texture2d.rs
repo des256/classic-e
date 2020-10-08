@@ -3,20 +3,19 @@
 
 use crate::*;
 use std::{
-    rc::Rc,
     ffi::c_void,
     marker::PhantomData,
 };
 use gl::types::GLuint;
 
 /// 2D texture GPU resource.
-pub struct Texture2D<T: GPUDataFormat> {
+pub struct Texture2D<T: GPUTextureFormat> {
     pub tex: GLuint,
     size: Vec2<usize>,
     phantom: PhantomData<T>,
 }
 
-impl<T: GPUDataFormat> Texture2D<T> {
+impl Graphics {
     /// (temporary) Create new empty 2D texture.
     /// 
     /// **Arguments**
@@ -28,7 +27,7 @@ impl<T: GPUDataFormat> Texture2D<T> {
     /// 
     /// * `Ok(Texture2D)` - The new 2D texture.
     /// * `Err(SystemError)` - The 2D texture could not be created.
-    pub fn new(_graphics: &Rc<Graphics>,size: Vec2<usize>) -> Result<Texture2D<T>,SystemError> {
+    pub fn create_texture2d<T: GPUTextureFormat>(&self,size: Vec2<usize>) -> Result<Texture2D<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -57,12 +56,14 @@ impl<T: GPUDataFormat> Texture2D<T> {
     /// 
     /// * `Ok(Texture2D)` - The new 2D texture.
     /// * `Err(SystemError)` - The 2D texture could not be created.
-    pub fn new_from_mat(graphics: &Rc<Graphics>,src: Mat<T>) -> Result<Texture2D<T>,SystemError> {
-        let texture = Texture2D::new(graphics,src.size)?;
+    pub fn create_texture2d_from_mat<T: GPUTextureFormat>(&self,src: Mat<T>) -> Result<Texture2D<T>,SystemError> {
+        let texture = self.create_texture2d(src.size)?;
         texture.load(Vec2::<usize>::zero(),&src);
         Ok(texture)
     }
+}
 
+impl<T: GPUTextureFormat> Texture2D<T> {
     /// (temporary) Load data into 2D texture.
     /// 
     /// **Arguments**
@@ -129,7 +130,7 @@ impl<T: GPUDataFormat> Texture2D<T> {
     }
 }
 
-impl<T: GPUDataFormat> Drop for Texture2D<T> {
+impl<T: GPUTextureFormat> Drop for Texture2D<T> {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteTextures(1,&self.tex);

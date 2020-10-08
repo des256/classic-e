@@ -1,38 +1,22 @@
 // E - UI - Button
 // Desmond Germans, 2020
 
-use crate::*;
-use std::{
-    rc::Rc,
-    cell::Cell,
+use{
+    crate::*,
+    std::cell::Cell,
 };
 
-/// Button hit test possibilities.
-#[derive(Copy,Clone,Debug)]
-pub enum ButtonHit {
-    Outside,
-    Button,
-}
-
-/// Button widget.
+/// Button.
 pub struct Button {
-    state: Rc<UIState>,
     r: Cell<Rect<i32>>,
-    hit: Cell<ButtonHit>,
-    pub text: String,
-    pub padding: Vec2<i32>,
-    pub inner_padding: Vec2<i32>,
+    name: String,
 }
 
 impl Button {
-    pub fn new(state: &Rc<UIState>,text: &str) -> Result<Button,SystemError> {
+    pub fn new(name: &str) -> Result<Button,SystemError> {
         Ok(Button {
-            state: Rc::clone(state),
-            r: Cell::new(Rect::<i32>::zero()),
-            hit: Cell::new(ButtonHit::Outside),
-            text: String::from(text),
-            padding: Vec2::<i32>::zero(),
-            inner_padding: vec2!(4,2),
+            r: Cell::new(rect!(0,0,0,0)),
+            name: name.to_string(),
         })
     }
 }
@@ -41,52 +25,18 @@ impl Widget for Button {
     fn rect(&self) -> Rect<i32> {
         self.r.get()
     }
-    
+
     fn set_rect(&self,r: Rect<i32>) {
         self.r.set(r);
     }
 
-    fn calc_min_size(&self) -> Vec2<i32> {
-        let styles = self.state.styles.borrow();
-        styles.font.measure(&self.text) + 2 * (self.padding + self.inner_padding)
+    fn calc_min_size(&self,_draw: &Draw) -> Vec2<i32> {
+        vec2!(0,0)
     }
 
-    fn draw(&self) {
-        let styles = self.state.styles.borrow();
-        let bc = if let ButtonHit::Button = self.hit.get() {
-            styles.button_hover_color
-        }
-        else {
-            styles.button_color
-        };
-        self.state.draw_rectangle(rect!(self.padding,self.r.get().s() - 2 * self.padding),bc,BlendMode::Replace);
-        self.state.draw_text(self.padding + self.inner_padding,&self.text,styles.button_text_color,&styles.font);
+    fn draw(&self,_draw: &Draw) {
     }
 
-    fn handle_mouse_press(&self,_p: Vec2<i32>,b: MouseButton) {
-        if let ButtonHit::Button = self.hit.get() {
-            if let MouseButton::Left = b {
-                println!("Click!");
-            }
-        }
-    }
-
-    fn handle_mouse_release(&self,_p: Vec2<i32>,_b: MouseButton) {
-    }
-
-    fn handle_mouse_move(&self,p: Vec2<i32>) {
-        if Rect::<i32>::new_os(self.padding,self.r.get().s() - 2 * self.padding).contains(&p) {
-            self.hit.set(ButtonHit::Button);
-        }
-        else {
-            if let ButtonHit::Outside = self.hit.get() {                
-            }
-            else {
-                self.hit.set(ButtonHit::Outside);
-            }
-        }
-    }
-
-    fn handle_mouse_wheel(&self,_w: MouseWheel) {
+    fn handle(&self,_ui: &UI,_window: &Window,_event: Event) {
     }
 }

@@ -12,15 +12,10 @@ const FONT_DIR: &str = "/home/desmond/e/static/fonts";
 fn main() -> Result<(),SystemError> {
     let system = Rc::new(System::new()?);
     let graphics = Rc::new(Graphics::new(&system)?);
-    let mut ui = UI::new(&system,&graphics,FONT_DIR)?;
-
-    let text = Rc::new(Text::new(&ui.state,"Hello, World!")?);
-
-    ui.open_frame(rect!(50,50,640,350),"Text Test",&Rc::clone(&text));
-
+    let ui = Rc::new(UI::new(&system,&graphics,FONT_DIR)?);
+    let text = Rc::new(Text::new("Hello, World!")?);
+    let window = UIWindow::new_frame(&ui,rect!(50,50,640,350),"Text Test",&(text as Rc<dyn Widget>))?;
     ui.run();
-
-    ui.close(&text);
-
+    drop(window);
     Ok(())
 }

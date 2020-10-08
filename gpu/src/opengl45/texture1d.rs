@@ -3,20 +3,19 @@
 
 use crate::*;
 use std::{
-    rc::Rc,
     ffi::c_void,
     marker::PhantomData,
 };
 use gl::types::GLuint;
 
 /// 1D texture GPU resource.
-pub struct Texture1D<T: GPUDataFormat> {
+pub struct Texture1D<T: GPUTextureFormat> {
     pub tex: GLuint,
     size: usize,
     phantom: PhantomData<T>,
 }
 
-impl<T: GPUDataFormat> Texture1D<T> {
+impl Graphics {
     /// (temporary) Create new empty 1D texture.
     /// 
     /// **Arguments**
@@ -28,7 +27,7 @@ impl<T: GPUDataFormat> Texture1D<T> {
     /// 
     /// * `Ok(Texture1D)` - The new 1D texture.
     /// * `Err(SystemError)` - The 1D texture could not be created.
-    pub fn new(_graphics: &Rc<Graphics>,size: usize) -> Result<Texture1D<T>,SystemError> {
+    pub fn create_texture1d<T: GPUTextureFormat>(&self,size: usize) -> Result<Texture1D<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -56,12 +55,14 @@ impl<T: GPUDataFormat> Texture1D<T> {
     /// 
     /// * `Ok(Texture1D)` - The new 1D texture.
     /// * `Err(SystemError)` - The 1D texture could not be created.
-    pub fn new_from_vec(graphics: &Rc<Graphics>,src: Vec<T>) -> Result<Texture1D<T>,SystemError> {
-        let texture = Texture1D::new(graphics,src.len())?;
+    pub fn create_texture1d_from_vec<T: GPUTextureFormat>(&self,src: Vec<T>) -> Result<Texture1D<T>,SystemError> {
+        let texture = self.create_texture1d(src.len())?;
         texture.load(0,&src);
         Ok(texture)
     }
+}
 
+impl<T: GPUTextureFormat> Texture1D<T> {
     /// (temporary) Load data into 1D texture.
     /// 
     /// **Arguments**
@@ -115,7 +116,7 @@ impl<T: GPUDataFormat> Texture1D<T> {
     }
 }
 
-impl<T: GPUDataFormat> Drop for Texture1D<T> {
+impl<T: GPUTextureFormat> Drop for Texture1D<T> {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteTextures(1,&self.tex);

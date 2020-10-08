@@ -13,17 +13,17 @@ const IMAGE_PATH: &str = "/home/desmond/e/static/images/world.png";
 fn main() -> Result<(),SystemError> {
     let system = Rc::new(System::new()?);
     let graphics = Rc::new(Graphics::new(&system)?);
-    let mut ui = UI::new(&system,&graphics,FONT_DIR)?;
+    let ui = Rc::new(UI::new(&system,&graphics,FONT_DIR)?);
 
     let mat = imageformats::load::<pixel::ARGB8>(IMAGE_PATH)?;
 
-    let image = Rc::new(Image::new(&ui.state,mat)?);
+    let image = Rc::new(Image::new(&ui,mat)?);
 
-    ui.open_frame(rect!(50,50,640,350),"Image Test",&Rc::clone(&image));
+    let id = ui.open_frame(rect!(50,50,640,350),"Image Test",&Rc::clone(&image));
 
     ui.run();
 
-    ui.close(&image);
+    ui.close(id);
 
     Ok(())
 }

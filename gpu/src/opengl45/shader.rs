@@ -3,7 +3,6 @@
 
 use crate::*;
 use std::{
-    rc::Rc,
     ffi::{
         CString,
         CStr,
@@ -24,7 +23,7 @@ pub struct Shader {
     pub(crate) sp: GLuint,
 }
 
-impl Shader {
+impl Graphics {
     /// Create new shader program.
     /// 
     /// **Arguments**
@@ -38,7 +37,7 @@ impl Shader {
     /// 
     /// * `Ok(Shader)` - The created shader program.
     /// * `Err(SystemError)` - The shader progam could not be created.
-    pub fn new(_graphics: &Rc<Graphics>,vertex_src: &str,geometry_src: Option<&str>,fragment_src: &str) -> Result<Shader,SystemError> {
+    pub fn create_shader(&self,vertex_src: &str,geometry_src: Option<&str>,fragment_src: &str) -> Result<Shader,SystemError> {
         unsafe {
             let vs = gl::CreateShader(gl::VERTEX_SHADER);
             let vcstr = CString::new(vertex_src.as_bytes()).unwrap();

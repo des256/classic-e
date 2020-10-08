@@ -1,4 +1,4 @@
-// E - System
+// E - Linux - System
 // Desmond Germans, 2020
 
 #[doc(hidden)]
@@ -19,7 +19,6 @@ use {
         mem::transmute,
         ptr::null_mut,
         rc::Rc,
-        cell::Cell,
     },
     x11::{
         xlib::{
@@ -110,10 +109,6 @@ use {
             TIME_CURRENT_TIME,
             GRAB_MODE_ASYNC,
             ungrab_pointer,
-            map_window,
-            ATOM_WM_NAME,
-            ATOM_STRING,
-            unmap_window,
         },
         cast_event,
     },
@@ -126,11 +121,6 @@ use {
         epoll_wait,
     },
 };
-
-pub const KEY_UP: u8 = 111;
-pub const KEY_DOWN: u8 = 116;
-pub const KEY_LEFT: u8 = 113;
-pub const KEY_RIGHT: u8 = 114;
 
 #[doc(hidden)]
 type GlXCreateContextAttribsARBProc = unsafe extern "C" fn(
@@ -158,6 +148,56 @@ fn load_function(name: &str) -> *mut c_void {
     pointer
 }
 
+pub trait SendEvent {
+    fn send_event(&self,xid: XID,event: Event);
+}
+
+impl SendEvent for Window {
+    fn send_event(&self,xid: XID,event: Event) {
+        if self.id == xid {
+            if let Some(handler) = &*self.handler.borrow() {
+                (handler)(event);
+            }
+        }
+    }
+}
+
+impl SendEvent for Rc<Window> {
+    fn send_event(&self,xid: XID,event: Event) {
+        if self.id == xid {
+            if let Some(handler) = &*self.handler.borrow() {
+                (handler)(event);
+            }
+        }
+    }
+}
+
+impl SendEvent for Vec<Window> {
+    fn send_event(&self,xid: XID,event: Event) {
+        for window in self.iter() {
+            if window.id == xid {
+                if let Some(handler) = &*window.handler.borrow() {
+                    (handler)(event);
+                }
+                break;
+            }
+        }
+    }
+}
+
+impl SendEvent for Vec<Rc<Window>> {
+    fn send_event(&self,xid: XID,event: Event) {
+        for window in self.iter() {
+            if window.id == xid {
+                if let Some(handler) = &*window.handler.borrow() {
+                    (handler)(event);
+                }
+                break
+            }
+        }
+    }
+}
+
 /// Main system context.
 pub struct System {
     pub connection: Connection,
@@ -170,7 +210,7 @@ pub struct System {
     pub(crate) wm_protocols: u32,
     pub(crate) colormap: XID,
     pub(crate) wm_motif_hints: u32,
-    pub(crate) _wm_transient_for: u32,
+    pub(crate) wm_transient_for: u32,
     pub(crate) wm_net_type: u32,
     pub(crate) wm_net_type_utility: u32,
     pub(crate) wm_net_state: u32,
@@ -389,7 +429,7 @@ impl System {
             wm_protocols: wm_protocols,
             colormap: colormap,
             wm_motif_hints: wm_motif_hints,
-            _wm_transient_for: wm_transient_for,
+            wm_transient_for: wm_transient_for,
             wm_net_type: wm_net_type,
             wm_net_type_utility: wm_net_type_utility,
             wm_net_state: wm_net_state,
@@ -399,94 +439,87 @@ impl System {
         })
     }
 
-    fn send_event<T: HandleEvent>(&self,handlers: &Vec<&T>,xid: XID,event: Event) {
-        for handler in handlers.iter() {
-            if xid == handler.id() {
-                handler.handle(event);
-                break;
-            }
+    fn translate_event(&self,xcb_event: xcb::GenericEvent) -> Option<(XID,Event)> {
+        let r = xcb_event.response_type() & !0x80;
+        match r {
+            EXPOSE => {
+                let expose: &ExposeEvent = unsafe { cast_event(&xcb_event) };
+                //let r = rect!(expose.x() as isize,expose.y() as isize,expose.width() as isize,expose.height() as isize);
+                let xid = expose.window() as XID;
+                return Some((xid,Event::Render));
+            },
+            KEY_PRESS => {
+                let key_press: &KeyPressEvent = unsafe { cast_event(&xcb_event) };
+                let k = key_press.detail() as u8;
+                let xid = key_press.event() as XID;
+                return Some((xid,Event::KeyPress(k)));
+            },
+            KEY_RELEASE => {
+                let key_release: &KeyReleaseEvent = unsafe { cast_event(&xcb_event) };
+                let k = key_release.detail() as u8;
+                let xid = key_release.event() as XID;
+                return Some((xid,Event::KeyRelease(k)));
+            },
+            BUTTON_PRESS => {
+                let button_press: &ButtonPressEvent = unsafe { cast_event(&xcb_event) };
+                let p = vec2!(button_press.event_x() as i32,button_press.event_y() as i32);
+                let xid = button_press.event() as XID;
+                match button_press.detail() {
+                    1 => { return Some((xid,Event::MousePress(p,MouseButton::Left))); },
+                    2 => { return Some((xid,Event::MousePress(p,MouseButton::Middle))); },
+                    3 => { return Some((xid,Event::MousePress(p,MouseButton::Right))); },
+                    4 => { return Some((xid,Event::MouseWheel(MouseWheel::Up))); },
+                    5 => { return Some((xid,Event::MouseWheel(MouseWheel::Down))); },
+                    6 => { return Some((xid,Event::MouseWheel(MouseWheel::Left))); },
+                    7 => { return Some((xid,Event::MouseWheel(MouseWheel::Right))); },
+                    _ => { },
+                }        
+            },
+            BUTTON_RELEASE => {
+                let button_release: &ButtonReleaseEvent = unsafe { cast_event(&xcb_event) };
+                let p = vec2!(button_release.event_x() as i32,button_release.event_y() as i32);
+                let xid = button_release.event() as XID;
+                match button_release.detail() {
+                    1 => { return Some((xid,Event::MouseRelease(p,MouseButton::Left))); },
+                    2 => { return Some((xid,Event::MouseRelease(p,MouseButton::Middle))); },
+                    3 => { return Some((xid,Event::MouseRelease(p,MouseButton::Right))); },
+                    _ => { },
+                }        
+            },
+            MOTION_NOTIFY => {
+                let motion_notify: &MotionNotifyEvent = unsafe { cast_event(&xcb_event) };
+                let p = vec2!(motion_notify.event_x() as i32,motion_notify.event_y() as i32);
+                let xid = motion_notify.event() as XID;
+                return Some((xid,Event::MouseMove(p)));
+            },
+            CONFIGURE_NOTIFY => {
+                let configure_notify: &ConfigureNotifyEvent = unsafe { cast_event(&xcb_event) };
+                let r = rect!(configure_notify.x() as i32,configure_notify.y() as i32,configure_notify.width() as i32,configure_notify.height() as i32);
+                let xid = configure_notify.event() as XID;
+                return Some((xid,Event::Configure(r)));
+            },
+            CLIENT_MESSAGE => {
+                let client_message : &ClientMessageEvent = unsafe { cast_event(&xcb_event) };
+                let data = &client_message.data().data;
+                let atom = (data[0] as u32) | ((data[1] as u32) << 8) | ((data[2] as u32) << 16) | ((data[3] as u32) << 24);
+                if atom == self.wm_delete_window {
+                    let xid = client_message.window() as XID;
+                    return Some((xid,Event::Close));
+                }
+            },
+            _ => { },
         }
+        None
     }
 
     /// Flush all pending window events.
     /// 
     /// This processes each pending event from the system's event queue by
     /// calling `handle` on the associated handlers.
-    pub fn flush<T: HandleEvent>(&self,handlers: &Vec<&T>) {
+    pub fn flush<T: SendEvent>(&self,target: &T) {
         while let Some(xcb_event) = self.connection.poll_for_event() {
-            let r = xcb_event.response_type() & !0x80;
-            match r {
-                EXPOSE => {
-                    let expose: &ExposeEvent = unsafe { cast_event(&xcb_event) };
-                    //let r = rect!(expose.x() as isize,expose.y() as isize,expose.width() as isize,expose.height() as isize);
-                    let xid = expose.window() as XID;
-                    self.send_event(handlers,xid,Event::Render);
-                },
-                KEY_PRESS => {
-                    let key_press: &KeyPressEvent = unsafe { cast_event(&xcb_event) };
-                    let k = key_press.detail() as u8;
-                    let xid = key_press.event() as XID;
-                    self.send_event(handlers,xid,Event::KeyPress(k));
-                },
-                KEY_RELEASE => {
-                    let key_release: &KeyReleaseEvent = unsafe { cast_event(&xcb_event) };
-                    let k = key_release.detail() as u8;
-                    let xid = key_release.event() as XID;
-                    self.send_event(handlers,xid,Event::KeyRelease(k));
-                },
-                BUTTON_PRESS => {
-                    let button_press: &ButtonPressEvent = unsafe { cast_event(&xcb_event) };
-                    let p = vec2!(button_press.event_x() as i32,button_press.event_y() as i32);
-                    let xid = button_press.event() as XID;
-                    match button_press.detail() {
-                        1 => { self.send_event(handlers,xid,Event::MousePress(p,MouseButton::Left)); },
-                        2 => { self.send_event(handlers,xid,Event::MousePress(p,MouseButton::Middle)); },
-                        3 => { self.send_event(handlers,xid,Event::MousePress(p,MouseButton::Right)); },
-                        4 => { self.send_event(handlers,xid,Event::MouseWheel(MouseWheel::Up)); },
-                        5 => { self.send_event(handlers,xid,Event::MouseWheel(MouseWheel::Down)); },
-                        6 => { self.send_event(handlers,xid,Event::MouseWheel(MouseWheel::Left)); },
-                        7 => { self.send_event(handlers,xid,Event::MouseWheel(MouseWheel::Right)); },
-                        _ => { },
-                    }        
-                },
-                BUTTON_RELEASE => {
-                    let button_release: &ButtonReleaseEvent = unsafe { cast_event(&xcb_event) };
-                    let p = vec2!(button_release.event_x() as i32,button_release.event_y() as i32);
-                    let xid = button_release.event() as XID;
-                    match button_release.detail() {
-                        1 => { self.send_event(handlers,xid,Event::MouseRelease(p,MouseButton::Left)); },
-                        2 => { self.send_event(handlers,xid,Event::MouseRelease(p,MouseButton::Middle)); },
-                        3 => { self.send_event(handlers,xid,Event::MouseRelease(p,MouseButton::Right)); },
-                        _ => { },
-                    }        
-                },
-                MOTION_NOTIFY => {
-                    let motion_notify: &MotionNotifyEvent = unsafe { cast_event(&xcb_event) };
-                    let p = vec2!(motion_notify.event_x() as i32,motion_notify.event_y() as i32);
-                    let xid = motion_notify.event() as XID;
-                    self.send_event(handlers,xid,Event::MouseMove(p));
-                },
-                CONFIGURE_NOTIFY => {
-                    let configure_notify: &ConfigureNotifyEvent = unsafe { cast_event(&xcb_event) };
-                    let r = rect!(configure_notify.x() as i32,configure_notify.y() as i32,configure_notify.width() as i32,configure_notify.height() as i32);
-                    let xid = configure_notify.event() as XID;
-                    for handler in handlers.iter() {
-                        if xid == handler.id() {
-                            handler.handle(Event::Configure(r));
-                            break;
-                        }
-                    }
-                },
-                CLIENT_MESSAGE => {
-                    let client_message : &ClientMessageEvent = unsafe { cast_event(&xcb_event) };
-                    let data = &client_message.data().data;
-                    let atom = (data[0] as u32) | ((data[1] as u32) << 8) | ((data[2] as u32) << 16) | ((data[3] as u32) << 24);
-                    if atom == self.wm_delete_window {
-                        let xid = client_message.window() as XID;
-                        self.send_event(handlers,xid,Event::Close);
-                    }
-                },
-                _ => { },
+            if let Some((xid,event)) = self.translate_event(xcb_event) {
+                target.send_event(xid,event);
             }
         }
     }
@@ -534,146 +567,5 @@ impl Drop for System {
         unsafe { glXMakeCurrent(self.connection.get_raw_dpy(),0,null_mut()); }
         destroy_window(&self.connection,self.hidden_window as u32);
         unsafe { glXDestroyContext(self.connection.get_raw_dpy(),self.context); }
-    }
-}
-
-/// Base window connection. Can be used to help implement `Window` trait.
-pub struct PlatformWindow {
-    pub system: Rc<System>,
-    pub id: u64,
-    pub r: Cell<Rect<i32>>,
-}
-
-impl PlatformWindow {
-    fn new(system: &Rc<System>,r: Rect<i32>) -> PlatformWindow {
-        let id = system.connection.generate_id() as XID;
-        let values = [
-            (CW_EVENT_MASK,
-                EVENT_MASK_EXPOSURE
-                | EVENT_MASK_KEY_PRESS
-                | EVENT_MASK_KEY_RELEASE
-                | EVENT_MASK_BUTTON_PRESS
-                | EVENT_MASK_BUTTON_RELEASE
-                | EVENT_MASK_POINTER_MOTION
-                | EVENT_MASK_STRUCTURE_NOTIFY
-            ),
-            (CW_COLORMAP,system.colormap as u32),
-        ];
-        create_window(
-            &system.connection,
-            system.depth as u8,
-            id as u32,
-            system.rootwindow as u32,
-            r.ox() as i16,r.oy() as i16,r.sx() as u16,r.sy() as u16,
-            0,
-            WINDOW_CLASS_INPUT_OUTPUT as u16,
-            system.visualid as u32,
-            &values
-        );
-        unsafe {
-            map_window(&system.connection,id as u32);
-            system.connection.flush();
-            XSync(system.connection.get_raw_dpy(),False);
-        }
-        PlatformWindow {
-            system: Rc::clone(system),
-            id: id,
-            r: Cell::new(Rect::<i32>::zero()),
-        }
-    }
-
-    /// Open new frame window.
-    ///
-    /// A frame window is a window with a draggable frame and a titlebar.
-    ///
-    /// **Arguments**
-    ///
-    /// * `system` - System to open the frame window on.
-    /// * `r` - Initial frame window rectangle.
-    /// * `title` - Title of the frame window. 
-    ///
-    /// **Returns**
-    ///
-    /// New frame base window.
-    pub fn new_frame(system: &Rc<System>,r: Rect<i32>,title: &str) -> PlatformWindow {
-        let core = PlatformWindow::new(system,r);
-        let protocol_set = [system.wm_delete_window];
-        change_property(
-            &system.connection,
-            PROP_MODE_REPLACE as u8,
-            core.id as u32,
-            system.wm_protocols,
-            ATOM_ATOM,
-            32,
-            &protocol_set
-        );        
-        change_property(
-            &system.connection,
-            PROP_MODE_REPLACE as u8,
-            core.id as u32,
-            ATOM_WM_NAME,
-            ATOM_STRING,
-            8,
-            title.as_bytes()
-        );
-        system.connection.flush();
-        core
-    }
-
-    /// Open new popup window.
-    ///
-    /// A popup window is a window with no title and no border. This is
-    /// usually used for menus, tooltips, dropdowns, etc.
-    ///
-    /// **Arguments**
-    ///
-    /// * `system` - System to open the frame window on.
-    /// * `r` - Initial frame window rectangle.
-    ///
-    /// **Returns**
-    ///
-    /// New popup base window.
-    pub fn new_popup(system: &Rc<System>,r: Rect<i32>) -> PlatformWindow {
-        let core = PlatformWindow::new(system,r);
-        let net_type = [system.wm_net_type_utility];
-        change_property(
-            &system.connection,
-            PROP_MODE_REPLACE as u8,
-            core.id as u32,
-            system.wm_net_type,
-            ATOM_ATOM,
-            32,
-            &net_type
-        );
-        let net_state = [system.wm_net_state_above];
-        change_property(
-            &system.connection,
-            PROP_MODE_REPLACE as u8,
-            core.id as u32,
-            system.wm_net_state,
-            ATOM_ATOM,
-            32,
-            &net_state
-        );
-        let hints = [2u32,0,0,0,0];
-        change_property(
-            &system.connection,
-            PROP_MODE_REPLACE as u8,
-            core.id as u32,
-            system.wm_motif_hints,
-            ATOM_ATOM,
-            32,
-            &hints
-        );
-        system.connection.flush();
-        core
-    }
-}
-
-impl Drop for PlatformWindow {
-    fn drop(&mut self) {
-        unsafe { glXMakeCurrent(self.system.connection.get_raw_dpy(),self.system.hidden_window,self.system.context); }
-        unmap_window(&self.system.connection,self.id as u32);
-        destroy_window(&self.system.connection,self.id as u32);    
     }
 }

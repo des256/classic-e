@@ -3,20 +3,19 @@
 
 use crate::*;
 use std::{
-    rc::Rc,
     ffi::c_void,
     marker::PhantomData,
 };
 use gl::types::GLuint;
 
 /// 2D texture array GPU resource.
-pub struct Texture2DArray<T: GPUDataFormat> {  // start with one layer, rebuild later
+pub struct Texture2DArray<T: GPUTextureFormat> {  // start with one layer, rebuild later
     pub tex: GLuint,
     size: Vec3<usize>,
     phantom: PhantomData<T>,
 }
 
-impl<T: GPUDataFormat> Texture2DArray<T> {
+impl Graphics {
     /// (temporary) Create new empty 2D texture array.
     /// 
     /// **Arguments**
@@ -28,7 +27,7 @@ impl<T: GPUDataFormat> Texture2DArray<T> {
     /// 
     /// * `Ok(Texture2DArray)` - The new 2D texture.
     /// * `Err(SystemError)` - The 2D texture array could not be created.
-    pub fn new(_graphics: &Rc<Graphics>,size: Vec3<usize>) -> Result<Texture2DArray<T>,SystemError> {
+    pub fn create_texture2darray<T: GPUTextureFormat>(&self,size: Vec3<usize>) -> Result<Texture2DArray<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -57,12 +56,14 @@ impl<T: GPUDataFormat> Texture2DArray<T> {
     /// 
     /// * `Ok(Texture2DArray)` - The new 2D texture array.
     /// * `Err(SystemError)` - The 2D texture array could not be created.
-    pub fn new_from_ten(graphics: &Rc<Graphics>,src: Ten<T>) -> Result<Texture2DArray<T>,SystemError> {
-        let texture = Texture2DArray::new(graphics,src.size)?;
+    pub fn create_texture2darray_from_ten<T: GPUTextureFormat>(&self,src: Ten<T>) -> Result<Texture2DArray<T>,SystemError> {
+        let texture = self.create_texture2darray(src.size)?;
         texture.load(Vec3::<usize>::zero(),&src);
         Ok(texture)
     }
+}
 
+impl<T: GPUTextureFormat> Texture2DArray<T> {
     /// (temporary) Load data into 2D texture array.
     /// 
     /// **Arguments**
@@ -144,7 +145,7 @@ impl<T: GPUDataFormat> Texture2DArray<T> {
     }
 }
 
-impl<T: GPUDataFormat> Drop for Texture2DArray<T> {
+impl<T: GPUTextureFormat> Drop for Texture2DArray<T> {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteTextures(1,&self.tex);

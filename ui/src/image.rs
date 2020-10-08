@@ -1,27 +1,22 @@
 // E - UI - Image
 // Desmond Germans, 2020
 
-use crate::*;
-use std::{
-    rc::Rc,
-    cell::Cell,
+use{
+    crate::*,
+    std::cell::Cell,
 };
 
-/// Image widget.
+/// Image.
 pub struct Image {
-    state: Rc<UIState>,
     r: Cell<Rect<i32>>,
-    pub texture: Texture2D<pixel::ARGB8>,
-    pub padding: Vec2<i32>,
+    image: Texture2D<pixel::ARGB8>,
 }
 
 impl Image {
-    pub fn new(state: &Rc<UIState>,mat: Mat<pixel::ARGB8>) -> Result<Image,SystemError> {
+    pub fn new(graphics: &Graphics,image: Mat<pixel::ARGB8>) -> Result<Image,SystemError> {
         Ok(Image {
-            state: Rc::clone(state),
-            r: Cell::new(Rect::<i32>::zero()),
-            texture: Texture2D::<pixel::ARGB8>::new_from_mat(&state.graphics,mat)?,
-            padding: Vec2::<i32>::zero(),
+            r: Cell::new(rect!(0,0,0,0)),
+            image: graphics.create_texture2d_from_mat(image)?,
         })
     }
 }
@@ -35,24 +30,13 @@ impl Widget for Image {
         self.r.set(r);
     }
 
-    fn calc_min_size(&self) -> Vec2<i32> {
-        let size = self.texture.size();
-        vec2!(size.x() as i32,size.y() as i32) + 2 * self.padding
+    fn calc_min_size(&self,_draw: &Draw) -> Vec2<i32> {
+        vec2!(0,0)
     }
 
-    fn draw(&self) {
-        self.state.draw_texture(self.r.get().o(),&self.texture,BlendMode::Replace);
+    fn draw(&self,_draw: &Draw) {
     }
 
-    fn handle_mouse_press(&self,_p: Vec2<i32>,_b: MouseButton) {
-    }
-
-    fn handle_mouse_release(&self,_p: Vec2<i32>,_b: MouseButton) {
-    }
-
-    fn handle_mouse_move(&self,_p: Vec2<i32>) {
-    }
-
-    fn handle_mouse_wheel(&self,_w: MouseWheel) {
+    fn handle(&self,_ui: &UI,_window: &Window,_event: Event) {
     }
 }

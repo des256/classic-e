@@ -9,7 +9,7 @@ use std::{
 
 /// Vertical stack widget.
 pub struct VStack {
-    pub state: Rc<UIState>,
+    pub ui: Rc<UI>,
     r: Cell<Rect<i32>>,
     pub widgets: Vec<Box<dyn Widget>>,
     pub halign: Cell<HAlignment>,
@@ -17,9 +17,9 @@ pub struct VStack {
 }
 
 impl VStack {
-    pub fn new_from_vec(state: &Rc<UIState>,widgets: Vec<Box<dyn Widget>>) -> Result<VStack,SystemError> {
+    pub fn new_from_vec(ui: &Rc<UI>,widgets: Vec<Box<dyn Widget>>) -> Result<VStack,SystemError> {
         Ok(VStack {
-            state: Rc::clone(&state),
+            ui: Rc::clone(&ui),
             r: Cell::new(Rect::<i32>::zero()),
             widgets: widgets,
             halign: Cell::new(HAlignment::Left),
@@ -68,9 +68,9 @@ impl Widget for VStack {
 
     fn draw(&self) {
         for widget in self.widgets.iter() {
-            self.state.delta_offset(widget.rect().o());
+            self.ui.state.delta_offset(widget.rect().o());
             widget.draw();
-            self.state.delta_offset(-widget.rect().o());
+            self.ui.state.delta_offset(-widget.rect().o());
         }
     }
 
@@ -86,13 +86,14 @@ impl Widget for VStack {
         }*/
     }
 
-    fn handle_mouse_move(&self,_p: Vec2<i32>) {
+    fn handle_mouse_move(&self,_p: Vec2<i32>) -> bool {
         /*if !self.core.capturing_mouse_move(p) {
             self.core.other_mouse_move(p)
         }
         else {
             true
         }*/
+        false
     }
 
     fn handle_mouse_wheel(&self,_w: MouseWheel) {

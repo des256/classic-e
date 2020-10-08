@@ -4,7 +4,6 @@
 use crate::*;
 use std::{
     ffi::c_void,
-    rc::Rc,
     ptr::null,
     marker::PhantomData,
 };
@@ -35,7 +34,7 @@ pub struct IndexBuffer<T: GLIndex> {
     phantom: PhantomData<T>,
 }
 
-impl<T: GLIndex> IndexBuffer<T> {
+impl Graphics {
     /// (temporary) Create new index buffer.
     /// 
     /// **Arguments**
@@ -46,7 +45,7 @@ impl<T: GLIndex> IndexBuffer<T> {
     /// 
     /// * `Ok(IndexBuffer)` - The new index buffer.
     /// * `Err(SystemError)` - The index buffer could not be created.
-    pub fn new(_graphics: &Rc<Graphics>) -> Result<IndexBuffer<T>,SystemError> {
+    pub fn create_indexbuffer<T: GLIndex>(&self) -> Result<IndexBuffer<T>,SystemError> {
         let mut ibo: GLuint = 0;
         unsafe {
             gl::GenBuffers(1,&mut ibo);
@@ -70,12 +69,14 @@ impl<T: GLIndex> IndexBuffer<T> {
     /// 
     /// * `Ok(IndexBuffer)` - The new index buffer.
     /// * `Err(SystemError)` - The index buffer could not be created.
-    pub fn new_from_vec(_graphics: &Rc<Graphics>,indices: &Vec<T>) -> Result<IndexBuffer<T>,SystemError> {
-        let indexbuffer = IndexBuffer::new(_graphics)?;
+    pub fn create_indexbuffer_from_vec<T: GLIndex>(&self,indices: &Vec<T>) -> Result<IndexBuffer<T>,SystemError> {
+        let indexbuffer = self.create_indexbuffer()?;
         indexbuffer.load(indices);
         Ok(indexbuffer)
     }
+}
 
+impl<T: GLIndex> IndexBuffer<T> {
     /// (temporary) Load all or part of the indices from vec.
     /// 
     /// **Arguments**

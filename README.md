@@ -1,20 +1,28 @@
 # E
 
-After rummaging through several Rust projects on the Internet, trying to convince myself that I shouldn't do it all over again, I found nothing too helpful, or up to similar standards as my old trusty 25-year old... E.
+After rummaging through several Rust projects on the Internet, trying to
+convince myself that I shouldn't do it all over again, I found nothing too
+helpful, or up to similar standards as my old trusty 25-year old... E.
 
 # Overview
 
-Regardless of how naive it sounds, E is supposed to function as a basic library for all supported platforms. The architecture is very simple.
+Regardless of how naive it sounds, E is supposed to function as a basic library
+for all supported platforms. The architecture is very simple.
 
-At the root are the basic data structuring and mathematical tools. All submodules depend on this.
+At the root are the basic data structuring and mathematical tools. All
+submodules depend on this.
 
-The submodule `platform` abstracts all platform-dependent stuff, like audio and desktop windowing (not UI widgets).
+The submodule `platform` abstracts all platform-dependent stuff, like audio and
+desktop windowing (not UI widgets).
 
-The submodule `gpu` abstracts away compute and graphics contexts that run on the GPU. This includes everything related to DirectX, OpenGL, Vulkan, etc. `gpu` needs `platform` to get access to the system.
+The submodule `gpu` abstracts away compute and graphics contexts that run on
+the GPU. This includes everything related to DirectX, OpenGL, Vulkan, etc.
+`gpu` needs `platform` to get access to the system.
 
 The submodule `image` contains image format encoders and decoders.
 
-The submodule `ui` defines interactive widgets that can be placed on windows from `platform`, using graphics from `gpu`.
+The submodule `ui` defines interactive widgets that can be placed on windows
+from `platform`, using graphics from `gpu`.
 
 ## Data Structures
 
@@ -22,7 +30,9 @@ The submodule `ui` defines interactive widgets that can be placed on windows fro
 
 `Ten` are 3D arrays, like `Vec` and `Mat`.
 
-`pixel` defines various pixel formats as basic data types. Constructions like `Mat<pixel::ARGB8>` can be regarded as main memory images. The following pixel formats are currently defined:
+`pixel` defines various pixel formats as basic data types. Constructions like
+`Mat<pixel::ARGB8>` can be regarded as main memory images. The following pixel
+formats are currently defined:
 
 - pixel::R8
 - pixel::R3G3B2
@@ -42,12 +52,20 @@ The submodule `ui` defines interactive widgets that can be placed on windows fro
 
 `Complex` are complex numbers. `Quat` are quaternions.
 
-`Vec2`, `Vec3`, `Vec3A` and `Vec4` are 2D, 3D and 4D vectors
-in a mathematical sense. `Mat2x2`, `Mat3x3`, `Mat3x3A` and `Mat4x4` are matrices in a mathematical sense. Basic arithmetic operations are defined for these types, and they correspond directly to similar types inside shaders. `Vec2`, `Vec3A` and `Vec4` are implemented on top of SIMD access. `Vec3` is not. `Mat2x2`, `Mat3x3A` and `Mat4x4` are implemented on top of SIMD access. `Mat3x3` is not. Use `Vec3` for storage and space-preservation. Use `Vec3A` for calculations speed. The trait `From` is defined to convert one to the other.
+`Vec2`, `Vec3`, `Vec3A` and `Vec4` are 2D, 3D and 4D vectors in a mathematical
+sense. `Mat2x2`, `Mat3x3`, `Mat3x3A` and `Mat4x4` are matrices in a
+mathematical sense. Basic arithmetic operations are defined for these types,
+and they correspond directly to similar types inside shaders. `Vec2`, `Vec3A`
+and `Vec4` are implemented on top of SIMD access. `Vec3` is not. `Mat2x2`,
+`Mat3x3A` and `Mat4x4` are implemented on top of SIMD access. `Mat3x3` is not.
+Use `Vec3` for storage and space-preservation. Use `Vec3A` for speed. The
+trait `From` is defined to convert one to the other.
 
 `Rect` describes a rectangle. A rectangle consists of an origin and a size.
 
 `MultiVec2`, `MultiVec3` and `MultiVec4` are 2D, 3D and 4D multivectors.
+
+`Quat` describes a quaternion.
 
 ### Future
 
@@ -57,9 +75,13 @@ in a mathematical sense. `Mat2x2`, `Mat3x3`, `Mat3x3A` and `Mat4x4` are matrices
 
 ## Platform Abstraction
 
-### [2020/9]
-
-In order to access the platform, create a `System` object. This abstracts away housekeeping of system resources. In order to open a desktop window (for Linux, Windows and MacOS), create a `BaseWindow` object. This represents an open window on the screen. To handle events, create an object that implements the `Window` trait (and owning a `BaseWindow`). Use `System::flush()` to handle pending windowing events with `Window::handle()`.
+In order to access the platform, create a `System` object. This abstracts away
+housekeeping of system resources. In order to open a desktop window (for
+Linux, Windows and MacOS), create a `Window` object via `Window::new_frame()`
+or `Window::new_popup()`. This represents an open window on the screen. To
+handle events, register a handler closure with `Window::set_handler`. Use
+`System::wait()` to wait for events and `System::flush()` to distribute the
+events to the windows via the closures.
 
 ### Future
 
@@ -68,7 +90,10 @@ In order to access the platform, create a `System` object. This abstracts away h
 
 ## Compute and Graphics
 
-To use the GPU for graphics, create a `gpu::Graphics` context. Bind the graphics object to a window by calling `Graphics::bind_target(T)` where `T` can be an object implementing the `Window` trait. As soon as the graphics pipeline is accessed, call `Graphics::present()` to swap the buffers.
+To use the GPU for graphics, create a `gpu::Graphics` context. Bind the
+graphics object to a window by calling `Graphics::bind_target(T)` where `T`
+can be an object implementing the `Window` trait. As soon as the graphics
+pipeline is accessed, call `Graphics::present()` to swap the buffers.
 
 ### Future
 
@@ -78,7 +103,7 @@ To use the GPU for graphics, create a `gpu::Graphics` context. Bind the graphics
 
 ## Image Formats
 
-Supported image formats are BMP, PNG and JPEG.
+Supported image formats are BMP, PNG (only loading) and JPEG (only loading).
 
 ### Future
 
@@ -91,21 +116,22 @@ Supported image formats are BMP, PNG and JPEG.
 
 ## UI Widgets
 
-### [2020/9]
-
-The `ui` module manages interaction and design of widgets via the `UI` context. The `UI` context manages everything necessary for the application (including platform resource access). Each window can host a widget hierarchy. Widgets are drawn using a `gpu::Graphics` context. To create a widgeted window, use `UI::open_frame()` or `UI::open_popup()`. These methods accept a `Rc<dyn Widget>` to the widget. Then, run the application with `UI.run()`.
+The `ui` submodule builds on top of `System` and `Graphics` and provides
+recursive widgets for each window, as well as management of all the windows
+as they open and close during operation of the UI. Use
+`UIWindow::new_frame()` and `UIWindow::new_popup()` to access the UI
+resouces and use recursive widgets. Running the UI is done with `UI::run()`.
+This takes care of the event handling loop. Drawing is done using the context
+`Draw`, which specifies shaders and drawing mechanisms for UI widgets.
 
 ### Future
 
+- Accordeon
 - Book
-- Breadcrumb
 - Button
 - DatePicker
 - Field
 - FilePicker
-- HAccordeon
-- HSplitter
-- HStack
 - Image
 - List
 - Menu
@@ -116,20 +142,19 @@ The `ui` module manages interaction and design of widgets via the `UI` context. 
 - Progress
 - Scroller
 - Slider
+- Splitter
+- Stack
 - Stepper
 - Text
 - TimePicker
 - Toggle
 - ToolBar
 - Tree
-- VAccordeon
-- VSplitter
-- VStack
 
-## Future
+## Later Future
 
-- 3D Scene graph
-- 3D Formats
+- Some sort of scene graph library that can handle 3D graphics everywhere
+- 3D Formats in that library
 - Video Formats
 - Audio Formats
 - AR

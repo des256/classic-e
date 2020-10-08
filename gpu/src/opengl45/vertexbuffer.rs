@@ -3,56 +3,20 @@
 
 use crate::*;
 use std::{
-    rc::Rc,
     ffi::c_void,
     marker::PhantomData,
     ptr::null,
 };
-use gl::types::{
-    GLuint,
-    GLvoid,
-};
-
-#[doc(hidden)]
-pub trait GLVertex {
-    fn bind();
-    fn len() -> isize;
-}
-
-impl GLVertex for Vec2<f32> {
-    fn bind() {
-        unsafe {
-            gl::EnableVertexAttribArray(0);
-            gl::VertexAttribPointer(0,2,gl::FLOAT,gl::FALSE,0,0 as *const GLvoid);
-        }
-    }
-
-    fn len() -> isize {
-        8
-    }
-}
-
-impl GLVertex for Vec4<f32> {
-    fn bind() {
-        unsafe {
-            gl::EnableVertexAttribArray(0);
-            gl::VertexAttribPointer(0,4,gl::FLOAT,gl::FALSE,0,0 as *const GLvoid);
-        }
-    }
-
-    fn len() -> isize {
-        16
-    }
-}
+use gl::types::GLuint;
 
 /// Vertex buffer GPU resource.
-pub struct VertexBuffer<T: GLVertex> {
+pub struct VertexBuffer<T: GPUVertexFormat> {
     pub(crate) vao: GLuint,
     pub(crate) vbo: GLuint,
     phantom: PhantomData<T>,
 }
 
-impl<T: GLVertex> VertexBuffer<T> {
+impl Graphics {
     /// (temporary) Create new vertex buffer.
     /// 
     /// **Arguments**
@@ -63,7 +27,7 @@ impl<T: GLVertex> VertexBuffer<T> {
     /// 
     /// * `Ok(VertexBuffer)` - The new vertex buffer.
     /// * `Err(SystemError)` - The vertex buffer could not be created.
-    pub fn new(_graphics: &Rc<Graphics>) -> Result<VertexBuffer<T>,SystemError> {
+    pub fn create_vertexbuffer<T: GPUVertexFormat>(&self) -> Result<VertexBuffer<T>,SystemError> {
         let mut vao: GLuint = 0;
         let mut vbo: GLuint = 0;
         unsafe {
@@ -92,12 +56,14 @@ impl<T: GLVertex> VertexBuffer<T> {
     /// 
     /// * `Ok(VertexBuffer)` - The new vertex buffer.
     /// * `Err(SystemError)` - The vertex buffer could not be created.
-    pub fn new_from_vec(_graphics: &Rc<Graphics>,src: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
-        let vertexbuffer = VertexBuffer::new(_graphics)?;
+    pub fn create_vertexbuffer_from_vec<T: GPUVertexFormat>(&self,src: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
+        let vertexbuffer = self.create_vertexbuffer()?;
         vertexbuffer.load(0,&src);
         Ok(vertexbuffer)
     }
+}
 
+impl<T: GPUVertexFormat> VertexBuffer<T> {
     /// (temporary) Load data into vertex buffer
     /// 
     /// **Arguments**
@@ -107,18 +73,18 @@ impl<T: GLVertex> VertexBuffer<T> {
     pub fn load(&self,o: usize,src: &Vec<T>) {
         unsafe { 
             gl::BindVertexArray(self.vao);
-            gl::BufferData(gl::ARRAY_BUFFER,T::len() * (o + src.len()) as isize,null() as *const c_void,gl::STATIC_DRAW);
+            gl::BufferData(gl::ARRAY_BUFFER,((o + src.len()) * T::len()) as isize,null() as *const c_void,gl::STATIC_DRAW);
             gl::BufferSubData(
                 gl::ARRAY_BUFFER,
-                T::len() * (o as isize),
-                T::len() * src.len() as isize,
+                (T::len() * o) as isize,
+                (T::len() * src.len()) as isize,
                 src.as_ptr() as *const c_void
             );
         }
     }
 }
 
-impl<T: GLVertex> Drop for VertexBuffer<T> {
+impl<T: GPUVertexFormat> Drop for VertexBuffer<T> {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteBuffers(1,&self.vbo);

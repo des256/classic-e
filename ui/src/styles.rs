@@ -1,4 +1,4 @@
-// E - Styles
+// E - UI - Styles
 // Desmond Germans, 2020
 
 use crate::*;
@@ -10,6 +10,10 @@ pub struct Styles {
     pub proto_serif: Rc<FontProto>,
     pub proto_mono: Rc<FontProto>,
     pub font: Rc<Font>,
+    pub accordeon_tab_text_color: u32,
+    pub accordeon_tab_color: u32,
+    pub accordeon_tab_hover_color: u32,
+    pub accordeon_tab_current_color: u32,
     pub book_tab_text_color: u32,
     pub book_tab_color: u32,
     pub book_tab_hover_color: u32,
@@ -18,12 +22,28 @@ pub struct Styles {
     pub button_text_color: u32,
     pub button_color: u32,
     pub button_hover_color: u32,
-    pub menubar_text_color: u32,
+    // field
+    // list
+    pub menu_item_text_color: u32,
+    pub menu_item_color: u32,
+    pub menu_item_hover_color: u32,
+    pub menubar_item_text_color: u32,
+    pub menubar_item_color: u32,
+    pub menubar_item_hover_color: u32,
+    // progress
+    // scrollbar
+    // slider
+    // stepper
     pub text_color: u32,
+    // toggle
+    pub toolbar_item_text_color: u32,
+    pub toolbar_item_color: u32,
+    pub toolbar_item_hover_color: u32,
+    // tree
 }
 
 impl Styles {
-    pub fn new_default(graphics: &Rc<Graphics>,font_path: &str) -> Result<Styles,SystemError> {
+    pub fn new_default(graphics: &Graphics,font_path: &str) -> Result<Styles,SystemError> {
         let proto_sans = Rc::new(
             FontProto::new(
                 graphics,
@@ -50,16 +70,36 @@ impl Styles {
             proto_serif: proto_serif,
             proto_mono: proto_mono,
             font: font,
+            accordeon_tab_text_color: 0xAAAAAA,
+            accordeon_tab_color: 0x444444,
+            accordeon_tab_hover_color: 0x224488,
+            accordeon_tab_current_color: 0x112244,
             book_tab_text_color: 0xAAAAAA,
-            book_tab_color: 0x332211,
-            book_tab_hover_color: 0x112244,
-            book_tab_current_color: 0x665522,
+            book_tab_color: 0x444444,
+            book_tab_hover_color: 0x224488,
+            book_tab_current_color: 0x112244,
             book_tab_background_color: 0x111111,
             button_text_color: 0xAAAAAA,
-            button_color: 0x332211,
-            button_hover_color: 0x112244,
-            menubar_text_color: 0xAAAAAA,
+            button_color: 0x444444,
+            button_hover_color: 0x224488,
+            // field
+            // list
+            menu_item_text_color: 0xAAAAAA,
+            menu_item_color: 0x444444,
+            menu_item_hover_color: 0x224488,
+            menubar_item_text_color: 0xAAAAAA,
+            menubar_item_color: 0x444444,
+            menubar_item_hover_color: 0x224488,
+            // progress
+            // scrollbar
+            // slider
+            // stepper
             text_color: 0xAAAAAA,
+            // toggle
+            toolbar_item_text_color: 0xAAAAAA,
+            toolbar_item_color: 0x444444,
+            toolbar_item_hover_color: 0x224488,
+            // tree        
         })
     }
 }

@@ -9,9 +9,7 @@ use std::{
     ptr::null_mut,
 };
 use gl::types::{
-    GLint,
     GLuint,
-    GLfloat,
     GLchar,
     GLenum,
 };
@@ -41,106 +39,11 @@ pub struct Graphics {
 }
 
 #[doc(hidden)]
-pub trait GLSetUniform {
-    fn set_uniform(location: i32,value: Self);
-}
-
-impl GLSetUniform for f32 {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform1f(location,value) };
-    }
-}
-
-impl GLSetUniform for Vec2<f32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform2fv(location,1,&value as *const Self as *const GLfloat) };
-    }
-}
-
-impl GLSetUniform for Vec3<f32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform3fv(location,1,&value as *const Self as *const GLfloat) };
-    }
-}
-
-impl GLSetUniform for Vec4<f32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform4fv(location,1,&value as *const Self as *const GLfloat) };
-    }
-}
-
-impl GLSetUniform for u32 {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform1ui(location,value) };
-    }
-}
-
-impl GLSetUniform for Vec2<u32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform2uiv(location,1,&value as *const Self as *const GLuint) };
-    }
-}
-
-impl GLSetUniform for Vec3<u32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform3uiv(location,1,&value as *const Self as *const GLuint) };
-    }
-}
-
-impl GLSetUniform for Vec4<u32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform4uiv(location,1,&value as *const Self as *const GLuint) };
-    }
-}
-
-impl GLSetUniform for i32 {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform1i(location,value) };
-    }
-}
-
-impl GLSetUniform for Vec2<i32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform2iv(location,1,&value as *const Self as *const GLint) };
-    }
-}
-
-impl GLSetUniform for Vec3<i32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform3iv(location,1,&value as *const Self as *const GLint) };
-    }
-}
-
-impl GLSetUniform for Vec4<i32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform4iv(location,1,&value as *const Self as *const GLint) };
-    }
-}
-
-impl GLSetUniform for Rect<f32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform4fv(location,1,&value as *const Self as *const GLfloat) };
-    }
-}
-
-impl GLSetUniform for Rect<u32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform4uiv(location,1,&value as *const Self as *const GLuint) };
-    }
-}
-
-impl GLSetUniform for Rect<i32> {
-    fn set_uniform(location: i32,value: Self) {
-        unsafe { gl::Uniform4iv(location,1,&value as *const Self as *const GLint) };
-    }
-}
-
-#[doc(hidden)]
-pub trait GLBindTexture {
+pub trait GPUBindTexture {
     fn do_bind(&self,graphics: &Graphics,stage: usize);
 }
 
-impl GLBindTexture for Framebuffer {
+impl GPUBindTexture for Framebuffer {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
@@ -149,7 +52,7 @@ impl GLBindTexture for Framebuffer {
     }
 }
 
-impl<T: GPUDataFormat> GLBindTexture for Texture1D<T> {
+impl<T: GPUTextureFormat> GPUBindTexture for Texture1D<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
@@ -158,7 +61,7 @@ impl<T: GPUDataFormat> GLBindTexture for Texture1D<T> {
     }
 }
 
-impl<T: GPUDataFormat> GLBindTexture for Texture2D<T> {
+impl<T: GPUTextureFormat> GPUBindTexture for Texture2D<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
@@ -167,7 +70,7 @@ impl<T: GPUDataFormat> GLBindTexture for Texture2D<T> {
     }
 }
 
-impl<T: GPUDataFormat> GLBindTexture for Texture3D<T> {
+impl<T: GPUTextureFormat> GPUBindTexture for Texture3D<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
@@ -176,7 +79,7 @@ impl<T: GPUDataFormat> GLBindTexture for Texture3D<T> {
     }
 }
 
-impl<T: GPUDataFormat> GLBindTexture for TextureCube<T> {
+impl<T: GPUTextureFormat> GPUBindTexture for TextureCube<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
@@ -185,7 +88,7 @@ impl<T: GPUDataFormat> GLBindTexture for TextureCube<T> {
     }
 }
 
-impl<T: GPUDataFormat> GLBindTexture for Texture2DArray<T> {
+impl<T: GPUTextureFormat> GPUBindTexture for Texture2DArray<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
@@ -213,30 +116,33 @@ impl BindTarget for Framebuffer {
     }
 }
 
-impl<T: HandleEvent> BindTarget for T {
+impl BindTarget for Rc<Window> {
 #[allow(unused_variables)]
     fn do_bind(&self,graphics: &Graphics) {
         unsafe {
 #[cfg(target_os="linux")]
-            glXMakeCurrent(graphics.system.connection.get_raw_dpy(),self.id(),graphics.system.context);
+            glXMakeCurrent(graphics.system.connection.get_raw_dpy(),self.id,graphics.system.context);
 #[cfg(target_os="windows")]
             wglMakeCurrent(self.hdc,self.anchor.hglrc);
             gl::BindFramebuffer(gl::FRAMEBUFFER,0);
-            let mut r = rect!(0i32,0i32,0i32,0i32);
+
 #[cfg(target_os="linux")]
-            {
-                let geometry_com = get_geometry(&graphics.system.connection,self.id() as u32);
+            let r = {
+                let geometry_com = get_geometry(&graphics.system.connection,self.id as u32);
                 let geometry = match geometry_com.get_reply() {
                     Ok(geometry) => *geometry.ptr,
                     Err(_) => { return; },
                 };
-                r = rect!(
+                rect!(
                     geometry.x as i32,
                     geometry.y as i32,
                     geometry.width as i32,
                     geometry.height as i32
-                );
-            }
+                )
+            };
+#[cfg(target_os="windows")]
+            let r = rect!(0i32,0i32,0i32,0i32);
+            
             gl::Viewport(0,0,r.s().x(),r.s().y());
             gl::Scissor(0,0,r.s().x(),r.s().y());
         }
@@ -395,7 +301,7 @@ impl Graphics {
     /// 
     /// * `stage` - Texture stage to bind to.
     /// * `texture` - Texture or framebuffer to bind.
-    pub fn bind_texture<T: GLBindTexture>(&self,stage: usize,texture: &T) {
+    pub fn bind_texture<T: GPUBindTexture>(&self,stage: usize,texture: &T) {
         texture.do_bind(&self,stage);
     }
 
@@ -415,10 +321,10 @@ impl Graphics {
     /// 
     /// * `name` - Variable name referenced in the shader program.
     /// * `value` - Value of the uniform.
-    pub fn set_uniform<T: GLSetUniform>(&self,name: &str,value: T) {
+    pub fn set_uniform<T: GPUUniformFormat>(&self,name: &str,value: T) {
         let cname = CString::new(name).unwrap();
         let res = unsafe { gl::GetUniformLocation(self.sp.get(),cname.as_ptr() as *const GLchar) };
-        T::set_uniform(res,value);
+        T::set(res,value);
     }
 
     /// (temporary) Bind current vertex buffer.
@@ -426,7 +332,7 @@ impl Graphics {
     /// **Arguments**
     /// 
     /// * `vertexbuffer` - Vertexbuffer to bind.
-    pub fn bind_vertexbuffer<T: GLVertex>(&self,vertexbuffer: &VertexBuffer<T>) {
+    pub fn bind_vertexbuffer<T: GPUVertexFormat>(&self,vertexbuffer: &VertexBuffer<T>) {
         unsafe { gl::BindVertexArray(vertexbuffer.vao) };
     }
 
@@ -447,7 +353,7 @@ impl Graphics {
     /// * `bp` - Uniform buffer binding point.
     /// * `name` - Name of the uniform block in the shader.
     /// * `uniformbuffer` - Uniform buffer.
-    pub fn bind_uniformbuffer<T: GLUniform>(&self,bp: u32,name: &str,uniformbuffer: &UniformBuffer<T>) {
+    pub fn bind_uniformbuffer<T: GPUUniformFormat>(&self,bp: u32,name: &str,uniformbuffer: &UniformBuffer<T>) {
         let cname = CString::new(name).unwrap();
         unsafe {
             let res = gl::GetUniformBlockIndex(self.sp.get(),cname.as_ptr() as *const GLchar);
@@ -463,10 +369,10 @@ impl Graphics {
     /// * `window` - Window to set VSync for.
     /// * `state` - Whether or not VSync should be enabled.
     #[allow(unused_variables)]
-    pub fn set_vsync(&self,handler: &dyn HandleEvent,state: bool) {
+    pub fn set_vsync(&self,window: &Window,state: bool) {
         unsafe {
     #[cfg(target_os="linux")]
-            (self.system.glx_swap_interval)(self.system.connection.get_raw_dpy(),handler.id(),if state { 1 } else { 0 });
+            (self.system.glx_swap_interval)(self.system.connection.get_raw_dpy(),window.id,if state { 1 } else { 0 });
     #[cfg(target_os="windows")]
             (self.system.wgl_swap_interval)(if state { 1 } else { 0 });
         }

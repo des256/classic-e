@@ -3,7 +3,6 @@
 
 use crate::*;
 use std::{
-    rc::Rc,
     ffi::c_void,
     marker::PhantomData,
 };
@@ -19,13 +18,13 @@ pub enum CubeFace {
 }
 
 /// Cube texture GPU resource.
-pub struct TextureCube<T: GPUDataFormat> {
+pub struct TextureCube<T: GPUTextureFormat> {
     pub tex: GLuint,
     size: usize,
     phantom: PhantomData<T>,
 }
 
-impl<T: GPUDataFormat> TextureCube<T> {    
+impl Graphics {
     /// (temporary) Create new cube texture.
     /// 
     /// **Arguments**
@@ -37,7 +36,7 @@ impl<T: GPUDataFormat> TextureCube<T> {
     /// 
     /// * `Ok(TextureCube)` - The new cube texture.
     /// * `Err(SystemError)` - The cube texture could not be created.
-    pub fn new(_graphics: &Rc<Graphics>,size: usize) -> Result<TextureCube<T>,SystemError> {
+    pub fn create_texturecube<T: GPUTextureFormat>(&self,size: usize) -> Result<TextureCube<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -72,8 +71,8 @@ impl<T: GPUDataFormat> TextureCube<T> {
     /// 
     /// * `Ok(TextureCube)` - The new cube texture.
     /// * `Err(SystemError)` - The cube texture could not be created.
-    pub fn new_from_mats(graphics: &Rc<Graphics>,src_xp: Mat<T>,src_xn: Mat<T>,src_yp: Mat<T>,src_yn: Mat<T>,src_zp: Mat<T>,src_zn: Mat<T>) -> Result<TextureCube<T>,SystemError> {
-        let texture = TextureCube::new(graphics,src_xp.size.x())?;
+    pub fn create_texturecube_from_mats<T: GPUTextureFormat>(&self,src_xp: Mat<T>,src_xn: Mat<T>,src_yp: Mat<T>,src_yn: Mat<T>,src_zp: Mat<T>,src_zn: Mat<T>) -> Result<TextureCube<T>,SystemError> {
+        let texture = self.create_texturecube(src_xp.size.x())?;
         texture.load(CubeFace::PositiveX,Vec2::<usize>::zero(),&src_xp);
         texture.load(CubeFace::NegativeX,Vec2::<usize>::zero(),&src_xn);
         texture.load(CubeFace::PositiveY,Vec2::<usize>::zero(),&src_yp);
@@ -82,7 +81,9 @@ impl<T: GPUDataFormat> TextureCube<T> {
         texture.load(CubeFace::NegativeZ,Vec2::<usize>::zero(),&src_zn);
         Ok(texture)
     }
+}
 
+impl<T: GPUTextureFormat> TextureCube<T> {    
     /// (temporary) Load data into up-facing texture.
     /// 
     /// **Arguments**
@@ -174,7 +175,7 @@ impl<T: GPUDataFormat> TextureCube<T> {
     }
 }
 
-impl<T: GPUDataFormat> Drop for TextureCube<T> {
+impl<T: GPUTextureFormat> Drop for TextureCube<T> {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteTextures(1,&self.tex);
