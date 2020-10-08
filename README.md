@@ -34,15 +34,15 @@ from `platform`, using graphics from `gpu`.
 `Mat<pixel::ARGB8>` can be regarded as main memory images. The following pixel
 formats are currently defined:
 
-- pixel::R8
-- pixel::R3G3B2
-- pixel::ARGB2
-- pixel::R5G6B5
-- pixel::ARGB4
-- pixel::A1RGB5
-- pixel::RGB8
-- pixel::ARGB8
-- pixel::A2RGB10
+- `pixel::R8`
+- `pixel::R3G3B2`
+- `pixel::ARGB2`
+- `pixel::R5G6B5`
+- `pixel::ARGB4`
+- `pixel::A1RGB5`
+- `pixel::RGB8`
+- `pixel::ARGB8`
+- `pixel::A2RGB10`
 
 ### Future
 
@@ -64,8 +64,6 @@ trait `From` is defined to convert one to the other.
 `Rect` describes a rectangle. A rectangle consists of an origin and a size.
 
 `MultiVec2`, `MultiVec3` and `MultiVec4` are 2D, 3D and 4D multivectors.
-
-`Quat` describes a quaternion.
 
 ### Future
 
@@ -126,30 +124,30 @@ This takes care of the event handling loop. Drawing is done using the context
 
 ### Future
 
-- Accordeon
-- Book
-- Button
-- DatePicker
-- Field
-- FilePicker
-- Image
-- List
-- Menu
-- MenuBar
-- MessageBox
-- Page
-- Pagination
-- Progress
-- Scroller
-- Slider
-- Splitter
-- Stack
-- Stepper
-- Text
-- TimePicker
-- Toggle
-- ToolBar
-- Tree
+- `Accordeon`
+- `Book`
+- `Button`
+- `DatePicker`
+- `Field`
+- `FilePicker`
+- `Image`
+- `List`
+- `Menu`
+- `MenuBar`
+- `MessageBox`
+- `Page`
+- `Pagination`
+- `Progress`
+- `Scroller`
+- `Slider`
+- `Splitter`
+- `Stack`
+- `Stepper`
+- `Text`
+- `TimePicker`
+- `Toggle`
+- `ToolBar`
+- `Tree`
 
 ## Later Future
 
