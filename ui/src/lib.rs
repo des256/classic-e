@@ -58,7 +58,7 @@ pub trait Widget {
     fn draw(&self,draw: &Draw);
 
     /// Handle widget event.
-    fn handle(&self,ui: &UI,window: &Window,event: Event);
+    fn handle(&self,ui: &UI,window: &Window,draw: &Draw,event: Event);
 }
 
 mod accordeon;
@@ -84,6 +84,9 @@ pub use draw::*;
 
 mod field;
 pub use field::*;
+
+mod filepicker;
+pub use filepicker::*;
 
 mod font;
 pub use font::*;

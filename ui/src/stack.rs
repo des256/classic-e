@@ -43,15 +43,52 @@ impl Widget for Stack {
 
     fn set_rect(&self,r: Rect<i32>) {
         self.r.set(r);
+        // TODO: calculate child rects
     }
 
-    fn calc_min_size(&self,_draw: &Draw) -> Vec2<i32> {
-        vec2!(0,0)
+    fn calc_min_size(&self,draw: &Draw) -> Vec2<i32> {
+        match self.orientation {
+            Orientation::Horizontal => {
+                let mut total_size = vec2!(0i32,0i32);
+                for child in self.children.iter() {
+                    let size = child.calc_min_size(draw);
+                    total_size += vec2!(size.x(),0);
+                    if size.y() > total_size.y() {
+                        total_size.set_y(size.y());
+                    }
+                }
+                total_size
+            },
+            Orientation::Vertical => {
+                let mut total_size = vec2!(0i32,0i32);
+                for child in self.children.iter() {
+                    let size = child.calc_min_size(draw);
+                    if size.x() > total_size.x() {
+                        total_size.set_x(size.x());
+                    }
+                    total_size += vec2!(0,size.y());
+                }
+                total_size
+            },
+        }
     }
 
-    fn draw(&self,_draw: &Draw) {
+    fn draw(&self,draw: &Draw) {
+        // TODO: draw all the children
     }
 
-    fn handle(&self,_ui: &UI,_window: &Window,_event: Event) {
+    fn handle(&self,ui: &UI,window: &Window,draw: &Draw,event: Event) {
+        match event {
+            Event::MousePress(p,b) => {
+                // TODO: pass to child
+            },
+            Event::MouseRelease(p,b) => {
+                // TODO: pass to child
+            },
+            Event::MouseMove(p) => {
+                // TODO: pass to child
+            },
+            _ => { },
+        }
     }
 }

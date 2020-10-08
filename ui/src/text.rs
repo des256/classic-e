@@ -40,6 +40,6 @@ impl Widget for Text {
         draw.draw_text(vec2!(0,0),&self.text,styles.text_color,&styles.font);
     }
 
-    fn handle(&self,_ui: &UI,_window: &Window,_event: Event) {
+    fn handle(&self,ui: &UI,window: &Window,draw: &Draw,event: Event) {
     }
 }

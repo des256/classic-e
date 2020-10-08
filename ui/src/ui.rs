@@ -132,22 +132,22 @@ impl UIWindow {
     fn dispatch_platform_event(&self,platform_event: platform::Event) {
         match platform_event {
             platform::Event::KeyPress(k) => {
-                self.widget.handle(&self.ui,&self.window,Event::KeyPress(k));
+                self.widget.handle(&self.ui,&self.window,&self.ui.draw.borrow(),Event::KeyPress(k));
             },
             platform::Event::KeyRelease(k) => {
-                self.widget.handle(&self.ui,&self.window,Event::KeyRelease(k));
+                self.widget.handle(&self.ui,&self.window,&self.ui.draw.borrow(),Event::KeyRelease(k));
             },
             platform::Event::MousePress(p,b) => {
-                self.widget.handle(&self.ui,&self.window,Event::MousePress(p,b));
+                self.widget.handle(&self.ui,&self.window,&self.ui.draw.borrow(),Event::MousePress(p,b));
             },
             platform::Event::MouseRelease(p,b) => {
-                self.widget.handle(&self.ui,&self.window,Event::MouseRelease(p,b));
+                self.widget.handle(&self.ui,&self.window,&self.ui.draw.borrow(),Event::MouseRelease(p,b));
             },
             platform::Event::MouseWheel(w) => {
-                self.widget.handle(&self.ui,&self.window,Event::MouseWheel(w));
+                self.widget.handle(&self.ui,&self.window,&self.ui.draw.borrow(),Event::MouseWheel(w));
             },
             platform::Event::MouseMove(p) => {
-                self.widget.handle(&self.ui,&self.window,Event::MouseMove(p));
+                self.widget.handle(&self.ui,&self.window,&self.ui.draw.borrow(),Event::MouseMove(p));
             },
             platform::Event::Configure(r) => {
                 self.window.r.set(rect!(vec2!(0,0),r.s()));  // TBD: would be nice if this happens in platform, and not here

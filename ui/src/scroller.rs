@@ -5,18 +5,24 @@
 
 use{
     crate::*,
-    std::cell::Cell,
+    std::{
+        cell::Cell,
+        rc::Rc,
+    }
 };
 
 /// Scroller.
 pub struct Scroller {
     r: Cell<Rect<i32>>,
+    child: Rc<dyn Widget>,
+    // TBD offset
 }
 
 impl Scroller {
-    pub fn new() -> Result<Scroller,SystemError> {
+    pub fn new(child: Rc<dyn Widget>) -> Result<Scroller,SystemError> {
         Ok(Scroller {
             r: Cell::new(rect!(0,0,0,0)),
+            child: child,
         })
     }
 }
@@ -34,9 +40,22 @@ impl Widget for Scroller {
         vec2!(0,0)
     }
 
-    fn draw(&self,_draw: &Draw) {
+    fn draw(&self,draw: &Draw) {
+        // TODO: draw child at offset
     }
 
-    fn handle(&self,_ui: &UI,_window: &Window,_event: Event) {
+    fn handle(&self,ui: &UI,window: &Window,draw: &Draw,event: Event) {
+        match event {
+            Event::MousePress(p,b) => {
+                // TODO: pass down to child
+            },
+            Event::MouseRelease(p,b) => {
+                // TODO: pass down to child
+            },
+            Event::MouseMove(p) => {
+                // TODO: pass down to child
+            },
+            _ => { },
+        }
     }
 }

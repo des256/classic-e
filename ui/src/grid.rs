@@ -47,13 +47,27 @@ impl Widget for Grid {
         self.r.set(r);
     }
 
-    fn calc_min_size(&self,_draw: &Draw) -> Vec2<i32> {
+    fn calc_min_size(&self,draw: &Draw) -> Vec2<i32> {
+        // TODO: add all the item sizes together
         vec2!(0,0)
     }
 
-    fn draw(&self,_draw: &Draw) {
+    fn draw(&self,draw: &Draw) {
+        // TODO: draw grid cells
     }
 
-    fn handle(&self,_ui: &UI,_window: &Window,_event: Event) {
+    fn handle(&self,ui: &UI,window: &Window,draw: &Draw,event: Event) {
+        match event {
+            Event::MousePress(p,b) => {
+
+            },
+            Event::MouseRelease(p,b) => {
+
+            },
+            Event::MouseMove(p) => {
+
+            },
+            _ => { },
+        }
     }
 }

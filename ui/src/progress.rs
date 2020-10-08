@@ -12,12 +12,16 @@ use{
 /// Progress indicator.
 pub struct Progress {
     r: Cell<Rect<i32>>,
+    full: Cell<f32>,
+    value: Cell<f32>,
 }
 
 impl Progress {
     pub fn new() -> Result<Progress,SystemError> {
         Ok(Progress {
             r: Cell::new(rect!(0,0,0,0)),
+            full: Cell::new(1.0),
+            value: Cell::new(0.0),
         })
     }
 }
@@ -35,9 +39,11 @@ impl Widget for Progress {
         vec2!(0,0)
     }
 
-    fn draw(&self,_draw: &Draw) {
+    fn draw(&self,draw: &Draw) {
+        // TODO: draw background part
+        // TODO: draw progress part
     }
 
-    fn handle(&self,_ui: &UI,_window: &Window,_event: Event) {
+    fn handle(&self,ui: &UI,window: &Window,draw: &Draw,event: Event) {
     }
 }

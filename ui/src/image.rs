@@ -32,13 +32,15 @@ impl Widget for Image {
         self.r.set(r);
     }
 
-    fn calc_min_size(&self,_draw: &Draw) -> Vec2<i32> {
-        vec2!(0,0)
+    fn calc_min_size(&self,draw: &Draw) -> Vec2<i32> {
+        let size = self.image.size();
+        vec2!(size.x() as i32,size.y() as i32)
     }
 
-    fn draw(&self,_draw: &Draw) {
+    fn draw(&self,draw: &Draw) {
+        draw.draw_texture(vec2!(0,0),&self.image,BlendMode::Replace);
     }
 
-    fn handle(&self,_ui: &UI,_window: &Window,_event: Event) {
+    fn handle(&self,ui: &UI,window: &Window,draw: &Draw,event: Event) {
     }
 }

@@ -1,15 +1,15 @@
-// E - UI - TimePicker
+// E - UI - FilePicker
 // Desmond Germans, 2020
 
-// A time picker allows the user to select a date.
+// A file picker allows the user to select one or more files.
 
 use{
     crate::*,
     std::cell::Cell,
 };
 
-/// Time picker.
-pub struct TimePicker {
+/// File picker.
+pub struct FilePicker {
     r: Cell<Rect<i32>>,
 }
 
