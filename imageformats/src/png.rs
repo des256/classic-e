@@ -109,10 +109,11 @@ struct ZipReader<'a> {
 }
 
 impl<'a> ZipReader<'a> {
+    // This currently entirely ignores the ZLIB wrapper that goes around the INFLATE blocks; this might not always be a good thing
     fn new(block: &'a [u8]) -> ZipReader<'a> {
         ZipReader {
             block: block,
-            rp: 6,  // first 2 bytes a
+            rp: 6,
             bit: 32,
             cache: ((block[2] as u32) | ((block[3] as u32) << 8) | ((block[4] as u32) << 16) | ((block[5] as u32) << 24)) as u32,
         }        
@@ -193,6 +194,8 @@ impl<'a> ZipReader<'a> {
 
 fn inflate(src: &[u8],inflated_size: u32) -> Option<Vec<u8>> {
 
+    //println!("PNG: ZIP INFLATE: zlib header: {:02X} {:02X}; inflated size supposed to be {}, source size {}",src[0],src[1],inflated_size,src.len());
+
     let mut dst: Vec<u8> = vec![0; inflated_size as usize];
     let mut reader = ZipReader::new(&src);
     let mut dp: usize = 0;
@@ -232,12 +235,20 @@ fn inflate(src: &[u8],inflated_size: u32) -> Option<Vec<u8>> {
         // get final block and type bits
         match reader.read_bits(1) {
             Some(value) => { if value == 1 { is_final = true; } else { is_final = false; } },
-            None => { return None; },
+            None => {
+                //println!("PNG: ZIP INFLATE: unable to read final block bit");
+                return None;
+            },
         }
         let block_type = match reader.read_bits(2) {
             Some(value) => { value },
-            None => { return None; },
+            None => {
+                //println!("PNG: ZIP INFLATE: unable to read type bits");
+                return None;
+            },
         };
+
+        //println!("PNG: ZIP INFLATE: block final {}, type {}",is_final,block_type);
 
         // process uncompressed data
         match block_type {
@@ -246,6 +257,7 @@ fn inflate(src: &[u8],inflated_size: u32) -> Option<Vec<u8>> {
                 let length = (((src[sp + 1] as u16) << 8) | (src[sp] as u16)) as usize;
                 sp += 4;
                 if (sp + length > src.len()) || (dp + length > dst.len()) {
+                    //println!("PNG: ZIP INFLATE: uncompressed data out of range");
                     return None;
                 }
                 dst[dp..dp + length].copy_from_slice(&src[sp..sp + length]);
@@ -261,15 +273,24 @@ fn inflate(src: &[u8],inflated_size: u32) -> Option<Vec<u8>> {
                 // get table metrics
                 let hlit = match reader.read_bits(5) {
                     Some(value) => { value + 257 },
-                    None => { return None; },
+                    None => {
+                        //println!("PNG: ZIP INFLATE: unable to read hlit bits");
+                        return None;
+                    },
                 } as usize;
                 let hdist = match reader.read_bits(5) {
                     Some(value) => { value + 1 },
-                    None => { return None; },
+                    None => {
+                        //println!("PNG: ZIP INFLATE: unable to read hdist bits");
+                        return None;
+                    },
                 } as usize;
                 let hclen = match reader.read_bits(4) {
                     Some(value) => { value + 4 },
-                    None => { return None; },
+                    None => {
+                        //println!("PNG: ZIP INFLATE: unable to read hclen bits");
+                        return None;
+                    },
                 };
 
                 // get length codes
@@ -277,7 +298,10 @@ fn inflate(src: &[u8],inflated_size: u32) -> Option<Vec<u8>> {
                 for i in 0..hclen {
                     lengths[HCORD[i as usize]] = match reader.read_bits(3) {
                         Some(value) => { value },
-                        None => { return None; },
+                        None => {
+                            //println!("PNG: ZIP INFLATE: unable to read length code bits");
+                            return None;
+                        },
                     } as u8;
                 }
                 let hctree_tables = create_huffman_tables(&lengths);
@@ -288,12 +312,18 @@ fn inflate(src: &[u8],inflated_size: u32) -> Option<Vec<u8>> {
                 while ll < hlit + hdist {
                     let code = match reader.read_symbol(&hctree_tables) {
                         Some(value) => { value },
-                        None => { return None; },
+                        None => {
+                            //println!("PNG: ZIP INFLATE: unable to read code symbol");
+                            return None;
+                        },
                     };
                     if code == 16 {
                         let length = match reader.read_bits(2) {
                             Some(value) => { value + 3 },
-                            None => { return None; },
+                            None => {
+                                //println!("PNG: ZIP INFLATE: unable to read 2 length bits");
+                                return None;
+                            },
                         };
                         for _i in 0..length { // TODO: for loop might be expressed differently in rust
                             lengths[ll] = lengths[ll - 1];
@@ -303,7 +333,10 @@ fn inflate(src: &[u8],inflated_size: u32) -> Option<Vec<u8>> {
                     else if code == 17 {
                         let length = match reader.read_bits(3) {
                             Some(value) => { value + 3 },
-                            None => { return None; },
+                            None => {
+                                //println!("PNG: ZIP INFLATE: unable to read 3 length bits");
+                                return None;
+                            },
                         };
                         for _i in 0..length { // TODO: for loop might be expressed differently in rust
                             lengths[ll] = 0;
@@ -313,7 +346,10 @@ fn inflate(src: &[u8],inflated_size: u32) -> Option<Vec<u8>> {
                     else if code == 18 {
                         let length = match reader.read_bits(7) {
                             Some(value) => { value + 11 },
-                            None => { return None; },
+                            None => {
+                                //println!("PNG: ZIP INFLATE: unable to read 7 length bits");
+                                return None;
+                            },
                         };
                         for _i in 0..length { // TODO: for loop might be expressed differently in rust
                             lengths[ll] = 0;
@@ -333,7 +369,13 @@ fn inflate(src: &[u8],inflated_size: u32) -> Option<Vec<u8>> {
                 hdist_tables = &current_hdist_tables;
             },
             3 => {
-                return None;
+                if is_final {
+                    break;
+                }
+                else {
+                    //println!("PNG: ZIP INFLATE: block type 3 not supported");
+                    return None;
+                }
             },
             _ => { },
         }
@@ -342,7 +384,10 @@ fn inflate(src: &[u8],inflated_size: u32) -> Option<Vec<u8>> {
             while dp < dst.len() {
                 let mut code = match reader.read_symbol(&hlitlen_tables) {
                     Some(value) => { value },
-                    None => { return None; },
+                    None => {
+                        //println!("PNG: ZIP INFLATE: unable to read code symbol");
+                        return None;
+                    },
                 };
                 if code < 256 {
                     dst[dp] = code as u8;
@@ -361,14 +406,20 @@ fn inflate(src: &[u8],inflated_size: u32) -> Option<Vec<u8>> {
                     if extra > 0 {
                         length += match reader.read_bits(extra) {
                             Some(value) => { value },
-                            None => { return None; },
+                            None => {
+                                //println!("PNG: ZIP INFLATE: unable to read extra length bits");
+                                return None;
+                            },
                         } as usize;
                     }
 
                     // get dist length and extra bit entries
                     code = match reader.read_symbol(&hdist_tables) {
                         Some(value) => { value },
-                        None => { return None; },
+                        None => {
+                            //println!("PNG: ZIP INFLATE: unable to read extra dist length");
+                            return None;
+                        },
                     };
                     let mut dist = DIST_DIST[code as usize] as usize;
                     let extra = DIST_EXTRA[code as usize] as u32;
@@ -377,7 +428,10 @@ fn inflate(src: &[u8],inflated_size: u32) -> Option<Vec<u8>> {
                     if extra > 0 {
                         dist += match reader.read_bits(extra) {
                             Some(value) => { value },
-                            None => { return None; },
+                            None => {
+                                //println!("PNG: ZIP INFLATE: unable to read extra bits");
+                                return None;
+                            },
                         } as usize;
                     }
 
@@ -387,9 +441,11 @@ fn inflate(src: &[u8],inflated_size: u32) -> Option<Vec<u8>> {
                         //return None;
                     }
                     if dist > dp {
+                        //println!("PNG: ZIP INFLATE: distance too large");
                         return None;
                     }
                     if dp + length - dist > dst.len() {
+                        //println!("PNG: ZIP INFLATE: source block too big");
                         return None;
                     }
                     for i in 0..length {
@@ -733,6 +789,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
         (src[5] != 0x0A) ||
         (src[6] != 0x1A) ||
         (src[7] != 0x0A) {
+        println!("PNG: decoding tag failed");
         return None;
     }
     let mut sp: usize = 8;
@@ -773,6 +830,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
                     (compression != 0) ||
                     (filter != 0) ||
                     (interlace > 1) {
+                    //println!("PNG: header sanity check failed");
                     return None;
                 }
                 itype = match itype_code {
@@ -791,7 +849,10 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
                     0x1002 => Type::RGB16,
                     0x1004 => Type::LA16,
                     0x1006 => Type::RGBA16,
-                    _ => { return None; },
+                    _ => {
+                        //println!("PNG: unknown itype {:04X}",itype_code);
+                        return None;
+                    },
                 };
                 match itype {
                     Type::L1 => { stride = (width + 7) / 8; bpp = 1; },
@@ -825,6 +886,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
             0x504C5445 => { // PLTE
                 plte_present = true;
                 if chunk_length > 768 {
+                    //println!("PNG: PLTE chunk too big ({})",chunk_length);
                     return None;
                 }
                 for i in 0..(chunk_length / 3) {
@@ -927,11 +989,13 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
 
     // sanity check the palette
     if need_plte && !plte_present {
+        //println!("PNG: palette needed but not present");
         return None;
     }
 
     // sanity check the data
     if !idat_found || !iend_found {
+        //println!("PNG: missing IDAT or IEND chunk");
         return None;
     }
 
@@ -974,7 +1038,10 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
         }
         let filtered_data = match inflate(&zipped_data,total_dsize) {
             Some(data) => { data },
-            None => { return None; },
+            None => {
+                //println!("PNG: ZIP INFLATE failed");
+                return None;
+            },
         };
         let mut sp = 0usize;
         let mut result = Mat::<T>::new(vec2!(width as usize,height as usize));
@@ -992,7 +1059,10 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
         
         let filtered_data = match inflate(&zipped_data,(stride + 1) * height) {
             Some(data) => { data },
-            None => { return None; },
+            None => {
+                //println!("PNG: ZIP INFLATE failed");
+                return None;
+            },
         };
         
         //let after_inflate = Instant::now();
@@ -1027,3 +1097,10 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
 pub fn encode<T: pixel::Pixel>(_src: &Mat<T>) -> Option<Vec<u8>> {
     None
 }
+
+
+/*
+
+78 5E = 01111000 01011110: CM=8 (deflate), CINFO=7 (32k window size), FLEVEL=fast, FDICT=no, FCHECK=1E
+78 DA = 01111000 11011010: CM=8 (deflate), CINFO=7 (32k window size), FLEVEL=maximum, FDICT=no, FCHECK=1A
+*/

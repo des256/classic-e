@@ -7,12 +7,16 @@
 use{
     crate::*,
     std::{
-        cell::Cell,
+        cell::{
+            Cell,
+            RefCell,
+        },
         rc::Rc,
     },
 };
 
-#[derive(Copy,Clone)]
+#[doc(hidden)]
+#[derive(Copy,Clone,Debug)]
 pub enum SplitterHit {
     Nothing,
     TopLeft,
@@ -20,41 +24,132 @@ pub enum SplitterHit {
     BottomRight,
 }
 
-/// Splitter.
+/// Horizontal or vertical splitter style.
+pub struct SplitterStyle {
+    pub color: u32,
+    pub hover_color: u32,
+}
+
+/// Horizontal or vertical splitter.
 pub struct Splitter {
+    ui: Rc<UI>,
+    orientation: Orientation,
+    style: RefCell<SplitterStyle>,
     r: Cell<Rect<i32>>,
     hit: Cell<SplitterHit>,
-    orientation: Orientation,
+    capturing: Cell<bool>,
     topleft: Rc<dyn Widget>,
     bottomright: Rc<dyn Widget>,
     pos: Cell<i32>,
+    start_pos: Cell<i32>,
+    start_p: Cell<Vec2<i32>>,
 }
 
 impl Splitter {
-    pub fn new_horizontal(left: Rc<dyn Widget>,right: Rc<dyn Widget>) -> Result<Splitter,SystemError> {
+    pub fn new_horizontal(ui: &Rc<UI>,left: Rc<dyn Widget>,right: Rc<dyn Widget>) -> Result<Splitter,SystemError> {
         Ok(Splitter {
+            ui: Rc::clone(&ui),
+            orientation: Orientation::Horizontal,
+            style: RefCell::new(SplitterStyle {
+                color: 0x444444,
+                hover_color: 0x224488,    
+            }),
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(SplitterHit::Nothing),
-            orientation: Orientation::Horizontal,
+            capturing: Cell::new(false),
             topleft: left,
             bottomright: right,
             pos: Cell::new(0),
+            start_pos: Cell::new(0),
+            start_p: Cell::new(vec2!(0,0)),
         })
     }
 
-    pub fn new_vertical(top: Rc<dyn Widget>,bottom: Rc<dyn Widget>) -> Result<Splitter,SystemError> {
+    pub fn new_vertical(ui: &Rc<UI>,top: Rc<dyn Widget>,bottom: Rc<dyn Widget>) -> Result<Splitter,SystemError> {
         Ok(Splitter {
+            ui: Rc::clone(&ui),
+            orientation: Orientation::Vertical,
+            style: RefCell::new(SplitterStyle {
+                color: 0x444444,
+                hover_color: 0x224488,    
+            }),
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(SplitterHit::Nothing),
-            orientation: Orientation::Vertical,
+            capturing: Cell::new(false),
             topleft: top,
             bottomright: bottom,
             pos: Cell::new(0),
+            start_pos: Cell::new(0),
+            start_p: Cell::new(vec2!(0,0)),
         })
     }
 
-    pub fn find_hit(&self,draw: &Draw,p: Vec2<i32>) -> SplitterHit {
-        SplitterHit::Nothing  // Should be TopLeft, Separator or BottomRight when the separator is known
+    pub fn find_hit(&self,p: Vec2<i32>) -> SplitterHit {
+        if !rect!(vec2!(0,0),self.r.get().s()).contains(&p) {
+            return SplitterHit::Nothing
+        }
+        let pos = self.pos.get();
+        match self.orientation {
+            Orientation::Horizontal => {
+                if p.x() < pos {
+                    SplitterHit::TopLeft
+                }
+                else if p.x() < pos + SPLITTER_SEPARATOR_SIZE {
+                    SplitterHit::Separator
+                }
+                else {
+                    SplitterHit::BottomRight
+                }
+            },
+            Orientation::Vertical => {
+                if p.y() < pos {
+                    SplitterHit::TopLeft
+                }
+                else if p.y() < pos + SPLITTER_SEPARATOR_SIZE {
+                    SplitterHit::Separator
+                }
+                else {
+                    SplitterHit::BottomRight
+                }
+            },
+        }
+    }
+
+    pub fn set_pos(&self,pos: i32) {
+        let mut new_pos = pos;
+        let topleft_size = self.topleft.calc_min_size();
+        let bottomright_size = self.bottomright.calc_min_size();
+        let (range_low,range_high) = match self.orientation {
+            Orientation::Horizontal => {
+                (
+                    topleft_size.x(),
+                    self.r.get().sx() - bottomright_size.x() - SPLITTER_SEPARATOR_SIZE
+                )
+            },
+            Orientation::Vertical => {
+                (
+                    topleft_size.y(),
+                    self.r.get().sy() - bottomright_size.y() - SPLITTER_SEPARATOR_SIZE
+                )
+            },
+        };
+        if new_pos < range_low {
+            new_pos = range_low;
+        }
+        if new_pos > range_high {
+            new_pos = range_high;
+        }
+        self.pos.set(new_pos);
+        match self.orientation {
+            Orientation::Horizontal => {
+                self.topleft.set_rect(rect!(vec2!(0,0),vec2!(new_pos,self.r.get().sy())));
+                self.bottomright.set_rect(rect!(vec2!(new_pos + SPLITTER_SEPARATOR_SIZE,0),vec2!(self.r.get().sx() - new_pos - SPLITTER_SEPARATOR_SIZE,self.r.get().sy())));
+            },
+            Orientation::Vertical => {
+                self.topleft.set_rect(rect!(vec2!(0,0),vec2!(self.r.get().sx(),new_pos)));
+                self.bottomright.set_rect(rect!(vec2!(0,new_pos + SPLITTER_SEPARATOR_SIZE),vec2!(self.r.get().sx(),self.r.get().sy() - new_pos - SPLITTER_SEPARATOR_SIZE)));
+            },
+        }
     }
 }
 
@@ -67,18 +162,19 @@ impl Widget for Splitter {
 
     fn set_rect(&self,r: Rect<i32>) {
         self.r.set(r);
+        self.set_pos(self.pos.get());
     }
 
-    fn calc_min_size(&self,draw: &Draw) -> Vec2<i32> {
+    fn calc_min_size(&self) -> Vec2<i32> {
         match self.orientation {
             Orientation::Horizontal => {
                 let mut total_size = vec2!(SPLITTER_SEPARATOR_SIZE,0);
-                let size = self.topleft.calc_min_size(draw);
+                let size = self.topleft.calc_min_size();
                 total_size += vec2!(size.x(),0);
                 if size.y() > total_size.y() {
                     total_size.set_y(size.y());
                 }
-                let size = self.bottomright.calc_min_size(draw);
+                let size = self.bottomright.calc_min_size();
                 total_size += vec2!(size.x(),0);
                 if size.y() > total_size.y() {
                     total_size.set_y(size.y());
@@ -87,12 +183,12 @@ impl Widget for Splitter {
             },
             Orientation::Vertical => {
                 let mut total_size = vec2!(0,SPLITTER_SEPARATOR_SIZE);
-                let size = self.topleft.calc_min_size(draw);
+                let size = self.topleft.calc_min_size();
                 if size.x() > total_size.x() {
                     total_size.set_x(size.x());
                 }
                 total_size += vec2!(0,size.y());
-                let size = self.bottomright.calc_min_size(draw);
+                let size = self.bottomright.calc_min_size();
                 if size.x() > total_size.x() {
                     total_size.set_x(size.x());
                 }
@@ -102,24 +198,189 @@ impl Widget for Splitter {
         }
     }
 
-    fn draw(&self,draw: &Draw) {
-        // TODO: draw up/left child
-        // TODO: draw separator
-        // TODO: draw down/right child
+    fn draw(&self) {
+        let style = self.style.borrow();
+        let color = if let SplitterHit::Separator = self.hit.get() {
+            style.hover_color
+        }
+        else {
+            style.color
+        };
+        let offset = self.topleft.rect().o();
+        self.ui.delta_offset(offset);
+        self.topleft.draw();
+        self.ui.delta_offset(-offset);
+        let pos = self.pos.get();
+        match self.orientation {
+            Orientation::Horizontal => {
+                self.ui.draw_rectangle(rect!(pos,0,SPLITTER_SEPARATOR_SIZE,self.r.get().sy()),color,BlendMode::Replace);
+            },
+            Orientation::Vertical => {
+                self.ui.draw_rectangle(rect!(0,pos,self.r.get().sx(),SPLITTER_SEPARATOR_SIZE),color,BlendMode::Replace);
+            },
+        }
+        let offset = self.bottomright.rect().o();
+        self.ui.delta_offset(offset);
+        self.bottomright.draw();
+        self.ui.delta_offset(-offset);
     }
 
-    fn handle(&self,ui: &UI,window: &Window,draw: &Draw,event: Event) {
-        match event {
-            Event::MousePress(p,b) => {
+    fn keypress(&self,ui: &UI,window: &Window,k: u8) {
+    }
 
-            },
-            Event::MouseRelease(p,b) => {
+    fn keyrelease(&self,ui: &UI,window: &Window,k: u8) {
+    }
 
-            },
-            Event::MouseMove(p) => {
-                self.hit.set(self.find_hit(draw,p));
-            },
-            _ => { },
+    fn mousepress(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+        if self.capturing.get() {
+            match self.hit.get() {
+                SplitterHit::Nothing => {
+                    self.capturing.set(false);
+                    false
+                },
+                SplitterHit::TopLeft => {
+                    let result = self.topleft.mousepress(ui,window,p - self.topleft.rect().o(),b);
+                    self.capturing.set(result);
+                    result
+                },
+                SplitterHit::Separator => {
+                    true
+                },
+                SplitterHit::BottomRight => {
+                    let result = self.bottomright.mousepress(ui,window,p - self.bottomright.rect().o(),b);
+                    self.capturing.set(result);
+                    result
+                },
+            }
         }
+        else {
+            match self.hit.get() {
+                SplitterHit::Nothing => {
+                    false
+                },
+                SplitterHit::TopLeft => {
+                    let result = self.topleft.mousepress(ui,window,p - self.topleft.rect().o(),b);
+                    self.capturing.set(result);
+                    result
+                },
+                SplitterHit::Separator => {
+                    println!("Splitter: start dragging separator");
+                    self.start_pos.set(self.pos.get());
+                    self.start_p.set(p);
+                    self.capturing.set(true);
+                    true
+                }
+                SplitterHit::BottomRight => {
+                    let result = self.bottomright.mousepress(ui,window,p - self.bottomright.rect().o(),b);
+                    self.capturing.set(result);
+                    result
+                },
+            }
+        }
+    }
+
+    fn mouserelease(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+        if self.capturing.get() {
+            match self.hit.get() {
+                SplitterHit::Nothing => {
+                    self.capturing.set(false);
+                    false
+                },
+                SplitterHit::TopLeft => {
+                    let result = self.topleft.mouserelease(ui,window,p - self.topleft.rect().o(),b);
+                    self.capturing.set(result);
+                    result
+                },
+                SplitterHit::Separator => {
+                    println!("Splitter: stop dragging separator");
+                    self.capturing.set(false);
+                    self.mousemove(ui,window,p)
+                },
+                SplitterHit::BottomRight => {
+                    let result = self.bottomright.mouserelease(ui,window,p - self.bottomright.rect().o(),b);
+                    self.capturing.set(result);
+                    result
+                },
+            }
+        }
+        else {
+            match self.hit.get() {
+                SplitterHit::Nothing => {
+                    false
+                },
+                SplitterHit::TopLeft => {
+                    let result = self.topleft.mouserelease(ui,window,p - self.topleft.rect().o(),b);
+                    self.capturing.set(result);
+                    result
+                },
+                SplitterHit::Separator => {
+                    false
+                },
+                SplitterHit::BottomRight => {
+                    let result = self.bottomright.mouserelease(ui,window,p - self.bottomright.rect().o(),b);
+                    self.capturing.set(result);
+                    result
+                },
+            }
+        }
+    }
+
+    fn mousemove(&self,ui: &UI,window: &Window,p: Vec2<i32>) -> bool {
+        if self.capturing.get() {
+            match self.hit.get() {
+                SplitterHit::Nothing => {
+                    self.capturing.set(false);
+                    false
+                },
+                SplitterHit::TopLeft => {
+                    let result = self.topleft.mousemove(ui,window,p - self.topleft.rect().o());
+                    self.capturing.set(result);
+                    result
+                },
+                SplitterHit::Separator => {
+                    let wanted_pos = match self.orientation {
+                        Orientation::Horizontal => {
+                            self.start_pos.get() + p.x() - self.start_p.get().x()
+                        },
+                        Orientation::Vertical => {
+                            self.start_pos.get() + p.y() - self.start_p.get().y()
+                        },
+                    };
+                    self.set_pos(wanted_pos);
+                    println!("Splitter: dragging separator");
+                    true
+                },
+                SplitterHit::BottomRight => {
+                    let result = self.bottomright.mousemove(ui,window,p - self.bottomright.rect().o());
+                    self.capturing.set(result);
+                    result
+                },
+            }
+        }
+        else {
+            self.hit.set(self.find_hit(p));
+            match self.hit.get() {
+                SplitterHit::Nothing => {
+                    false
+                },
+                SplitterHit::TopLeft => {
+                    let result = self.topleft.mousemove(ui,window,p - self.topleft.rect().o());
+                    self.capturing.set(result);
+                    result
+                },
+                SplitterHit::Separator => {
+                    true
+                },
+                SplitterHit::BottomRight => {
+                    let result = self.bottomright.mousemove(ui,window,p - self.bottomright.rect().o());
+                    self.capturing.set(result);
+                    result
+                }
+            }
+        }
+    }
+
+    fn mousewheel(&self,ui: &UI,window: &Window,w: MouseWheel) -> bool {
+        false
     }
 }

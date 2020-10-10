@@ -5,15 +5,34 @@
 
 use{
     crate::*,
-    std::cell::Cell,
+    std::{
+        cell::{
+            Cell,
+            RefCell,
+        },
+        rc::Rc,
+    },
 };
 
-#[derive(Copy,Clone)]
+#[doc(hidden)]
+#[derive(Copy,Clone,Debug)]
 pub enum MenuHit {
     Nothing,
     Item(usize),
 }
 
+/// Menu style.
+pub struct MenuStyle {
+    pub font: Rc<Font>,
+    pub item_text_color: u32,
+    pub item_disabled_text_color: u32,
+    pub item_color: u32,
+    pub item_hover_color: u32,
+    pub item_disabled_color: u32,
+    pub item_current_color: u32,
+}
+
+/// Menu item.
 pub enum MenuItem {
     Action(String),
     Menu(String,Menu),
@@ -22,8 +41,11 @@ pub enum MenuItem {
 
 /// Menu.
 pub struct Menu {
+    ui: Rc<UI>,
+    style: RefCell<MenuStyle>,
     r: Cell<Rect<i32>>,
     hit: Cell<MenuHit>,
+    capturing: Cell<bool>,
     items: Vec<MenuItem>,
     current: Cell<Option<usize>>,
 }
@@ -31,23 +53,34 @@ pub struct Menu {
 const MENU_SEPARATOR_HEIGHT: i32 = 10;
 
 impl Menu {
-    pub fn new(items: Vec<MenuItem>) -> Result<Menu,SystemError> {
+    pub fn new(ui: &Rc<UI>,items: Vec<MenuItem>) -> Result<Menu,SystemError> {
         Ok(Menu {
+            ui: Rc::clone(&ui),
+            style: RefCell::new(MenuStyle {
+                font: Rc::clone(&ui.font),
+                item_text_color: 0xAAAAAA,
+                item_disabled_text_color: 0x666666,
+                item_color: 0x444444,
+                item_hover_color: 0x224488,
+                item_disabled_color: 0x333333,
+                item_current_color: 0x3366CC,
+            }),
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(MenuHit::Nothing),
+            capturing: Cell::new(false),
             items: items,
             current: Cell::new(None),
         })
     }
 
-    pub fn find_hit(&self,draw: &Draw,p: Vec2<i32>) -> MenuHit {
-        let styles = draw.styles.borrow();
+    pub fn find_hit(&self,p: Vec2<i32>) -> MenuHit {
+        let style = self.style.borrow();
         let mut r = rect!(0i32,0i32,0i32,0i32);
         for i in 0..self.items.len() {
             let item = &self.items[i];
             match item {
                 MenuItem::Action(name) => {
-                    let size = styles.font.measure(&name);
+                    let size = style.font.measure(&name);
                     r.set_s(size);
                     if r.contains(&p) {
                         return MenuHit::Item(i);
@@ -55,7 +88,7 @@ impl Menu {
                     r.set_oy(r.oy() + size.y());
                 },
                 MenuItem::Menu(name,_) => {
-                    let size = styles.font.measure(&name);
+                    let size = style.font.measure(&name);
                     r.set_s(size);
                     if r.contains(&p) {
                         return MenuHit::Item(i);
@@ -80,20 +113,20 @@ impl Widget for Menu {
         self.r.set(r);
     }
 
-    fn calc_min_size(&self,draw: &Draw) -> Vec2<i32> {
-        let styles = draw.styles.borrow();
+    fn calc_min_size(&self) -> Vec2<i32> {
+        let style = self.style.borrow();
         let mut total_size = vec2!(0i32,0i32);
         for item in self.items.iter() {
             match item {
                 MenuItem::Action(name) => {
-                    let size = styles.font.measure(&name);
+                    let size = style.font.measure(&name);
                     if size.x() > total_size.x() {
                         total_size.set_x(size.x());
                     }
                     total_size += vec2!(0,size.y());
                 },
                 MenuItem::Menu(name,_) => {
-                    let size = styles.font.measure(&name);
+                    let size = style.font.measure(&name);
                     if size.x() > total_size.x() {
                         total_size.set_x(size.x());
                     }
@@ -107,67 +140,76 @@ impl Widget for Menu {
         total_size
     }
 
-    fn draw(&self,draw: &Draw) {
-        let styles = draw.styles.borrow();
+    fn draw(&self) {
+        let style = self.style.borrow();
         let mut r = rect!(0i32,0i32,self.r.get().sx(),0i32);
         for i in 0..self.items.len() {
             let item = &self.items[i];
             let color = if let Some(n) = self.current.get() {
                 if n == i {
-                    styles.menu_item_current_color
+                    style.item_current_color
                 }
                 else {
-                    styles.menu_item_color  // TBD if menu item is enabled or not
+                    style.item_color  // TBD if menu item is enabled or not
                 }
             }
             else if let MenuHit::Item(n) = self.hit.get() {
                 if n == i {
-                    styles.menu_item_hover_color
+                    style.item_hover_color
                 }
                 else {
-                    styles.menu_item_color // TBD if menu item is enabled or not
+                    style.item_color // TBD if menu item is enabled or not
                 }
             }
             else {
-                styles.menu_item_color // TBD if menu item is enabled or not
+                style.item_color // TBD if menu item is enabled or not
             };
-            let text_color = styles.menu_item_text_color;
+            let text_color = style.item_text_color;
             match item {
                 MenuItem::Action(name) => {
-                    let size = styles.font.measure(&name);
+                    let size = style.font.measure(&name);
                     r.set_sy(size.y());
-                    draw.draw_rectangle(r,color,BlendMode::Replace);
-                    draw.draw_text(r.o(),&name,text_color,&styles.font);
+                    self.ui.draw_rectangle(r,color,BlendMode::Replace);
+                    self.ui.draw_text(r.o(),&name,text_color,&style.font);
                     r.set_oy(r.oy() + size.y());
                 },
                 MenuItem::Menu(name,_) => {
-                    let size = styles.font.measure(&name);
+                    let size = style.font.measure(&name);
                     r.set_sy(size.y());
-                    draw.draw_rectangle(r,color,BlendMode::Replace);
-                    draw.draw_text(vec2!(0,0),&name,text_color,&styles.font);
+                    self.ui.draw_rectangle(r,color,BlendMode::Replace);
+                    self.ui.draw_text(vec2!(0,0),&name,text_color,&style.font);
                     r.set_oy(r.oy() + size.y());
                 },
                 MenuItem::Separator => {
                     r.set_sy(MENU_SEPARATOR_HEIGHT);
-                    draw.draw_rectangle(r,styles.menu_item_color,BlendMode::Replace);
+                    self.ui.draw_rectangle(r,style.item_color,BlendMode::Replace);
                     r.set_oy(r.oy() + MENU_SEPARATOR_HEIGHT);
                 },
             }
         }
     }
 
-    fn handle(&self,ui: &UI,window: &Window,draw: &Draw,event: Event) {
-        match event {
-            Event::MousePress(p,b) => {
+    fn keypress(&self,ui: &UI,window: &Window,k: u8) {
+    }
 
-            },
-            Event::MouseRelease(p,b) => {
+    fn keyrelease(&self,ui: &UI,window: &Window,k: u8) {
+    }
 
-            },
-            Event::MouseMove(p) => {
-                self.hit.set(self.find_hit(draw,p));
-            },
-            _ => { },
-        }
+    fn mousepress(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+        false
+    }
+
+    fn mouserelease(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+        false
+    }
+
+    fn mousemove(&self,ui: &UI,window: &Window,p: Vec2<i32>) -> bool {
+        // TODO: if capturing, no change, otherwise:
+        self.hit.set(self.find_hit(p));
+        false
+    }
+
+    fn mousewheel(&self,ui: &UI,window: &Window,w: MouseWheel) -> bool {
+        false
     }
 }

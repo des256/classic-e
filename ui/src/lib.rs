@@ -27,16 +27,6 @@ pub enum VAlignment {
     Fill,
 }
 
-/// Widget event.
-pub enum Event {
-    KeyPress(u8),
-    KeyRelease(u8),
-    MousePress(Vec2<i32>,MouseButton),
-    MouseRelease(Vec2<i32>,MouseButton),
-    MouseWheel(MouseWheel),
-    MouseMove(Vec2<i32>),
-}
-
 /// Widget orientation.
 pub enum Orientation {
     Horizontal,
@@ -52,13 +42,18 @@ pub trait Widget {
     fn set_rect(&self,r: Rect<i32>);
 
     /// Calculate minimum size this widget needs. Asked by the parents to organize the children via set_rect.
-    fn calc_min_size(&self,draw: &Draw) -> Vec2<i32>;
+    fn calc_min_size(&self) -> Vec2<i32>;
 
     /// Draw the widget.
-    fn draw(&self,draw: &Draw);
+    fn draw(&self);
 
-    /// Handle widget event.
-    fn handle(&self,ui: &UI,window: &Window,draw: &Draw,event: Event);
+    /// Handle widget events.
+    fn keypress(&self,ui: &UI,window: &Window,k: u8);
+    fn keyrelease(&self,ui: &UI,window: &Window,k: u8);
+    fn mousepress(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool;
+    fn mouserelease(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool;
+    fn mousemove(&self,ui: &UI,window: &Window,p: Vec2<i32>) -> bool;
+    fn mousewheel(&self,ui: &UI,window: &Window,w: MouseWheel) -> bool;
 }
 
 mod accordeon;
@@ -78,9 +73,6 @@ pub use colorpicker::*;
 
 mod datepicker;
 pub use datepicker::*;
-
-mod draw;
-pub use draw::*;
 
 mod field;
 pub use field::*;
@@ -127,12 +119,6 @@ pub use splitter::*;
 mod stack;
 pub use stack::*;
 
-mod stepper;
-pub use stepper::*;
-
-mod styles;
-pub use styles::*;
-
 mod text;
 pub use text::*;
 
@@ -144,6 +130,9 @@ pub use toggle::*;
 
 mod toolbar;
 pub use toolbar::*;
+
+mod tooltip;
+pub use tooltip::*;
 
 mod tree;
 pub use tree::*;

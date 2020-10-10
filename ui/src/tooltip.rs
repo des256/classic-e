@@ -1,7 +1,8 @@
-// E - UI - Text
+// E - UI - ToolTip
 // Desmond Germans, 2020
 
-// Text is exactly that, text.
+// ToolTip is an informative popup that appears when the mouse hovers over a
+// widget a certain time.
 
 use crate::*;
 use std::{
@@ -12,43 +13,41 @@ use std::{
     rc::Rc,
 };
 
-/// Text style.
-pub struct TextStyle {
+/// Tool tip style.
+pub struct ToolTipStyle {
     pub font: Rc<Font>,
-    pub color: u32,
     pub text_color: u32,
 }
 
-/// Text.
-pub struct Text {
+/// Tool tip.
+pub struct ToolTip {
     ui: Rc<UI>,
-    style: RefCell<TextStyle>,
-    r: Cell<Rect<i32>>,
+    style: RefCell<ToolTipStyle>,
+    p: Cell<Vec2<i32>>,
     text: String,
 }
 
-impl Text {
-    pub fn new(ui: &Rc<UI>,text: &str) -> Result<Text,SystemError> {
-        Ok(Text {
+impl ToolTip {
+    pub fn new(ui: &Rc<UI>,text: &str) -> Result<ToolTip,SystemError> {
+        Ok(ToolTip {
             ui: Rc::clone(&ui),
-            style: RefCell::new(TextStyle {
+            style: RefCell::new(ToolTipStyle {
                 font: Rc::clone(&ui.font),
-                color: 0x444444,
                 text_color: 0xAAAAAA,
             }),
-            r: Cell::new(rect!(0,0,0,0)),
+            p: Cell::new(vec2!(0,0)),
             text: text.to_string(),
         })
     }
 }
 
-impl Widget for Text {
+impl Widget for ToolTip {
     fn rect(&self) -> Rect<i32> {
-        self.r.get()
+        rect!(self.p.get(),vec2!(0,0))
     }
 
     fn set_rect(&self,r: Rect<i32>) {
-        self.r.set(r);
+        self.p.set(r.o());
     }
 
     fn calc_min_size(&self) -> Vec2<i32> {
@@ -58,7 +57,6 @@ impl Widget for Text {
 
     fn draw(&self) {
         let style = self.style.borrow();
-        self.ui.draw_rectangle(rect!(vec2!(0,0),self.r.get().s()),style.color,BlendMode::Replace);
         self.ui.draw_text(vec2!(0,0),&self.text,style.text_color,&style.font);
     }
 
@@ -84,3 +82,5 @@ impl Widget for Text {
         false
     }
 }
+
+// widget interface might not even be necessary for tooltips...

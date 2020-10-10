@@ -11,21 +11,26 @@ use{
     }
 };
 
-/// Scroller.
+/// Scroller over a child widget.
 pub struct Scroller {
+    ui: Rc<UI>,
     r: Cell<Rect<i32>>,
     child: Rc<dyn Widget>,
-    // TBD offset
+    offset: Cell<Vec2<i32>>,
 }
 
 impl Scroller {
-    pub fn new(child: Rc<dyn Widget>) -> Result<Scroller,SystemError> {
+    pub fn new(ui: &Rc<UI>,child: Rc<dyn Widget>) -> Result<Scroller,SystemError> {
         Ok(Scroller {
+            ui: Rc::clone(&ui),
             r: Cell::new(rect!(0,0,0,0)),
             child: child,
+            offset: Cell::new(vec2!(0,0)),
         })
     }
 }
+
+const SCROLLER_MIN_SIZE: i32 = 10;
 
 impl Widget for Scroller {
     fn rect(&self) -> Rect<i32> {
@@ -36,26 +41,35 @@ impl Widget for Scroller {
         self.r.set(r);
     }
 
-    fn calc_min_size(&self,_draw: &Draw) -> Vec2<i32> {
-        vec2!(0,0)
+    fn calc_min_size(&self) -> Vec2<i32> {
+        vec2!(SCROLLER_MIN_SIZE,SCROLLER_MIN_SIZE)
     }
 
-    fn draw(&self,draw: &Draw) {
-        // TODO: draw child at offset
+    fn draw(&self) {
+        self.ui.delta_offset(-self.offset.get());
+        self.child.draw();
+        self.ui.delta_offset(self.offset.get());
     }
 
-    fn handle(&self,ui: &UI,window: &Window,draw: &Draw,event: Event) {
-        match event {
-            Event::MousePress(p,b) => {
-                // TODO: pass down to child
-            },
-            Event::MouseRelease(p,b) => {
-                // TODO: pass down to child
-            },
-            Event::MouseMove(p) => {
-                // TODO: pass down to child
-            },
-            _ => { },
-        }
+    fn keypress(&self,ui: &UI,window: &Window,k: u8) {
+    }
+
+    fn keyrelease(&self,ui: &UI,window: &Window,k: u8) {
+    }
+
+    fn mousepress(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+        self.child.mousepress(ui,window,p - self.rect().o() + self.offset.get(),b)
+    }
+
+    fn mouserelease(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+        self.child.mouserelease(ui,window,p - self.rect().o() + self.offset.get(),b)
+    }
+
+    fn mousemove(&self,ui: &UI,window: &Window,p: Vec2<i32>) -> bool {
+        self.child.mousemove(ui,window,p - self.rect().o() + self.offset.get())
+    }
+
+    fn mousewheel(&self,ui: &UI,window: &Window,w: MouseWheel) -> bool {
+        self.child.mousewheel(ui,window,w)
     }
 }

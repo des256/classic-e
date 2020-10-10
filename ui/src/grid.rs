@@ -13,15 +13,17 @@ use{
     },
 };
 
+#[doc(hidden)]
 pub struct RowSpec {
 
 }
 
+#[doc(hidden)]
 pub struct ColumnSpec {
     
 }
 
-/// Grid.
+/// Grid of child widgets.
 pub struct Grid {
     r: Cell<Rect<i32>>,
     rows: RefCell<Vec<RowSpec>>,
@@ -47,27 +49,34 @@ impl Widget for Grid {
         self.r.set(r);
     }
 
-    fn calc_min_size(&self,draw: &Draw) -> Vec2<i32> {
+    fn calc_min_size(&self) -> Vec2<i32> {
         // TODO: add all the item sizes together
         vec2!(0,0)
     }
 
-    fn draw(&self,draw: &Draw) {
+    fn draw(&self) {
         // TODO: draw grid cells
     }
 
-    fn handle(&self,ui: &UI,window: &Window,draw: &Draw,event: Event) {
-        match event {
-            Event::MousePress(p,b) => {
+    fn keypress(&self,ui: &UI,window: &Window,k: u8) {
+    }
 
-            },
-            Event::MouseRelease(p,b) => {
+    fn keyrelease(&self,ui: &UI,window: &Window,k: u8) {
+    }
 
-            },
-            Event::MouseMove(p) => {
+    fn mousepress(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+        false
+    }
 
-            },
-            _ => { },
-        }
+    fn mouserelease(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+        false
+    }
+
+    fn mousemove(&self,ui: &UI,window: &Window,p: Vec2<i32>) -> bool {
+        false
+    }
+
+    fn mousewheel(&self,ui: &UI,window: &Window,w: MouseWheel) -> bool {
+        false
     }
 }
