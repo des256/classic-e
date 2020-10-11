@@ -5,25 +5,32 @@
 - when scrollbars get too small, they need to auto-disable
 - scrollbar tabs should have a minimum size
 - add various types of padding to all widgets
-- different mouse cursors updated by mousemove
+- add different mouse cursors updated by mousemove
 - there are various instances where some default text is measured to estimate the size of a widget, this might not be appropriate
 - taking Cell for everything might not be entirely necessary, play around with mutability
 - use struct enums instead of tuple enums
+- document all the code
+- rustdoc
+- basic examples
+- simplify the mouse/capturing code
+- access vector coordinates by transmuting internally, rather than functions
+- timers
+- separate UI resources from draw context
+- design how buttons and menus trigger actions, action trait or closure
+- to speed up menus, maybe use map/unmap them instead of recreating them
+- Win32 implementation
+- explore Cocoa/Metal
+- explore web/WebGL, WASM interface; popup menus by divs over the canvas?
+- potentially improve the graphics commands, update OpenGL API towards Vulkan?
 
 ## STILL TODO
 
 - MenuBar and Menu
-- actions with menus and toolbars
-- states
+- states, enable/disable, in-menu toggles
 - pickers: color, date, file, time
+- messagebox
 - Grid
 - List and Tree
 - Scroller
 - ToolTip
-
-## MENU
-
-Microsoft menus seem to be activated by mouserelease instead of mousepress
-
-the currently open menu captures the mouse in volatile mode
-
+- actions with menus and toolbars

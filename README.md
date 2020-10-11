@@ -124,7 +124,6 @@ This takes care of the event handling loop. Drawing is done using the context
 
 ### Future
 
-- `Accordeon`
 - `Book`
 - `Button`
 - `DatePicker`

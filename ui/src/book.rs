@@ -2,7 +2,7 @@
 // Desmond Germans, 2020
 
 // A book is an area with tabs at the top. The currently selected tab dictates
-// the widgets in the rest of the area.
+// the widgets in the page area under the tabs.
 
 use {
     crate::*,

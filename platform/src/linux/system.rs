@@ -486,7 +486,8 @@ impl System {
     pub fn flush(&self) {
         while let Some(xcb_event) = self.connection.poll_for_event() {
             if let Some((xid,event)) = self.translate_event(xcb_event) {
-                // TODO: potentially, this entire construction can be wrapped up in a hashmap local to System
+                // TODO: potentially, this entire construction can be wrapped
+                // up in a hashmap local to System
                 match get_property(
                     &self.connection,
                     false,
