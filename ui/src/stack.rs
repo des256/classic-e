@@ -136,13 +136,13 @@ impl Widget for Stack {
         }
     }
 
-    fn keypress(&self,ui: &UI,window: &Window,k: u8) {
+    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Window,k: u8) {
+    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 StackHit::Nothing => {
@@ -170,7 +170,7 @@ impl Widget for Stack {
         }
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 StackHit::Nothing => {
@@ -198,7 +198,7 @@ impl Widget for Stack {
         }
     }
     
-    fn mousemove(&self,ui: &UI,window: &Window,p: Vec2<i32>) -> bool {
+    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 StackHit::Nothing => {
@@ -227,7 +227,7 @@ impl Widget for Stack {
         }
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Window,w: MouseWheel) -> bool {
+    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
         false
     }
 }

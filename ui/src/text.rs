@@ -62,25 +62,25 @@ impl Widget for Text {
         self.ui.draw_text(vec2!(0,0),&self.text,style.text_color,&style.font);
     }
 
-    fn keypress(&self,ui: &UI,window: &Window,k: u8) {
+    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Window,k: u8) {
+    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
         false
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
         false
     }
 
-    fn mousemove(&self,ui: &UI,window: &Window,p: Vec2<i32>) -> bool {
+    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
         false
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Window,w: MouseWheel) -> bool {
+    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
         false
     }
 }

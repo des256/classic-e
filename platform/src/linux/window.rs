@@ -28,9 +28,11 @@ use {
             EVENT_MASK_POINTER_MOTION,
             EVENT_MASK_STRUCTURE_NOTIFY,
             CW_COLORMAP,
+            CW_OVERRIDE_REDIRECT,
             create_window,
             WINDOW_CLASS_INPUT_OUTPUT,
             change_property,
+            change_property_checked,
             PROP_MODE_REPLACE,
             ATOM_ATOM,
             destroy_window,
@@ -38,6 +40,7 @@ use {
             ATOM_WM_NAME,
             ATOM_STRING,
             unmap_window,
+            ATOM_PRIMARY,
             ATOM_WINDOW,
         },
     },
@@ -57,7 +60,7 @@ pub struct Window {
 }
 
 impl Window {
-    fn new(system: &Rc<System>,r: Rect<i32>) -> Result<Window,SystemError> {
+    fn new(system: &Rc<System>,r: Rect<i32>,parent: Option<XID>) -> Result<Rc<Window>,SystemError> {
         let id = system.connection.generate_id() as XID;
         let values = [
             (CW_EVENT_MASK,
@@ -70,11 +73,13 @@ impl Window {
                 | EVENT_MASK_STRUCTURE_NOTIFY
             ),
             (CW_COLORMAP,system.colormap as u32),
+            (CW_OVERRIDE_REDIRECT,if let Some(_) = parent { 1 } else { 0 }),
         ];
         create_window(
             &system.connection,
             system.depth as u8,
             id as u32,
+            //if let Some(id) = parent { id as u32 } else { system.rootwindow as u32 },
             system.rootwindow as u32,
             r.ox() as i16,r.oy() as i16,r.sx() as u16,r.sy() as u16,
             0,
@@ -87,12 +92,30 @@ impl Window {
             system.connection.flush();
             XSync(system.connection.get_raw_dpy(),False);
         }
-        Ok(Window {
+        let window = Rc::new(Window {
             system: Rc::clone(system),
             id: id,
             r: Cell::new(r),
             handler: RefCell::new(None),
-        })
+        });
+        let encoded_pointer = Rc::as_ptr(&window) as u64;
+        let encoded_pointer_dwords = [
+            (encoded_pointer & 0x00000000FFFFFFFF) as u32,
+            (encoded_pointer >> 32) as u32,
+        ];
+        match change_property_checked(
+            &system.connection,
+            PROP_MODE_REPLACE as u8,
+            id as u32,
+            system.e_window_pointer,
+            ATOM_PRIMARY,
+            32,
+            &encoded_pointer_dwords
+        ).request_check() {
+            Ok(o) => { println!("ok {:?}",o) },
+            Err(e) => { println!("response type {:?}, error code {:?}",e.response_type(),e.error_code()) },
+        }
+        Ok(window)
     }
 
     /// Open new frame window.
@@ -108,8 +131,8 @@ impl Window {
     /// **Returns**
     ///
     /// New frame base window.
-    pub fn new_frame(system: &Rc<System>,r: Rect<i32>,title: &str) -> Result<Window,SystemError> {
-        let window = Window::new(system,r)?;
+    pub fn new_frame(system: &Rc<System>,r: Rect<i32>,title: &str) -> Result<Rc<Window>,SystemError> {
+        let window = Window::new(system,r,None)?;
         let protocol_set = [system.wm_delete_window];
         change_property(
             &system.connection,
@@ -146,9 +169,9 @@ impl Window {
     /// **Returns**
     ///
     /// New popup base window.
-    pub fn new_popup(system: &Rc<System>,parent_window: &Window,r: Rect<i32>) -> Result<Window,SystemError> {
-        let window = Window::new(system,r)?;
-        let net_type = [system.wm_net_type_utility];
+    pub fn new_popup(system: &Rc<System>,parent_window: &Window,r: Rect<i32>) -> Result<Rc<Window>,SystemError> {
+        let window = Window::new(system,r,Some(parent_window.id))?;
+        /*let net_type = [system.wm_net_type_utility];
         change_property(
             &system.connection,
             PROP_MODE_REPLACE as u8,
@@ -157,7 +180,7 @@ impl Window {
             ATOM_ATOM,
             32,
             &net_type
-        );
+        );*/
         let net_state = [system.wm_net_state_above];
         change_property(
             &system.connection,
@@ -192,13 +215,38 @@ impl Window {
         Ok(window)
     }
 
+    pub fn handle_event(&self,event: Event) {
+        if let Event::Configure(r) = &event {
+            // When resizing, X seems to return a rectangle with the initial
+            // origin as specified during window creation. But when moving, X
+            // seems to correctly update the origin coordinates.
+            // Not sure what to make of this, but in order to get the actual
+            // rectangle, this seems to work:
+            let old_r = self.r.get();
+            if r.s() != old_r.s() {
+                self.r.set(rect!(old_r.o(),r.s()));
+            }
+            else {
+                self.r.set(*r);
+            }
+        }
+        if let Some(handler) = &*(self.handler).borrow() {
+            (handler)(event);
+        }
+    }
+
     pub fn set_handler<T: Fn(Event) + 'static>(&self,handler: T) {
         *self.handler.borrow_mut() = Some(Box::new(handler));
+    }
+
+    pub fn clear_handler(&self) {
+        *self.handler.borrow_mut() = None;
     }
 }
 
 impl Drop for Window {
     fn drop(&mut self) {
+        //self.system.windows.borrow_mut().remove(&self.id);
         unsafe { glXMakeCurrent(self.system.connection.get_raw_dpy(),self.system.hidden_window,self.system.context); }
         unmap_window(&self.system.connection,self.id as u32);
         destroy_window(&self.system.connection,self.id as u32);    

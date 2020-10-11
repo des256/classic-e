@@ -109,6 +109,8 @@ use {
             TIME_CURRENT_TIME,
             GRAB_MODE_ASYNC,
             ungrab_pointer,
+            ATOM_ANY,
+            get_property,
         },
         cast_event,
     },
@@ -148,56 +150,6 @@ fn load_function(name: &str) -> *mut c_void {
     pointer
 }
 
-pub trait SendEvent {
-    fn send_event(&self,xid: XID,event: Event);
-}
-
-impl SendEvent for Window {
-    fn send_event(&self,xid: XID,event: Event) {
-        if self.id == xid {
-            if let Some(handler) = &*self.handler.borrow() {
-                (handler)(event);
-            }
-        }
-    }
-}
-
-impl SendEvent for Rc<Window> {
-    fn send_event(&self,xid: XID,event: Event) {
-        if self.id == xid {
-            if let Some(handler) = &*self.handler.borrow() {
-                (handler)(event);
-            }
-        }
-    }
-}
-
-impl SendEvent for Vec<Window> {
-    fn send_event(&self,xid: XID,event: Event) {
-        for window in self.iter() {
-            if window.id == xid {
-                if let Some(handler) = &*window.handler.borrow() {
-                    (handler)(event);
-                }
-                break;
-            }
-        }
-    }
-}
-
-impl SendEvent for Vec<Rc<Window>> {
-    fn send_event(&self,xid: XID,event: Event) {
-        for window in self.iter() {
-            if window.id == xid {
-                if let Some(handler) = &*window.handler.borrow() {
-                    (handler)(event);
-                }
-                break
-            }
-        }
-    }
-}
-
 /// Main system context.
 pub struct System {
     pub connection: Connection,
@@ -213,8 +165,10 @@ pub struct System {
     pub(crate) wm_transient_for: u32,
     pub(crate) wm_net_type: u32,
     pub(crate) wm_net_type_utility: u32,
+    pub(crate) wm_net_type_dropdown_menu: u32,
     pub(crate) wm_net_state: u32,
     pub(crate) wm_net_state_above: u32,
+    pub(crate) e_window_pointer: u32,
     epfd: c_int,
     pub glx_swap_interval: GlXSwapIntervalEXT,
 }
@@ -226,7 +180,7 @@ impl System {
     /// 
     /// * `Ok(System)` - The new system context.
     /// * `Err(SystemError)` - The system context could not be created.
-    pub fn new() -> Result<System,SystemError> {
+    pub fn new() -> Result<Rc<System>,SystemError> {
         let connection = match Connection::connect_with_xlib_display() {
             Ok((connection,_)) => connection,
             Err(_) => { return Err(SystemError::Generic); },
@@ -310,8 +264,10 @@ impl System {
         let transient_for_com = intern_atom(&connection,false,"WM_TRANSIENT_FOR");
         let net_type_com = intern_atom(&connection,false,"_NET_WM_TYPE");
         let net_type_utility_com = intern_atom(&connection,false,"_NET_WM_TYPE_UTILITY");
+        let net_type_dropdown_menu_com = intern_atom(&connection,false,"_NET_WM_TYPE_DROPDOWN_MENU");
         let net_state_com = intern_atom(&connection,false,"_NET_WM_STATE");
         let net_state_above_com = intern_atom(&connection,false,"_NET_WM_STATE_ABOVE");
+        let e_window_pointer_com = intern_atom(&connection,false,"E_WINDOW_POINTER");
         let wm_protocols = match protocols_com.get_reply() {
             Ok(protocols) => protocols.atom(),
             Err(_) => { return Err(SystemError::Generic); },
@@ -336,12 +292,20 @@ impl System {
             Ok(net_type_utility) => net_type_utility.atom(),
             Err(_) => { return Err(SystemError::Generic); },
         };
+        let wm_net_type_dropdown_menu = match net_type_dropdown_menu_com.get_reply() {
+            Ok(net_type_dropdown_menu) => net_type_dropdown_menu.atom(),
+            Err(_) => { return Err(SystemError::Generic); },
+        };
         let wm_net_state = match net_state_com.get_reply() {
             Ok(net_state) => net_state.atom(),
             Err(_) => { return Err(SystemError::Generic); },
         };
         let wm_net_state_above = match net_state_above_com.get_reply() {
             Ok(net_state_above) => net_state_above.atom(),
+            Err(_) => { return Err(SystemError::Generic); },
+        };
+        let e_window_pointer = match e_window_pointer_com.get_reply() {
+            Ok(e_window_pointer) => e_window_pointer.atom(),
             Err(_) => { return Err(SystemError::Generic); },
         };
         
@@ -418,7 +382,7 @@ impl System {
         let mut epe = [epoll_event { events: EPOLLIN as u32,u64: 0, }];
         unsafe { epoll_ctl(epfd,EPOLL_CTL_ADD,fd,epe.as_mut_ptr()) };
 
-        Ok(System {
+        Ok(Rc::new(System {
             connection: connection,
             hidden_window: hidden_window,
             context: context,
@@ -432,13 +396,16 @@ impl System {
             wm_transient_for: wm_transient_for,
             wm_net_type: wm_net_type,
             wm_net_type_utility: wm_net_type_utility,
+            wm_net_type_dropdown_menu: wm_net_type_dropdown_menu,
             wm_net_state: wm_net_state,
             wm_net_state_above: wm_net_state_above,
+            e_window_pointer: e_window_pointer,
             epfd: epfd,
             glx_swap_interval: glx_swap_interval,
-        })
+        }))
     }
 
+    // translate X11 events to Event events that can be handled by the windows
     fn translate_event(&self,xcb_event: xcb::GenericEvent) -> Option<(XID,Event)> {
         let r = xcb_event.response_type() & !0x80;
         match r {
@@ -495,7 +462,7 @@ impl System {
             CONFIGURE_NOTIFY => {
                 let configure_notify: &ConfigureNotifyEvent = unsafe { cast_event(&xcb_event) };
                 let r = rect!(configure_notify.x() as i32,configure_notify.y() as i32,configure_notify.width() as i32,configure_notify.height() as i32);
-                let xid = configure_notify.event() as XID;
+                let xid = configure_notify.window() as XID;
                 return Some((xid,Event::Configure(r)));
             },
             CLIENT_MESSAGE => {
@@ -516,10 +483,28 @@ impl System {
     /// 
     /// This processes each pending event from the system's event queue by
     /// calling `handle` on the associated handlers.
-    pub fn flush<T: SendEvent>(&self,target: &T) {
+    pub fn flush(&self) {
         while let Some(xcb_event) = self.connection.poll_for_event() {
             if let Some((xid,event)) = self.translate_event(xcb_event) {
-                target.send_event(xid,event);
+                // TODO: potentially, this entire construction can be wrapped up in a hashmap local to System
+                match get_property(
+                    &self.connection,
+                    false,
+                    xid as u32,
+                    self.e_window_pointer,
+                    ATOM_ANY,
+                    0,
+                    2
+                ).get_reply() {
+                    Ok(reply) => {
+                        if reply.value_len() != 0 {
+                            let encoded_pointer = (reply.value::<u32>()[0] as u64) | ((reply.value::<u32>()[1] as u64) << 32);
+                            let window_pointer = encoded_pointer as *const Window;
+                            unsafe { (*window_pointer).handle_event(event); }
+                        }
+                    }
+                    _ => { },
+                };
             }
         }
     }

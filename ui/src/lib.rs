@@ -6,6 +6,7 @@
 use base::*;
 use platform::*;
 use gpu::*;
+use std::rc::Rc;
 
 pub const FONT_TEXTURE_SIZE: u32 = 1024;
 
@@ -48,16 +49,13 @@ pub trait Widget {
     fn draw(&self);
 
     /// Handle widget events.
-    fn keypress(&self,ui: &UI,window: &Window,k: u8);
-    fn keyrelease(&self,ui: &UI,window: &Window,k: u8);
-    fn mousepress(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool;
-    fn mouserelease(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool;
-    fn mousemove(&self,ui: &UI,window: &Window,p: Vec2<i32>) -> bool;
-    fn mousewheel(&self,ui: &UI,window: &Window,w: MouseWheel) -> bool;
+    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8);
+    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8);
+    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool;
+    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool;
+    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool;
+    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool;
 }
-
-mod accordeon;
-pub use accordeon::*;
 
 mod action;
 pub use action::*;

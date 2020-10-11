@@ -233,13 +233,13 @@ impl Widget for ScrollBar {
         }
     }
 
-    fn keypress(&self,ui: &UI,window: &Window,k: u8) {
+    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Window,k: u8) {
+    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ScrollBarHit::Nothing => {
@@ -270,13 +270,11 @@ impl Widget for ScrollBar {
                 },
                 ScrollBarHit::StepLess => {
                     println!("ScrollBar: start clicking StepLess");
-                    self.set_value(self.value.get() - self.step.get());
                     self.capturing.set(true);
                     true
                 },
                 ScrollBarHit::PageLess => {
                     println!("ScrollBar: start clicking PageLess");
-                    self.set_value(self.value.get() - self.page.get());
                     self.capturing.set(true);
                     true
                 },
@@ -299,13 +297,11 @@ impl Widget for ScrollBar {
                 },
                 ScrollBarHit::PageMore => {
                     println!("ScrollBar: start clicking PageMore");
-                    self.set_value(self.value.get() + self.page.get());
                     self.capturing.set(true);
                     true
                 },
                 ScrollBarHit::StepMore => {
                     println!("ScrollBar: start clicking StepMore");
-                    self.set_value(self.value.get() + self.step.get());
                     self.capturing.set(true);
                     true
                 }
@@ -313,7 +309,7 @@ impl Widget for ScrollBar {
         }
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ScrollBarHit::Nothing => {
@@ -322,11 +318,13 @@ impl Widget for ScrollBar {
                 },
                 ScrollBarHit::StepLess => {
                     println!("ScrollBar: stop clicking StepLess");
+                    self.set_value(self.value.get() - self.step.get());
                     self.capturing.set(false);
                     self.mousemove(ui,window,p)
                 },
                 ScrollBarHit::PageLess => {
                     println!("ScrollBar: stop clicking PageLess");
+                    self.set_value(self.value.get() - self.page.get());
                     self.capturing.set(false);
                     self.mousemove(ui,window,p)
                 },
@@ -337,11 +335,13 @@ impl Widget for ScrollBar {
                 },
                 ScrollBarHit::PageMore => {
                     println!("ScrollBar: stop clicking PageMore");
+                    self.set_value(self.value.get() + self.page.get());
                     self.capturing.set(false);
                     self.mousemove(ui,window,p)
                 },
                 ScrollBarHit::StepMore => {
                     println!("ScrollBar: stop clicking StepMore");
+                    self.set_value(self.value.get() + self.step.get());
                     self.capturing.set(false);
                     self.mousemove(ui,window,p)
                 }
@@ -371,7 +371,7 @@ impl Widget for ScrollBar {
         }
     }
 
-    fn mousemove(&self,ui: &UI,window: &Window,p: Vec2<i32>) -> bool {
+    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ScrollBarHit::Nothing => {
@@ -439,7 +439,7 @@ impl Widget for ScrollBar {
         }
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Window,w: MouseWheel) -> bool {
+    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
         false
     }
 }

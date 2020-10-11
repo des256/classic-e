@@ -16,16 +16,40 @@ fn main() -> Result<(),SystemError> {
     let graphics = Rc::new(Graphics::new(&system)?);
     let ui = Rc::new(UI::new(&system,&graphics,FONT_DIR)?);
 
+    let file_menu_items = vec![
+        MenuItem::Action("New File".to_string()),
+        MenuItem::Action("New Window".to_string()),
+        MenuItem::Separator,
+        MenuItem::Action("Open File...".to_string()),
+        MenuItem::Action("Open Folder...".to_string()),
+        MenuItem::Separator,
+        MenuItem::Action("Exit".to_string()),
+    ];
+    let file_menu = Rc::new(Menu::new(&ui,file_menu_items)?);
+
+    let edit_menu_items = vec![
+        MenuItem::Action("Undo".to_string()),
+        MenuItem::Action("Redo".to_string()),
+        MenuItem::Separator,
+        MenuItem::Action("Cut".to_string()),
+        MenuItem::Action("Copy".to_string()),
+        MenuItem::Action("Paste".to_string()),
+    ];
+    let edit_menu = Rc::new(Menu::new(&ui,edit_menu_items)?);
+
+    let help_menu_items = vec![
+        MenuItem::Action("Welcome".to_string()),
+        MenuItem::Action("Interactive Playground".to_string()),
+        MenuItem::Separator,
+        MenuItem::Action("About".to_string()),
+    ];
+    let help_menu = Rc::new(Menu::new(&ui,help_menu_items)?);
+
     let menubar_items = vec![
-        MenuBarItem::Menu("File".to_string()),
-        MenuBarItem::Menu("Edit".to_string()),
-        MenuBarItem::Menu("Selection".to_string()),
-        MenuBarItem::Menu("View".to_string()),
-        MenuBarItem::Menu("Go".to_string()),
-        MenuBarItem::Menu("Run".to_string()),
-        MenuBarItem::Menu("Terminal".to_string()),
+        MenuBarItem::Menu("File".to_string(),file_menu),
+        MenuBarItem::Menu("Edit".to_string(),edit_menu),
         MenuBarItem::Separator,
-        MenuBarItem::Menu("Help".to_string()),
+        MenuBarItem::Menu("Help".to_string(),help_menu),
     ];
     let menubar = Rc::new(MenuBar::new(&ui,menubar_items)?);
 

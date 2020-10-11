@@ -11,7 +11,7 @@ use std::{
 fn main() -> Result<(),SystemError> {
 
     // initialize system
-    let system = Rc::new(System::new()?);
+    let system = System::new()?;
 
     // the running variable
     let running = Rc::new(Cell::new(true));
@@ -33,7 +33,7 @@ fn main() -> Result<(),SystemError> {
     // run the show
     while running.get() {
         system.wait();
-        system.flush(&window);
+        system.flush();
     }
 
     Ok(())

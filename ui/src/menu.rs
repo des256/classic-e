@@ -75,13 +75,13 @@ impl Menu {
 
     pub fn find_hit(&self,p: Vec2<i32>) -> MenuHit {
         let style = self.style.borrow();
-        let mut r = rect!(0i32,0i32,0i32,0i32);
+        let mut r = rect!(0i32,0i32,self.r.get().sx(),0i32);
         for i in 0..self.items.len() {
             let item = &self.items[i];
             match item {
                 MenuItem::Action(name) => {
                     let size = style.font.measure(&name);
-                    r.set_s(size);
+                    r.set_sy(size.y());
                     if r.contains(&p) {
                         return MenuHit::Item(i);
                     }
@@ -89,7 +89,7 @@ impl Menu {
                 },
                 MenuItem::Menu(name,_) => {
                     let size = style.font.measure(&name);
-                    r.set_s(size);
+                    r.set_sy(size.y());
                     if r.contains(&p) {
                         return MenuHit::Item(i);
                     }
@@ -145,25 +145,17 @@ impl Widget for Menu {
         let mut r = rect!(0i32,0i32,self.r.get().sx(),0i32);
         for i in 0..self.items.len() {
             let item = &self.items[i];
-            let color = if let Some(n) = self.current.get() {
+            let mut color = style.item_color;
+            if let MenuHit::Item(n) = self.hit.get() {
                 if n == i {
-                    style.item_current_color
-                }
-                else {
-                    style.item_color  // TBD if menu item is enabled or not
+                    color = style.item_hover_color;
                 }
             }
-            else if let MenuHit::Item(n) = self.hit.get() {
+            if let Some(n) = self.current.get() {
                 if n == i {
-                    style.item_hover_color
-                }
-                else {
-                    style.item_color // TBD if menu item is enabled or not
+                    color = style.item_current_color;
                 }
             }
-            else {
-                style.item_color // TBD if menu item is enabled or not
-            };
             let text_color = style.item_text_color;
             match item {
                 MenuItem::Action(name) => {
@@ -189,27 +181,27 @@ impl Widget for Menu {
         }
     }
 
-    fn keypress(&self,ui: &UI,window: &Window,k: u8) {
+    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Window,k: u8) {
+    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
         false
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
         false
     }
 
-    fn mousemove(&self,ui: &UI,window: &Window,p: Vec2<i32>) -> bool {
+    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
         // TODO: if capturing, no change, otherwise:
         self.hit.set(self.find_hit(p));
         false
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Window,w: MouseWheel) -> bool {
+    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
         false
     }
 }

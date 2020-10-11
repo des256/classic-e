@@ -114,13 +114,13 @@ impl Widget for Toggle {
         self.ui.draw_rectangle(rect!(vec2!(TOGGLE_SIZE,0),vec2!(TOGGLE_SIZE,TOGGLE_SIZE)),right_color,BlendMode::Replace);
     }
 
-    fn keypress(&self,ui: &UI,window: &Window,k: u8) {
+    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Window,k: u8) {
+    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ToggleHit::Nothing => {
@@ -139,7 +139,6 @@ impl Widget for Toggle {
                 },
                 ToggleHit::Toggle => {
                     println!("Toggle: start clicking");
-                    self.set_value(!self.value.get());
                     self.capturing.set(true);
                     true
                 },
@@ -147,7 +146,7 @@ impl Widget for Toggle {
         }
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ToggleHit::Nothing => {
@@ -156,6 +155,7 @@ impl Widget for Toggle {
                 },
                 ToggleHit::Toggle => {
                     println!("Toggle: stop clicking");
+                    self.set_value(!self.value.get());
                     self.capturing.set(false);
                     self.mousemove(ui,window,p)
                 },
@@ -173,7 +173,7 @@ impl Widget for Toggle {
         }        
     }
 
-    fn mousemove(&self,ui: &UI,window: &Window,p: Vec2<i32>) -> bool {
+    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ToggleHit::Nothing => {
@@ -199,7 +199,7 @@ impl Widget for Toggle {
         }
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Window,w: MouseWheel) -> bool {
+    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
         false
     }
 }

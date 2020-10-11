@@ -204,17 +204,11 @@ impl UI {
         self.running.set(true);
         while self.running.get() {
 
-            // extract current list of platform windows (TBD: can we do this nicer somehow?)
-            let mut windows: Vec<Rc<Window>> = Vec::new();
-            for uiwindow in self.uiwindows.borrow().iter() {
-                windows.push(Rc::clone(&uiwindow.window));
-            }
-
             // wait for events
             self.system.wait();
 
             // process the events
-            self.system.flush(&windows);
+            self.system.flush();
 
             // redraw all windows
             for uiwindow in self.uiwindows.borrow().iter() {
@@ -357,10 +351,19 @@ impl UI {
 }
 
 impl UIWindow {
+    fn register(self) -> Rc<UIWindow> {
+        let rced_self = Rc::new(self);
+        let handler_rced_self = Rc::clone(&rced_self);
+        rced_self.window.set_handler(move |platform_event| UIWindow::dispatch_platform_event(&handler_rced_self,platform_event));
+        rced_self.widget.set_rect(rced_self.window.r.get());
+        rced_self.ui.new_uiwindows.borrow_mut().push(Rc::clone(&rced_self));
+        rced_self
+    }
+
     pub fn new_frame(ui: &Rc<UI>,r: Rect<i32>,title: &str,widget: &Rc<dyn Widget>) -> Result<Rc<UIWindow>,SystemError> {
         Ok(UIWindow {
             ui: Rc::clone(&ui),
-            window: Rc::new(Window::new_frame(&ui.system,r,title)?),
+            window: Window::new_frame(&ui.system,r,title)?,
             widget: Rc::clone(&widget),
             capturing: Cell::new(false),
         }.register())
@@ -369,53 +372,47 @@ impl UIWindow {
     pub fn new_popup(ui: &Rc<UI>,r: Rect<i32>,parent: &Rc<UIWindow>,widget: &Rc<dyn Widget>) -> Result<Rc<UIWindow>,SystemError> {
         Ok(UIWindow {
             ui: Rc::clone(&ui),
-            window: Rc::new(Window::new_popup(&ui.system,&parent.window,r)?),
+            window: Window::new_popup(&ui.system,&parent.window,r)?,
             widget: Rc::clone(&widget),
             capturing: Cell::new(false),
         }.register())
     }
 
-    fn register(self) -> Rc<UIWindow> {
-
-        // make Rc of this UIWindow
-        let rced_self = Rc::new(self);
-
-        // clone the Rc for the handler closure
-        let handler_rced_self = Rc::clone(&rced_self);
-
-        // set handler closure to call dispatch_platform_event
-        rced_self.window.set_handler(move |platform_event| handler_rced_self.dispatch_platform_event(platform_event));
-
-        // append this UIWindow to the UI's new_uiwindows list
-        rced_self.ui.new_uiwindows.borrow_mut().push(Rc::clone(&rced_self));
-
-        rced_self
+    pub fn close(&self) {
+        self.window.clear_handler();
+        let uiwindows = self.ui.uiwindows.borrow();
+        for i in 0..uiwindows.len() {
+            let cur_uiwindow = &uiwindows[i];
+            if Rc::as_ptr(cur_uiwindow) == self as *const UIWindow {
+                self.ui.drop_uiwindows.borrow_mut().push(i);
+                break;
+            }
+        }
     }
 
-    fn dispatch_platform_event(&self,platform_event: platform::Event) {
+    fn dispatch_platform_event(window: &Rc<UIWindow>,platform_event: platform::Event) {
         let mut new_capturing = false;
         match platform_event {
             platform::Event::KeyPress(k) => {
-                self.widget.keypress(&self.ui,&self.window,k);
+                window.widget.keypress(&window.ui,window,k);
             },
             platform::Event::KeyRelease(k) => {
-                self.widget.keyrelease(&self.ui,&self.window,k);
+                window.widget.keyrelease(&window.ui,window,k);
             },
             platform::Event::MousePress(p,b) => {
-                new_capturing = self.widget.mousepress(&self.ui,&self.window,p,b);
+                new_capturing = window.widget.mousepress(&window.ui,&window,p,b);
             },
             platform::Event::MouseRelease(p,b) => {
-                new_capturing = self.widget.mouserelease(&self.ui,&self.window,p,b);
+                new_capturing = window.widget.mouserelease(&window.ui,&window,p,b);
             },
             platform::Event::MouseWheel(w) => {
-                new_capturing = self.widget.mousewheel(&self.ui,&self.window,w);
+                new_capturing = window.widget.mousewheel(&window.ui,&window,w);
             },
             platform::Event::MouseMove(p) => {
-                new_capturing = self.widget.mousemove(&self.ui,&self.window,p);
+                new_capturing = window.widget.mousemove(&window.ui,&window,p);
             },
             platform::Event::Configure(r) => {
-                self.window.r.set(rect!(vec2!(0,0),r.s()));  // TBD: would be nice if this happens in platform, and not here
-                self.widget.set_rect(rect!(vec2!(0,0),r.s()));
+                window.widget.set_rect(r);
             },
             platform::Event::Render => {
 #[cfg(target_os="linux")]
@@ -430,7 +427,7 @@ impl UIWindow {
                     // DispatchMessage() doesn't return until the window is
                     // resized, but WndProc() gets called to redraw the window
                     // anyway, handle the drawing here
-                    self.draw_widget();
+                    window.draw_widget();
                 }
             },
             platform::Event::Close => {
@@ -439,14 +436,14 @@ impl UIWindow {
         }
 
         // capture the mouse in this window
-        if new_capturing != self.capturing.get() {
+        if new_capturing != window.capturing.get() {
             if new_capturing {
-                self.ui.system.capture_mouse(self.window.id);
+                window.ui.system.capture_mouse(window.window.id);
             }
             else {
-                self.ui.system.release_mouse();
+                window.ui.system.release_mouse();
             }
-            self.capturing.set(new_capturing);
+            window.capturing.set(new_capturing);
         }
     }
 
@@ -466,20 +463,5 @@ impl UIWindow {
         // and flush and present the window
         self.ui.graphics.flush();
         self.ui.graphics.present(self.window.id);
-    }
-}
-
-impl Drop for UIWindow {
-    fn drop(&mut self) {
-        // find this window in the UI's uiwindows list
-        let uiwindows = self.ui.uiwindows.borrow();
-        for i in 0..uiwindows.len() {
-            let cur_uiwindow = &uiwindows[i];
-            if Rc::as_ptr(cur_uiwindow) == self as *const UIWindow {
-                // found, so add this window to the UI's drop_uiwindows list
-                self.ui.drop_uiwindows.borrow_mut().push(i);
-                break;
-            }
-        }
     }
 }

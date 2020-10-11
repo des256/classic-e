@@ -144,26 +144,17 @@ impl Widget for Book {
             let item = &self.pages[i];
             let size = style.font.measure(&item.name);
             r.set_s(size);
-            let color = if let BookHit::Tab(n) = self.hit.get() {
+            let mut color = style.tab_color;
+            if let Some(n) = self.page.get() {
                 if n == i {
-                    style.tab_hover_color
+                    color = style.tab_current_color;
                 }
-                else {
-                    style.tab_color
+            }
+            if let BookHit::Tab(n) = self.hit.get() {
+                if n == i {
+                    color = style.tab_hover_color;
                 }
-            } else {
-                if let Some(n) = self.page.get() {
-                    if n == i {
-                        style.tab_current_color
-                    }
-                    else {
-                        style.tab_color
-                    }
-                }
-                else {
-                    style.tab_color
-                }
-            };
+            }
             self.ui.draw_rectangle(r,color,BlendMode::Replace);
             self.ui.draw_text(r.o(),&item.name,style.tab_text_color,&style.font);
             r.set_ox(r.ox() + size.x());
@@ -178,13 +169,13 @@ impl Widget for Book {
         }
     }
 
-    fn keypress(&self,ui: &UI,window: &Window,k: u8) {
+    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Window,k: u8) {
+    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 BookHit::Nothing => {
@@ -214,7 +205,6 @@ impl Widget for Book {
                 },
                 BookHit::Tab(n) => {
                     println!("Book: start clicking on tab {}",n);
-                    self.set_page(n);
                     self.capturing.set(true);
                     true
                 },
@@ -232,7 +222,7 @@ impl Widget for Book {
         }
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Window,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 BookHit::Nothing => {
@@ -241,6 +231,7 @@ impl Widget for Book {
                 },
                 BookHit::Tab(n) => {
                     println!("Book: stop clicking on tab {}",n);
+                    self.set_page(n);
                     self.capturing.set(false);
                     self.mousemove(ui,window,p)
                 },
@@ -279,7 +270,7 @@ impl Widget for Book {
         }
     }
 
-    fn mousemove(&self,ui: &UI,window: &Window,p: Vec2<i32>) -> bool {
+    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 BookHit::Nothing => {
@@ -318,7 +309,6 @@ impl Widget for Book {
                         result
                     }
                     else {
-                        println!("Book: mousemove: currentless Page");
                         false
                     }
                 }
@@ -326,7 +316,7 @@ impl Widget for Book {
         }
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Window,w: MouseWheel) -> bool {
+    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
         false
     }
 }
