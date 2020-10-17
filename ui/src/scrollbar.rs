@@ -56,8 +56,8 @@ pub struct ScrollBar {
 const SCROLLBAR_SIZE: i32 = 20;
 
 impl ScrollBar {
-    pub fn new_horizontal(ui: &Rc<UI>,full: f32,page: f32,step: f32) -> Result<ScrollBar,SystemError> {
-        Ok(ScrollBar {
+    pub fn new_horizontal(ui: &Rc<UI>,full: f32,page: f32,step: f32) -> Result<Rc<ScrollBar>,SystemError> {
+        Ok(Rc::new(ScrollBar {
             ui: Rc::clone(&ui),
             orientation: Orientation::Horizontal,
             style: RefCell::new(ScrollBarStyle {
@@ -78,11 +78,11 @@ impl ScrollBar {
             value: Cell::new(0.0),
             start_pos: Cell::new(0),
             start_p: Cell::new(vec2!(0,0)),
-        })
+        }))
     }
 
-    pub fn new_vertical(ui: &Rc<UI>,full: f32,page: f32,step: f32) -> Result<ScrollBar,SystemError> {
-        Ok(ScrollBar {
+    pub fn new_vertical(ui: &Rc<UI>,full: f32,page: f32,step: f32) -> Result<Rc<ScrollBar>,SystemError> {
+        Ok(Rc::new(ScrollBar {
             ui: Rc::clone(&ui),
             orientation: Orientation::Vertical,
             style: RefCell::new(ScrollBarStyle {
@@ -103,25 +103,25 @@ impl ScrollBar {
             value: Cell::new(0.0),
             start_pos: Cell::new(0),
             start_p: Cell::new(vec2!(0,0)),
-        })
+        }))
     }
 
     pub fn find_hit(&self,p: Vec2<i32>) -> ScrollBarHit {
-        if rect!(vec2!(0,0),self.r.get().s()).contains(&p) {
+        if rect!(vec2!(0,0),self.r.get().s).contains(&p) {
             match self.orientation {
                 Orientation::Horizontal => {
-                    let size = (self.page.get() * ((self.r.get().sx() - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
-                    let pos = (self.value.get() * ((self.r.get().sx() - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32;
-                    if p.x() < SCROLLBAR_SIZE {
+                    let size = (self.page.get() * ((self.r.get().s.x - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
+                    let pos = (self.value.get() * ((self.r.get().s.x - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32;
+                    if p.x < SCROLLBAR_SIZE {
                         ScrollBarHit::StepLess
                     }
-                    else if p.x() < SCROLLBAR_SIZE + pos {
+                    else if p.x < SCROLLBAR_SIZE + pos {
                         ScrollBarHit::PageLess
                     }
-                    else if p.x() < SCROLLBAR_SIZE + pos + size {
+                    else if p.x < SCROLLBAR_SIZE + pos + size {
                         ScrollBarHit::Tab
                     }
-                    else if p.x() < self.r.get().sx() - SCROLLBAR_SIZE {
+                    else if p.x < self.r.get().s.x - SCROLLBAR_SIZE {
                         ScrollBarHit::PageMore
                     }
                     else {
@@ -129,18 +129,18 @@ impl ScrollBar {
                     }
                 },
                 Orientation::Vertical => {
-                    let size = (self.page.get() * ((self.r.get().sy() - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
-                    let pos = (self.value.get() * ((self.r.get().sy() - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32;
-                    if p.y() < SCROLLBAR_SIZE {
+                    let size = (self.page.get() * ((self.r.get().s.y - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
+                    let pos = (self.value.get() * ((self.r.get().s.y - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32;
+                    if p.y < SCROLLBAR_SIZE {
                         ScrollBarHit::StepLess
                     }
-                    else if p.y() < SCROLLBAR_SIZE + pos {
+                    else if p.y < SCROLLBAR_SIZE + pos {
                         ScrollBarHit::PageLess
                     }
-                    else if p.y() < SCROLLBAR_SIZE + pos + size {
+                    else if p.y < SCROLLBAR_SIZE + pos + size {
                         ScrollBarHit::Tab
                     }
-                    else if p.y() < self.r.get().sy() - SCROLLBAR_SIZE {
+                    else if p.y < self.r.get().s.y - SCROLLBAR_SIZE {
                         ScrollBarHit::PageMore
                     }
                     else {
@@ -213,22 +213,22 @@ impl Widget for ScrollBar {
         }
         match self.orientation {
             Orientation::Horizontal => {
-                let size = (self.page.get() * ((self.r.get().sx() - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
-                let pos = (self.value.get() * ((self.r.get().sx() - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32;
+                let size = (self.page.get() * ((self.r.get().s.x - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
+                let pos = (self.value.get() * ((self.r.get().s.x - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32;
                 self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepless_color,BlendMode::Replace);
                 self.ui.draw_rectangle(rect!(vec2!(SCROLLBAR_SIZE,0),vec2!(pos,SCROLLBAR_SIZE)),pageless_color,BlendMode::Replace);
                 self.ui.draw_rectangle(rect!(vec2!(SCROLLBAR_SIZE + pos,0),vec2!(size,SCROLLBAR_SIZE)),tab_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(SCROLLBAR_SIZE + pos + size,0),vec2!(self.r.get().sx() - 2 * SCROLLBAR_SIZE - pos - size,SCROLLBAR_SIZE)),pagemore_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(self.r.get().sx() - SCROLLBAR_SIZE,0),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepmore_color,BlendMode::Replace);
+                self.ui.draw_rectangle(rect!(vec2!(SCROLLBAR_SIZE + pos + size,0),vec2!(self.r.get().s.x - 2 * SCROLLBAR_SIZE - pos - size,SCROLLBAR_SIZE)),pagemore_color,BlendMode::Replace);
+                self.ui.draw_rectangle(rect!(vec2!(self.r.get().s.x - SCROLLBAR_SIZE,0),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepmore_color,BlendMode::Replace);
             },
             Orientation::Vertical => {
-                let size = (self.page.get() * ((self.r.get().sy() - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
-                let pos = (self.value.get() * ((self.r.get().sy() - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32;
+                let size = (self.page.get() * ((self.r.get().s.y - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
+                let pos = (self.value.get() * ((self.r.get().s.y - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32;
                 self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepless_color,BlendMode::Replace);
                 self.ui.draw_rectangle(rect!(vec2!(0,SCROLLBAR_SIZE),vec2!(SCROLLBAR_SIZE,pos)),pageless_color,BlendMode::Replace);
                 self.ui.draw_rectangle(rect!(vec2!(0,SCROLLBAR_SIZE + pos),vec2!(SCROLLBAR_SIZE,size)),tab_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(0,SCROLLBAR_SIZE + pos + size),vec2!(SCROLLBAR_SIZE,self.r.get().sy() - 2 * SCROLLBAR_SIZE - pos - size)),pagemore_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(0,self.r.get().sy() - SCROLLBAR_SIZE),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepmore_color,BlendMode::Replace);
+                self.ui.draw_rectangle(rect!(vec2!(0,SCROLLBAR_SIZE + pos + size),vec2!(SCROLLBAR_SIZE,self.r.get().s.y - 2 * SCROLLBAR_SIZE - pos - size)),pagemore_color,BlendMode::Replace);
+                self.ui.draw_rectangle(rect!(vec2!(0,self.r.get().s.y - SCROLLBAR_SIZE),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepmore_color,BlendMode::Replace);
             },
         }
     }
@@ -282,12 +282,12 @@ impl Widget for ScrollBar {
                     println!("ScrollBar: start dragging Tab");
                     let pos = match self.orientation {
                         Orientation::Horizontal => {
-                            let size = (self.page.get() * ((self.r.get().sx() - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
-                            (self.value.get() * ((self.r.get().sx() - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32
+                            let size = (self.page.get() * ((self.r.get().s.x - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
+                            (self.value.get() * ((self.r.get().s.x - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32
                         },
                         Orientation::Vertical => {
-                            let size = (self.page.get() * ((self.r.get().sy() - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
-                            (self.value.get() * ((self.r.get().sy() - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32
+                            let size = (self.page.get() * ((self.r.get().s.y - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
+                            (self.value.get() * ((self.r.get().s.y - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32
                         },
                     };
                     self.start_pos.set(pos);
@@ -389,15 +389,15 @@ impl Widget for ScrollBar {
                 ScrollBarHit::Tab => {
                     match self.orientation {
                         Orientation::Horizontal => {
-                            let size = (self.page.get() * ((self.r.get().sx() - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
-                            let wanted_pos = self.start_pos.get() + p.x() - self.start_p.get().x();
-                            let wanted_value = (wanted_pos as f32) * self.full.get() / ((self.r.get().sx() - 2 * SCROLLBAR_SIZE - size) as f32);
+                            let size = (self.page.get() * ((self.r.get().s.x - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
+                            let wanted_pos = self.start_pos.get() + p.x - self.start_p.get().x;
+                            let wanted_value = (wanted_pos as f32) * self.full.get() / ((self.r.get().s.x - 2 * SCROLLBAR_SIZE - size) as f32);
                             self.set_value(wanted_value);
                         },
                         Orientation::Vertical => {
-                            let size = (self.page.get() * ((self.r.get().sy() - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
-                            let wanted_pos = self.start_pos.get() + p.y() - self.start_p.get().y();
-                            let wanted_value = (wanted_pos as f32) * self.full.get() / ((self.r.get().sy() - 2 * SCROLLBAR_SIZE - size) as f32);
+                            let size = (self.page.get() * ((self.r.get().s.y - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
+                            let wanted_pos = self.start_pos.get() + p.y - self.start_p.get().y;
+                            let wanted_value = (wanted_pos as f32) * self.full.get() / ((self.r.get().s.y - 2 * SCROLLBAR_SIZE - size) as f32);
                             self.set_value(wanted_value);
                         },
                     }

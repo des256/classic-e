@@ -1,6 +1,7 @@
 // E - Multivector
 // Desmond Germans, 2020
 
+/*
 use crate::*;
 use std::{
     cmp::PartialEq,
@@ -511,80 +512,80 @@ impl<T: SimdableFloat> Zero for MultiVec4<T> {
 
 impl<T: SimdableFloat> Display for MultiVec4<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
-        let sx = if self.x() < T::zero() {
-            format!("{}x",self.x())
+        let sx = if self.x < T::zero() {
+            format!("{}x",self.x)
         } else {
-            format!("+{}x",self.x())
+            format!("+{}x",self.x)
         };
-        let sy = if self.y() < T::zero() {
-            format!("{}y",self.y())
+        let sy = if self.y < T::zero() {
+            format!("{}y",self.y)
         } else {
-            format!("+{}y",self.y())
+            format!("+{}y",self.y)
         };
-        let sz = if self.z() < T::zero() {
-            format!("{}z",self.z())
+        let sz = if self.z < T::zero() {
+            format!("{}z",self.z)
         } else {
-            format!("+{}z",self.z())
+            format!("+{}z",self.z)
         };
-        let sw = if self.w() < T::zero() {
-            format!("{}w",self.w())
+        let sw = if self.w < T::zero() {
+            format!("{}w",self.w)
         } else {
-            format!("+{}w",self.w())
+            format!("+{}w",self.w)
         };
-        let sxy = if self.xy() < T::zero() {
-            format!("{}xy",self.xy())
+        let sxy = if self.xy < T::zero() {
+            format!("{}xy",self.xy)
         } else {
-            format!("+{}xy",self.xy())
+            format!("+{}xy",self.xy)
         };
-        let sxz = if self.xz() < T::zero() {
-            format!("{}xz",self.xz())
+        let sxz = if self.xz < T::zero() {
+            format!("{}xz",self.xz)
         } else {
-            format!("+{}xz",self.xz())
+            format!("+{}xz",self.xz)
         };
-        let sxw = if self.xw() < T::zero() {
-            format!("{}xw",self.xw())
+        let sxw = if self.xw < T::zero() {
+            format!("{}xw",self.xw)
         } else {
-            format!("+{}xw",self.xw())
+            format!("+{}xw",self.xw)
         };
-        let syz = if self.yz() < T::zero() {
-            format!("{}yz",self.yz())
+        let syz = if self.yz < T::zero() {
+            format!("{}yz",self.yz)
         } else {
-            format!("+{}yz",self.yz())
+            format!("+{}yz",self.yz)
         };
-        let syw = if self.yw() < T::zero() {
-            format!("{}yw",self.yw())
+        let syw = if self.yw < T::zero() {
+            format!("{}yw",self.yw)
         } else {
-            format!("+{}yw",self.yw())
+            format!("+{}yw",self.yw)
         };
-        let szw = if self.zw() < T::zero() {
-            format!("{}zw",self.zw())
+        let szw = if self.zw < T::zero() {
+            format!("{}zw",self.zw)
         } else {
-            format!("+{}zw",self.zw())
+            format!("+{}zw",self.zw)
         };
-        let sxyz = if self.xyz() < T::zero() {
-            format!("{}xyz",self.xyz())
+        let sxyz = if self.xyz < T::zero() {
+            format!("{}xyz",self.xyz)
         } else {
-            format!("+{}xyz",self.xyz())
+            format!("+{}xyz",self.xyz)
         };
-        let sxyw = if self.xyw() < T::zero() {
-            format!("{}xyw",self.xyw())
+        let sxyw = if self.xyw < T::zero() {
+            format!("{}xyw",self.xyw)
         } else {
-            format!("+{}xyw",self.xyw())
+            format!("+{}xyw",self.xyw)
         };
-        let sxzw = if self.xzw() < T::zero() {
-            format!("{}xzw",self.xzw())
+        let sxzw = if self.xzw < T::zero() {
+            format!("{}xzw",self.xzw)
         } else {
-            format!("+{}xzw",self.xzw())
+            format!("+{}xzw",self.xzw)
         };
-        let syzw = if self.yzw() < T::zero() {
-            format!("{}yzw",self.yzw())
+        let syzw = if self.yzw < T::zero() {
+            format!("{}yzw",self.yzw)
         } else {
-            format!("+{}yzw",self.yzw())
+            format!("+{}yzw",self.yzw)
         };
-        let sxyzw = if self.xyzw() < T::zero() {
-            format!("{}xyzw",self.xyzw())
+        let sxyzw = if self.xyzw < T::zero() {
+            format!("{}xyzw",self.xyzw)
         } else {
-            format!("+{}xyzw",self.xyzw())
+            format!("+{}xyzw",self.xyzw)
         };
         write!(f,"{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}",self.r(),sx,sy,sz,sw,sxy,sxz,sxw,syz,syw,szw,sxyz,sxyw,sxzw,syzw,sxyzw)
     }
@@ -647,44 +648,44 @@ impl<T: SimdableFloat> Mul<MultiVec4<T>> for MultiVec4<T> {
     type Output = MultiVec4<T>;
     fn mul(self,other: MultiVec4<T>) -> Self {
         MultiVec4::new(
-            self.r() * other.r() + self.x() * other.x() + self.y() * other.y() + self.z() * other.z() + self.w() * other.w() - self.xy() * other.xy() - self.xz() * other.xz() - self.xw() * other.xw() - self.yz() * other.yz() - self.yw() * other.yw() - self.zw() * other.zw() - self.xyz() * other.xyz() - self.xyw() * other.xyw() - self.xzw() * other.xzw() - self.yzw() * other.yzw() + self.xyzw() * other.xyzw(),
-            self.r() * other.x() + self.x() * other.r() - self.y() * other.xy() - self.z() * other.xz() - self.w() * other.xw() + self.xy() * other.y() + self.xz() * other.z() + self.xw() * other.w() - self.yz() * other.xyz() - self.yw() * other.xyw() - self.zw() * other.xzw() - self.xyz() * other.yz() - self.xyw() * other.yw() - self.xzw() * other.zw() + self.yzw() * other.xyzw() - self.xyzw() * other.yzw(),
-            self.r() * other.y() + self.x() * other.xy() + self.y() * other.r() - self.z() * other.yz() - self.w() * other.yw() - self.xy() * other.x() + self.xz() * other.xyz() + self.xw() * other.xyw() + self.yz() * other.z() + self.yw() * other.w() - self.zw() * other.yzw() + self.xyz() * other.xz() + self.xyw() * other.xw() - self.xzw() * other.xyzw() - self.yzw() * other.zw() + self.xyzw() * other.xzw(),
-            self.r() * other.z() + self.x() * other.xz() + self.y() * other.yz() + self.z() * other.r() - self.w() * other.zw() - self.xy() * other.xyz() - self.xz() * other.x() + self.xw() * other.xzw() - self.yz() * other.y() + self.yw() * other.yzw() + self.zw() * other.w() - self.xyz() * other.xy() + self.xyw() * other.xyzw() + self.xzw() * other.xw() + self.yzw() * other.yw() - self.xyzw() * other.xyw(),
-            self.r() * other.w() + self.x() * other.xw() + self.y() * other.yw() + self.z() * other.zw() + self.w() * other.r() - self.xy() * other.xyw() - self.xz() * other.xzw() - self.xw() * other.x() - self.yz() * other.yzw() - self.yw() * other.y() - self.zw() * other.z() - self.xyz() * other.xyzw() - self.xyw() * other.xy() - self.xzw() * other.xz() - self.yzw() * other.yz() + self.xyzw() * other.xyz(),
-            self.r() * other.xy() + self.x() * other.y() - self.y() * other.x() + self.z() * other.xyz() + self.w() * other.xyw() + self.xy() * other.r() - self.xz() * other.yz() - self.xw() * other.yw() + self.yz() * other.xz() + self.yw() * other.xw() - self.zw() * other.xyzw() + self.xyz() * other.z() + self.xyw() * other.w() - self.xzw() * other.yzw() + self.yzw() * other.xzw() - self.xyzw() * other.zw(),
-            self.r() * other.xz() + self.x() * other.z() - self.y() * other.xyz() - self.z() * other.x() + self.w() * other.xzw() + self.xy() * other.yz() + self.xz() * other.r() - self.xw() * other.zw() - self.yz() * other.xy() + self.yw() * other.xyzw() + self.zw() * other.xw() - self.xyz() * other.y() + self.xyw() * other.yzw() + self.xzw() * other.w() - self.yzw() * other.xyw() + self.xyzw() * other.yw(),
-            self.r() * other.xw() + self.x() * other.w() - self.y() * other.xyw() - self.z() * other.xzw() - self.w() * other.x() + self.xy() * other.yw() + self.xz() * other.zw() + self.xw() * other.r() - self.yz() * other.xyzw() - self.yw() * other.xy() - self.zw() * other.xz() - self.xyz() * other.yzw() - self.xyw() * other.y() - self.xzw() * other.z() + self.yzw() * other.xyz() - self.xyzw() * other.yz(),
-            self.r() * other.yz() + self.x() * other.xyz() + self.y() * other.z() - self.z() * other.y() + self.w() * other.yzw() - self.xy() * other.xz() + self.xz() * other.xy() - self.xw() * other.xyzw() + self.yz() * other.r() - self.yw() * other.zw() + self.zw() * other.yw() + self.xyz() * other.x() - self.xyw() * other.xzw() + self.xzw() * other.xyw() + self.yzw() * other.w() - self.xyzw() * other.xw(),
-            self.r() * other.yw() + self.x() * other.xyw() + self.y() * other.w() - self.z() * other.yzw() - self.w() * other.y() - self.xy() * other.xw() + self.xz() * other.xyzw() + self.xw() * other.xy() + self.yz() * other.zw() + self.yw() * other.r() - self.zw() * other.yz() + self.xyz() * other.xzw() + self.xyw() * other.x() - self.xzw() * other.xyz() - self.yzw() * other.z() + self.xyzw() * other.xz(),
-            self.r() * other.zw() + self.x() * other.xzw() + self.y() * other.yzw() + self.z() * other.w() - self.w() * other.z() - self.xy() * other.xyzw() - self.xz() * other.xw() + self.xw() * other.xz() - self.yz() * other.yw() + self.yw() * other.yz() + self.zw() * other.r() - self.xyz() * other.xyw() + self.xyw() * other.xyz() + self.xzw() * other.x() + self.yzw() * other.y() - self.xyzw() * other.xy(),
-            self.r() * other.xyz() + self.x() * other.yz() - self.y() * other.xz() + self.z() * other.xy() - self.w() * other.xyzw() + self.xy() * other.z() - self.xz() * other.y() + self.xw() * other.yzw() + self.yz() * other.x() - self.yw() * other.xzw() + self.zw() * other.xyw() + self.xyz() * other.r() - self.xyw() * other.zw() + self.xzw() * other.yw() - self.yzw() * other.xw() + self.xyzw() * other.w(),
-            self.r() * other.xyw() + self.x() * other.yw() - self.y() * other.xw() + self.z() * other.xyzw() + self.w() * other.xy() + self.xy() * other.w() - self.xz() * other.yzw() - self.xw() * other.y() + self.yz() * other.xzw() + self.yw() * other.x() - self.zw() * other.xyz() + self.xyz() * other.zw() + self.xyw() * other.r() - self.xzw() * other.yz() + self.yzw() * other.xz() - self.xyzw() * other.z(),
-            self.r() * other.xzw() + self.x() * other.zw() - self.y() * other.xyzw() - self.z() * other.xw() + self.w() * other.xz() + self.xy() * other.yzw() + self.xz() * other.w() - self.xw() * other.z() - self.yz() * other.xyw() + self.yw() * other.xyz() + self.zw() * other.x() - self.xyz() * other.yw() + self.xyw() * other.yz() + self.xzw() * other.r() - self.yzw() * other.xy() + self.xyzw() * other.y(),
-            self.r() * other.yzw() + self.x() * other.xyzw() + self.y() * other.zw() - self.z() * other.yw() + self.w() * other.yz() - self.xy() * other.xzw() + self.xz() * other.xyw() - self.xw() * other.xyz() + self.yz() * other.w() - self.yw() * other.z() + self.zw() * other.y() + self.xyz() * other.xw() - self.xyw() * other.xz() + self.xzw() * other.xy() + self.yzw() * other.r() - self.xyzw() * other.x(),
-            self.r() * other.xyzw() + self.x() * other.yzw() - self.y() * other.xzw() + self.z() * other.xyw() - self.w() * other.xyz() + self.xy() * other.zw() - self.xz() * other.yw() + self.xw() * other.yz() + self.yz() * other.xw() - self.yw() * other.xz() + self.zw() * other.xy() + self.xyz() * other.w() - self.xyw() * other.z() + self.xzw() * other.y() - self.yzw() * other.x() + self.xyzw() * other.r()
+            self.r() * other.r() + self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w - self.xy * other.xy - self.xz * other.xz - self.xw * other.xw - self.yz * other.yz - self.yw * other.yw - self.zw * other.zw - self.xyz * other.xyz - self.xyw * other.xyw - self.xzw * other.xzw - self.yzw * other.yzw + self.xyzw * other.xyzw,
+            self.r() * other.x + self.x * other.r() - self.y * other.xy - self.z * other.xz - self.w * other.xw + self.xy * other.y + self.xz * other.z + self.xw * other.w - self.yz * other.xyz - self.yw * other.xyw - self.zw * other.xzw - self.xyz * other.yz - self.xyw * other.yw - self.xzw * other.zw + self.yzw * other.xyzw - self.xyzw * other.yzw,
+            self.r() * other.y + self.x * other.xy + self.y * other.r() - self.z * other.yz - self.w * other.yw - self.xy * other.x + self.xz * other.xyz + self.xw * other.xyw + self.yz * other.z + self.yw * other.w - self.zw * other.yzw + self.xyz * other.xz + self.xyw * other.xw - self.xzw * other.xyzw - self.yzw * other.zw + self.xyzw * other.xzw,
+            self.r() * other.z + self.x * other.xz + self.y * other.yz + self.z * other.r() - self.w * other.zw - self.xy * other.xyz - self.xz * other.x + self.xw * other.xzw - self.yz * other.y + self.yw * other.yzw + self.zw * other.w - self.xyz * other.xy + self.xyw * other.xyzw + self.xzw * other.xw + self.yzw * other.yw - self.xyzw * other.xyw,
+            self.r() * other.w + self.x * other.xw + self.y * other.yw + self.z * other.zw + self.w * other.r() - self.xy * other.xyw - self.xz * other.xzw - self.xw * other.x - self.yz * other.yzw - self.yw * other.y - self.zw * other.z - self.xyz * other.xyzw - self.xyw * other.xy - self.xzw * other.xz - self.yzw * other.yz + self.xyzw * other.xyz,
+            self.r() * other.xy + self.x * other.y - self.y * other.x + self.z * other.xyz + self.w * other.xyw + self.xy * other.r() - self.xz * other.yz - self.xw * other.yw + self.yz * other.xz + self.yw * other.xw - self.zw * other.xyzw + self.xyz * other.z + self.xyw * other.w - self.xzw * other.yzw + self.yzw * other.xzw - self.xyzw * other.zw,
+            self.r() * other.xz + self.x * other.z - self.y * other.xyz - self.z * other.x + self.w * other.xzw + self.xy * other.yz + self.xz * other.r() - self.xw * other.zw - self.yz * other.xy + self.yw * other.xyzw + self.zw * other.xw - self.xyz * other.y + self.xyw * other.yzw + self.xzw * other.w - self.yzw * other.xyw + self.xyzw * other.yw,
+            self.r() * other.xw + self.x * other.w - self.y * other.xyw - self.z * other.xzw - self.w * other.x + self.xy * other.yw + self.xz * other.zw + self.xw * other.r() - self.yz * other.xyzw - self.yw * other.xy - self.zw * other.xz - self.xyz * other.yzw - self.xyw * other.y - self.xzw * other.z + self.yzw * other.xyz - self.xyzw * other.yz,
+            self.r() * other.yz + self.x * other.xyz + self.y * other.z - self.z * other.y + self.w * other.yzw - self.xy * other.xz + self.xz * other.xy - self.xw * other.xyzw + self.yz * other.r() - self.yw * other.zw + self.zw * other.yw + self.xyz * other.x - self.xyw * other.xzw + self.xzw * other.xyw + self.yzw * other.w - self.xyzw * other.xw,
+            self.r() * other.yw + self.x * other.xyw + self.y * other.w - self.z * other.yzw - self.w * other.y - self.xy * other.xw + self.xz * other.xyzw + self.xw * other.xy + self.yz * other.zw + self.yw * other.r() - self.zw * other.yz + self.xyz * other.xzw + self.xyw * other.x - self.xzw * other.xyz - self.yzw * other.z + self.xyzw * other.xz,
+            self.r() * other.zw + self.x * other.xzw + self.y * other.yzw + self.z * other.w - self.w * other.z - self.xy * other.xyzw - self.xz * other.xw + self.xw * other.xz - self.yz * other.yw + self.yw * other.yz + self.zw * other.r() - self.xyz * other.xyw + self.xyw * other.xyz + self.xzw * other.x + self.yzw * other.y - self.xyzw * other.xy,
+            self.r() * other.xyz + self.x * other.yz - self.y * other.xz + self.z * other.xy - self.w * other.xyzw + self.xy * other.z - self.xz * other.y + self.xw * other.yzw + self.yz * other.x - self.yw * other.xzw + self.zw * other.xyw + self.xyz * other.r() - self.xyw * other.zw + self.xzw * other.yw - self.yzw * other.xw + self.xyzw * other.w,
+            self.r() * other.xyw + self.x * other.yw - self.y * other.xw + self.z * other.xyzw + self.w * other.xy + self.xy * other.w - self.xz * other.yzw - self.xw * other.y + self.yz * other.xzw + self.yw * other.x - self.zw * other.xyz + self.xyz * other.zw + self.xyw * other.r() - self.xzw * other.yz + self.yzw * other.xz - self.xyzw * other.z,
+            self.r() * other.xzw + self.x * other.zw - self.y * other.xyzw - self.z * other.xw + self.w * other.xz + self.xy * other.yzw + self.xz * other.w - self.xw * other.z - self.yz * other.xyw + self.yw * other.xyz + self.zw * other.x - self.xyz * other.yw + self.xyw * other.yz + self.xzw * other.r() - self.yzw * other.xy + self.xyzw * other.y,
+            self.r() * other.yzw + self.x * other.xyzw + self.y * other.zw - self.z * other.yw + self.w * other.yz - self.xy * other.xzw + self.xz * other.xyw - self.xw * other.xyz + self.yz * other.w - self.yw * other.z + self.zw * other.y + self.xyz * other.xw - self.xyw * other.xz + self.xzw * other.xy + self.yzw * other.r() - self.xyzw * other.x,
+            self.r() * other.xyzw + self.x * other.yzw - self.y * other.xzw + self.z * other.xyw - self.w * other.xyz + self.xy * other.zw - self.xz * other.yw + self.xw * other.yz + self.yz * other.xw - self.yw * other.xz + self.zw * other.xy + self.xyz * other.w - self.xyw * other.z + self.xzw * other.y - self.yzw * other.x + self.xyzw * other.r()
         )
     }
 }
 
 impl<T: SimdableFloat> MulAssign<MultiVec4<T>> for MultiVec4<T> {
     fn mul_assign(&mut self,other: MultiVec4<T>) {
-        let nr = self.r() * other.r() + self.x() * other.x() + self.y() * other.y() + self.z() * other.z() + self.w() * other.w() - self.xy() * other.xy() - self.xz() * other.xz() - self.xw() * other.xw() - self.yz() * other.yz() - self.yw() * other.yw() - self.zw() * other.zw() - self.xyz() * other.xyz() - self.xyw() * other.xyw() - self.xzw() * other.xzw() - self.yzw() * other.yzw() + self.xyzw() * other.xyzw();
-        let nx = self.r() * other.x() + self.x() * other.r() - self.y() * other.xy() - self.z() * other.xz() - self.w() * other.xw() + self.xy() * other.y() + self.xz() * other.z() + self.xw() * other.w() - self.yz() * other.xyz() - self.yw() * other.xyw() - self.zw() * other.xzw() - self.xyz() * other.yz() - self.xyw() * other.yw() - self.xzw() * other.zw() + self.yzw() * other.xyzw() - self.xyzw() * other.yzw();
-        let ny = self.r() * other.y() + self.x() * other.xy() + self.y() * other.r() - self.z() * other.yz() - self.w() * other.yw() - self.xy() * other.x() + self.xz() * other.xyz() + self.xw() * other.xyw() + self.yz() * other.z() + self.yw() * other.w() - self.zw() * other.yzw() + self.xyz() * other.xz() + self.xyw() * other.xw() - self.xzw() * other.xyzw() - self.yzw() * other.zw() + self.xyzw() * other.xzw();
-        let nz = self.r() * other.z() + self.x() * other.xz() + self.y() * other.yz() + self.z() * other.r() - self.w() * other.zw() - self.xy() * other.xyz() - self.xz() * other.x() + self.xw() * other.xzw() - self.yz() * other.y() + self.yw() * other.yzw() + self.zw() * other.w() - self.xyz() * other.xy() + self.xyw() * other.xyzw() + self.xzw() * other.xw() + self.yzw() * other.yw() - self.xyzw() * other.xyw();
-        let nw = self.r() * other.w() + self.x() * other.xw() + self.y() * other.yw() + self.z() * other.zw() + self.w() * other.r() - self.xy() * other.xyw() - self.xz() * other.xzw() - self.xw() * other.x() - self.yz() * other.yzw() - self.yw() * other.y() - self.zw() * other.z() - self.xyz() * other.xyzw() - self.xyw() * other.xy() - self.xzw() * other.xz() - self.yzw() * other.yz() + self.xyzw() * other.xyz();
-        let nxy = self.r() * other.xy() + self.x() * other.y() - self.y() * other.x() + self.z() * other.xyz() + self.w() * other.xyw() + self.xy() * other.r() - self.xz() * other.yz() - self.xw() * other.yw() + self.yz() * other.xz() + self.yw() * other.xw() - self.zw() * other.xyzw() + self.xyz() * other.z() + self.xyw() * other.w() - self.xzw() * other.yzw() + self.yzw() * other.xzw() - self.xyzw() * other.zw();
-        let nxz = self.r() * other.xz() + self.x() * other.z() - self.y() * other.xyz() - self.z() * other.x() + self.w() * other.xzw() + self.xy() * other.yz() + self.xz() * other.r() - self.xw() * other.zw() - self.yz() * other.xy() + self.yw() * other.xyzw() + self.zw() * other.xw() - self.xyz() * other.y() + self.xyw() * other.yzw() + self.xzw() * other.w() - self.yzw() * other.xyw() + self.xyzw() * other.yw();
-        let nxw = self.r() * other.xw() + self.x() * other.w() - self.y() * other.xyw() - self.z() * other.xzw() - self.w() * other.x() + self.xy() * other.yw() + self.xz() * other.zw() + self.xw() * other.r() - self.yz() * other.xyzw() - self.yw() * other.xy() - self.zw() * other.xz() - self.xyz() * other.yzw() - self.xyw() * other.y() - self.xzw() * other.z() + self.yzw() * other.xyz() - self.xyzw() * other.yz();
-        let nyz = self.r() * other.yz() + self.x() * other.xyz() + self.y() * other.z() - self.z() * other.y() + self.w() * other.yzw() - self.xy() * other.xz() + self.xz() * other.xy() - self.xw() * other.xyzw() + self.yz() * other.r() - self.yw() * other.zw() + self.zw() * other.yw() + self.xyz() * other.x() - self.xyw() * other.xzw() + self.xzw() * other.xyw() + self.yzw() * other.w() - self.xyzw() * other.xw();
-        let nyw = self.r() * other.yw() + self.x() * other.xyw() + self.y() * other.w() - self.z() * other.yzw() - self.w() * other.y() - self.xy() * other.xw() + self.xz() * other.xyzw() + self.xw() * other.xy() + self.yz() * other.zw() + self.yw() * other.r() - self.zw() * other.yz() + self.xyz() * other.xzw() + self.xyw() * other.x() - self.xzw() * other.xyz() - self.yzw() * other.z() + self.xyzw() * other.xz();
-        let nzw = self.r() * other.zw() + self.x() * other.xzw() + self.y() * other.yzw() + self.z() * other.w() - self.w() * other.z() - self.xy() * other.xyzw() - self.xz() * other.xw() + self.xw() * other.xz() - self.yz() * other.yw() + self.yw() * other.yz() + self.zw() * other.r() - self.xyz() * other.xyw() + self.xyw() * other.xyz() + self.xzw() * other.x() + self.yzw() * other.y() - self.xyzw() * other.xy();
-        let nxyz = self.r() * other.xyz() + self.x() * other.yz() - self.y() * other.xz() + self.z() * other.xy() - self.w() * other.xyzw() + self.xy() * other.z() - self.xz() * other.y() + self.xw() * other.yzw() + self.yz() * other.x() - self.yw() * other.xzw() + self.zw() * other.xyw() + self.xyz() * other.r() - self.xyw() * other.zw() + self.xzw() * other.yw() - self.yzw() * other.xw() + self.xyzw() * other.w();
-        let nxyw = self.r() * other.xyw() + self.x() * other.yw() - self.y() * other.xw() + self.z() * other.xyzw() + self.w() * other.xy() + self.xy() * other.w() - self.xz() * other.yzw() - self.xw() * other.y() + self.yz() * other.xzw() + self.yw() * other.x() - self.zw() * other.xyz() + self.xyz() * other.zw() + self.xyw() * other.r() - self.xzw() * other.yz() + self.yzw() * other.xz() - self.xyzw() * other.z();
-        let nxzw = self.r() * other.xzw() + self.x() * other.zw() - self.y() * other.xyzw() - self.z() * other.xw() + self.w() * other.xz() + self.xy() * other.yzw() + self.xz() * other.w() - self.xw() * other.z() - self.yz() * other.xyw() + self.yw() * other.xyz() + self.zw() * other.x() - self.xyz() * other.yw() + self.xyw() * other.yz() + self.xzw() * other.r() - self.yzw() * other.xy() + self.xyzw() * other.y();
-        let nyzw = self.r() * other.yzw() + self.x() * other.xyzw() + self.y() * other.zw() - self.z() * other.yw() + self.w() * other.yz() - self.xy() * other.xzw() + self.xz() * other.xyw() - self.xw() * other.xyz() + self.yz() * other.w() - self.yw() * other.z() + self.zw() * other.y() + self.xyz() * other.xw() - self.xyw() * other.xz() + self.xzw() * other.xy() + self.yzw() * other.r() - self.xyzw() * other.x();
-        let nxyzw = self.r() * other.xyzw() + self.x() * other.yzw() - self.y() * other.xzw() + self.z() * other.xyw() - self.w() * other.xyz() + self.xy() * other.zw() - self.xz() * other.yw() + self.xw() * other.yz() + self.yz() * other.xw() - self.yw() * other.xz() + self.zw() * other.xy() + self.xyz() * other.w() - self.xyw() * other.z() + self.xzw() * other.y() - self.yzw() * other.x() + self.xyzw() * other.r();
+        let nr = self.r() * other.r() + self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w - self.xy * other.xy - self.xz * other.xz - self.xw * other.xw - self.yz * other.yz - self.yw * other.yw - self.zw * other.zw - self.xyz * other.xyz - self.xyw * other.xyw - self.xzw * other.xzw - self.yzw * other.yzw + self.xyzw * other.xyzw;
+        let nx = self.r() * other.x + self.x * other.r() - self.y * other.xy - self.z * other.xz - self.w * other.xw + self.xy * other.y + self.xz * other.z + self.xw * other.w - self.yz * other.xyz - self.yw * other.xyw - self.zw * other.xzw - self.xyz * other.yz - self.xyw * other.yw - self.xzw * other.zw + self.yzw * other.xyzw - self.xyzw * other.yzw;
+        let ny = self.r() * other.y + self.x * other.xy + self.y * other.r() - self.z * other.yz - self.w * other.yw - self.xy * other.x + self.xz * other.xyz + self.xw * other.xyw + self.yz * other.z + self.yw * other.w - self.zw * other.yzw + self.xyz * other.xz + self.xyw * other.xw - self.xzw * other.xyzw - self.yzw * other.zw + self.xyzw * other.xzw;
+        let nz = self.r() * other.z + self.x * other.xz + self.y * other.yz + self.z * other.r() - self.w * other.zw - self.xy * other.xyz - self.xz * other.x + self.xw * other.xzw - self.yz * other.y + self.yw * other.yzw + self.zw * other.w - self.xyz * other.xy + self.xyw * other.xyzw + self.xzw * other.xw + self.yzw * other.yw - self.xyzw * other.xyw;
+        let nw = self.r() * other.w + self.x * other.xw + self.y * other.yw + self.z * other.zw + self.w * other.r() - self.xy * other.xyw - self.xz * other.xzw - self.xw * other.x - self.yz * other.yzw - self.yw * other.y - self.zw * other.z - self.xyz * other.xyzw - self.xyw * other.xy - self.xzw * other.xz - self.yzw * other.yz + self.xyzw * other.xyz;
+        let nxy = self.r() * other.xy + self.x * other.y - self.y * other.x + self.z * other.xyz + self.w * other.xyw + self.xy * other.r() - self.xz * other.yz - self.xw * other.yw + self.yz * other.xz + self.yw * other.xw - self.zw * other.xyzw + self.xyz * other.z + self.xyw * other.w - self.xzw * other.yzw + self.yzw * other.xzw - self.xyzw * other.zw;
+        let nxz = self.r() * other.xz + self.x * other.z - self.y * other.xyz - self.z * other.x + self.w * other.xzw + self.xy * other.yz + self.xz * other.r() - self.xw * other.zw - self.yz * other.xy + self.yw * other.xyzw + self.zw * other.xw - self.xyz * other.y + self.xyw * other.yzw + self.xzw * other.w - self.yzw * other.xyw + self.xyzw * other.yw;
+        let nxw = self.r() * other.xw + self.x * other.w - self.y * other.xyw - self.z * other.xzw - self.w * other.x + self.xy * other.yw + self.xz * other.zw + self.xw * other.r() - self.yz * other.xyzw - self.yw * other.xy - self.zw * other.xz - self.xyz * other.yzw - self.xyw * other.y - self.xzw * other.z + self.yzw * other.xyz - self.xyzw * other.yz;
+        let nyz = self.r() * other.yz + self.x * other.xyz + self.y * other.z - self.z * other.y + self.w * other.yzw - self.xy * other.xz + self.xz * other.xy - self.xw * other.xyzw + self.yz * other.r() - self.yw * other.zw + self.zw * other.yw + self.xyz * other.x - self.xyw * other.xzw + self.xzw * other.xyw + self.yzw * other.w - self.xyzw * other.xw;
+        let nyw = self.r() * other.yw + self.x * other.xyw + self.y * other.w - self.z * other.yzw - self.w * other.y - self.xy * other.xw + self.xz * other.xyzw + self.xw * other.xy + self.yz * other.zw + self.yw * other.r() - self.zw * other.yz + self.xyz * other.xzw + self.xyw * other.x - self.xzw * other.xyz - self.yzw * other.z + self.xyzw * other.xz;
+        let nzw = self.r() * other.zw + self.x * other.xzw + self.y * other.yzw + self.z * other.w - self.w * other.z - self.xy * other.xyzw - self.xz * other.xw + self.xw * other.xz - self.yz * other.yw + self.yw * other.yz + self.zw * other.r() - self.xyz * other.xyw + self.xyw * other.xyz + self.xzw * other.x + self.yzw * other.y - self.xyzw * other.xy;
+        let nxyz = self.r() * other.xyz + self.x * other.yz - self.y * other.xz + self.z * other.xy - self.w * other.xyzw + self.xy * other.z - self.xz * other.y + self.xw * other.yzw + self.yz * other.x - self.yw * other.xzw + self.zw * other.xyw + self.xyz * other.r() - self.xyw * other.zw + self.xzw * other.yw - self.yzw * other.xw + self.xyzw * other.w;
+        let nxyw = self.r() * other.xyw + self.x * other.yw - self.y * other.xw + self.z * other.xyzw + self.w * other.xy + self.xy * other.w - self.xz * other.yzw - self.xw * other.y + self.yz * other.xzw + self.yw * other.x - self.zw * other.xyz + self.xyz * other.zw + self.xyw * other.r() - self.xzw * other.yz + self.yzw * other.xz - self.xyzw * other.z;
+        let nxzw = self.r() * other.xzw + self.x * other.zw - self.y * other.xyzw - self.z * other.xw + self.w * other.xz + self.xy * other.yzw + self.xz * other.w - self.xw * other.z - self.yz * other.xyw + self.yw * other.xyz + self.zw * other.x - self.xyz * other.yw + self.xyw * other.yz + self.xzw * other.r() - self.yzw * other.xy + self.xyzw * other.y;
+        let nyzw = self.r() * other.yzw + self.x * other.xyzw + self.y * other.zw - self.z * other.yw + self.w * other.yz - self.xy * other.xzw + self.xz * other.xyw - self.xw * other.xyz + self.yz * other.w - self.yw * other.z + self.zw * other.y + self.xyz * other.xw - self.xyw * other.xz + self.xzw * other.xy + self.yzw * other.r() - self.xyzw * other.x;
+        let nxyzw = self.r() * other.xyzw + self.x * other.yzw - self.y * other.xzw + self.z * other.xyw - self.w * other.xyz + self.xy * other.zw - self.xz * other.yw + self.xw * other.yz + self.yz * other.xw - self.yw * other.xz + self.zw * other.xy + self.xyz * other.w - self.xyw * other.z + self.xzw * other.y - self.yzw * other.x + self.xyzw * other.r();
         self.0 = Simd16::new([
             nr,
             nx,ny,nz,nw,
@@ -723,6 +724,7 @@ impl<T: SimdableFloat> From<T> for MultiVec4<T> {
 
 impl<T: SimdableFloat> From<Vec4<T>> for MultiVec4<T> {
     fn from(v: Vec4<T>) -> MultiVec4<T> {
-        MultiVec4::new(T::zero(),v.x(),v.y(),v.z(),v.w(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero())
+        MultiVec4::new(T::zero(),v.x,v.y,v.z,v.w,T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero())
     }
 }
+*/

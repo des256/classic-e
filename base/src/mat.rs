@@ -25,7 +25,7 @@ impl<T: Clone + Copy + Zero> Mat<T> {
     pub fn new(size: Vec2<usize>) -> Mat<T> {
         Mat {
             size: size,
-            data: vec![T::zero(); (size.x() * size.y()) as usize].into_boxed_slice(),
+            data: vec![T::zero(); (size.x * size.y) as usize].into_boxed_slice(),
             phantom: PhantomData,
         }
     }
@@ -37,7 +37,7 @@ impl<T: Clone + Copy + Zero> Mat<T> {
     /// * `p` - Coordinates of the element.
     /// * `v` - Element value.
     pub fn set(&mut self,p: Vec2<usize>,v: T) {
-        self.data[p.y() * self.size.x() + p.x()] = v;
+        self.data[p.y * self.size.x + p.x] = v;
     }
 
     /// (maybe) Get element from the array.
@@ -50,6 +50,6 @@ impl<T: Clone + Copy + Zero> Mat<T> {
     ///
     /// Element value.
     pub fn get(&self,p: Vec2<usize>) -> T {
-        self.data[p.y() * self.size.x() + p.x()]
+        self.data[p.y * self.size.x + p.x]
     }
 }

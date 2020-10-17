@@ -42,6 +42,11 @@ use {
             unmap_window,
             ATOM_PRIMARY,
             ATOM_WINDOW,
+            configure_window,
+            CONFIG_WINDOW_X,
+            CONFIG_WINDOW_Y,
+            CONFIG_WINDOW_WIDTH,
+            CONFIG_WINDOW_HEIGHT,
         },
     },
 };
@@ -60,7 +65,7 @@ pub struct Window {
 }
 
 impl Window {
-    fn new(system: &Rc<System>,r: Rect<i32>,parent: Option<XID>) -> Result<Rc<Window>,SystemError> {
+    fn new(system: &Rc<System>,r: Rect<i32>,absolute: bool) -> Result<Rc<Window>,SystemError> {
         let id = system.connection.generate_id() as XID;
         let values = [
             (CW_EVENT_MASK,
@@ -73,7 +78,7 @@ impl Window {
                 | EVENT_MASK_STRUCTURE_NOTIFY
             ),
             (CW_COLORMAP,system.colormap as u32),
-            (CW_OVERRIDE_REDIRECT,if let Some(_) = parent { 1 } else { 0 }),
+            (CW_OVERRIDE_REDIRECT,if absolute { 1 } else { 0 }),
         ];
         create_window(
             &system.connection,
@@ -81,7 +86,7 @@ impl Window {
             id as u32,
             //if let Some(id) = parent { id as u32 } else { system.rootwindow as u32 },
             system.rootwindow as u32,
-            r.ox() as i16,r.oy() as i16,r.sx() as u16,r.sy() as u16,
+            r.o.x as i16,r.o.y as i16,r.s.x as u16,r.s.y as u16,
             0,
             WINDOW_CLASS_INPUT_OUTPUT as u16,
             system.visualid as u32,
@@ -112,7 +117,7 @@ impl Window {
             32,
             &encoded_pointer_dwords
         ).request_check() {
-            Ok(o) => { println!("ok {:?}",o) },
+            Ok(o) => { },
             Err(e) => { println!("response type {:?}, error code {:?}",e.response_type(),e.error_code()) },
         }
         Ok(window)
@@ -132,7 +137,7 @@ impl Window {
     ///
     /// New frame base window.
     pub fn new_frame(system: &Rc<System>,r: Rect<i32>,title: &str) -> Result<Rc<Window>,SystemError> {
-        let window = Window::new(system,r,None)?;
+        let window = Window::new(system,r,false)?;
         let protocol_set = [system.wm_delete_window];
         change_property(
             &system.connection,
@@ -169,8 +174,8 @@ impl Window {
     /// **Returns**
     ///
     /// New popup base window.
-    pub fn new_popup(system: &Rc<System>,parent_window: &Window,r: Rect<i32>) -> Result<Rc<Window>,SystemError> {
-        let window = Window::new(system,r,Some(parent_window.id))?;
+    pub fn new_popup(system: &Rc<System>,r: Rect<i32>) -> Result<Rc<Window>,SystemError> {
+        let window = Window::new(system,r,true)?;
         /*let net_type = [system.wm_net_type_utility];
         change_property(
             &system.connection,
@@ -201,7 +206,7 @@ impl Window {
             32,
             &hints
         );
-        let transient_for = [parent_window.id];
+        /*let transient_for = [parent_window.id];
         change_property(
             &system.connection,
             PROP_MODE_REPLACE as u8,
@@ -210,7 +215,7 @@ impl Window {
             ATOM_WINDOW,
             32,
             &transient_for
-        );
+        );*/
         system.connection.flush();
         Ok(window)
     }
@@ -223,8 +228,8 @@ impl Window {
             // Not sure what to make of this, but in order to get the actual
             // rectangle, this seems to work:
             let old_r = self.r.get();
-            if r.s() != old_r.s() {
-                self.r.set(rect!(old_r.o(),r.s()));
+            if r.s != old_r.s {
+                self.r.set(rect!(old_r.o,r.s));
             }
             else {
                 self.r.set(*r);
@@ -241,6 +246,35 @@ impl Window {
 
     pub fn clear_handler(&self) {
         *self.handler.borrow_mut() = None;
+    }
+
+    pub fn show(&self) {
+        //println!("show {}",self.id);
+        unsafe {
+            map_window(&self.system.connection,self.id as u32);
+            self.system.connection.flush();
+            //XSync(self.system.connection.get_raw_dpy(),False);
+        }
+    }
+
+    pub fn hide(&self) {
+        //println!("hide {}",self.id);
+        unsafe {
+            unmap_window(&self.system.connection,self.id as u32);
+            self.system.connection.flush();
+            //XSync(self.system.connection.get_raw_dpy(),False);
+        }
+    }
+
+    pub fn configure(&self,r: &Rect<i32>) {
+
+        let values = [
+            (CONFIG_WINDOW_X as u16,r.o.x as u32),
+            (CONFIG_WINDOW_Y as u16,r.o.y as u32),
+            (CONFIG_WINDOW_WIDTH as u16,r.s.x as u32),
+            (CONFIG_WINDOW_HEIGHT as u16,r.s.y as u32),
+        ];
+        configure_window(&self.system.connection,self.id as u32,&values);
     }
 }
 

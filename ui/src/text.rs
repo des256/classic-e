@@ -28,8 +28,8 @@ pub struct Text {
 }
 
 impl Text {
-    pub fn new(ui: &Rc<UI>,text: &str) -> Result<Text,SystemError> {
-        Ok(Text {
+    pub fn new(ui: &Rc<UI>,text: &str) -> Result<Rc<Text>,SystemError> {
+        Ok(Rc::new(Text {
             ui: Rc::clone(&ui),
             style: RefCell::new(TextStyle {
                 font: Rc::clone(&ui.font),
@@ -38,7 +38,7 @@ impl Text {
             }),
             r: Cell::new(rect!(0,0,0,0)),
             text: text.to_string(),
-        })
+        }))
     }
 }
 
@@ -58,7 +58,7 @@ impl Widget for Text {
 
     fn draw(&self) {
         let style = self.style.borrow();
-        self.ui.draw_rectangle(rect!(vec2!(0,0),self.r.get().s()),style.color,BlendMode::Replace);
+        self.ui.draw_rectangle(rect!(vec2!(0,0),self.r.get().s),style.color,BlendMode::Replace);
         self.ui.draw_text(vec2!(0,0),&self.text,style.text_color,&style.font);
     }
 

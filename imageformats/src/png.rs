@@ -525,10 +525,10 @@ fn make_rgbaf<T: pixel::Pixel>(r: f32,g: f32,b: f32,a: f32,gamma: f32) -> T {
 
 fn make_c<T: pixel::Pixel>(c: T,gamma: f32) -> T {
     let p = c.as_vec4();
-    let r = (p.x() as f32) / 255.0;
-    let g = (p.y() as f32) / 255.0;
-    let b = (p.z() as f32) / 255.0;
-    let a = (p.w() as f32) / 255.0;
+    let r = (p.x as f32) / 255.0;
+    let g = (p.y as f32) / 255.0;
+    let b = (p.z as f32) / 255.0;
+    let a = (p.w as f32) / 255.0;
     let ur = (clampf(r.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ug = (clampf(g.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ub = (clampf(b.powf(gamma),0.0,1.0) * 255.0) as u8;

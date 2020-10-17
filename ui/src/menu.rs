@@ -35,7 +35,7 @@ pub struct MenuStyle {
 /// Menu item.
 pub enum MenuItem {
     Action(String),
-    Menu(String,Menu),
+    Menu(String,Rc<Menu>),
     Separator,
 }
 
@@ -45,16 +45,16 @@ pub struct Menu {
     style: RefCell<MenuStyle>,
     r: Cell<Rect<i32>>,
     hit: Cell<MenuHit>,
-    capturing: Cell<bool>,
     items: Vec<MenuItem>,
-    current: Cell<Option<usize>>,
+    current_item: RefCell<Option<usize>>,
+    pub popup: RefCell<Option<Rc<UIWindow>>>,
 }
 
 const MENU_SEPARATOR_HEIGHT: i32 = 10;
 
 impl Menu {
-    pub fn new(ui: &Rc<UI>,items: Vec<MenuItem>) -> Result<Menu,SystemError> {
-        Ok(Menu {
+    pub fn new(ui: &Rc<UI>,items: Vec<MenuItem>) -> Result<Rc<Menu>,SystemError> {
+        let menu = Rc::new(Menu {
             ui: Rc::clone(&ui),
             style: RefCell::new(MenuStyle {
                 font: Rc::clone(&ui.font),
@@ -67,36 +67,41 @@ impl Menu {
             }),
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(MenuHit::Nothing),
-            capturing: Cell::new(false),
             items: items,
-            current: Cell::new(None),
-        })
+            current_item: RefCell::new(None),
+            popup: RefCell::new(None),
+        });
+        let menu_popup_ref = Rc::clone(&menu);
+        *menu.popup.borrow_mut() = Some(UIWindow::new_popup(&ui,rect!(0,0,1,1),menu_popup_ref as Rc<dyn Widget>)?);
+        Ok(menu)
+
+        // NOTE: in order to close all leaks, first do *menu.popup.borrow_mut() = None
     }
 
     pub fn find_hit(&self,p: Vec2<i32>) -> MenuHit {
         let style = self.style.borrow();
-        let mut r = rect!(0i32,0i32,self.r.get().sx(),0i32);
+        let mut r = rect!(0i32,0i32,self.r.get().s.x,0i32);
         for i in 0..self.items.len() {
             let item = &self.items[i];
             match item {
                 MenuItem::Action(name) => {
                     let size = style.font.measure(&name);
-                    r.set_sy(size.y());
+                    r.s.y = size.y;
                     if r.contains(&p) {
                         return MenuHit::Item(i);
                     }
-                    r.set_oy(r.oy() + size.y());
+                    r.o.y += size.y;
                 },
                 MenuItem::Menu(name,_) => {
                     let size = style.font.measure(&name);
-                    r.set_sy(size.y());
+                    r.s.y = size.y;
                     if r.contains(&p) {
                         return MenuHit::Item(i);
                     }
-                    r.set_oy(r.oy() + size.y());
+                    r.o.y += size.y;
                 },
                 MenuItem::Separator => {
-                    r.set_oy(r.oy() + MENU_SEPARATOR_HEIGHT);
+                    r.o.y += MENU_SEPARATOR_HEIGHT;
                 },
             }
         }
@@ -120,17 +125,17 @@ impl Widget for Menu {
             match item {
                 MenuItem::Action(name) => {
                     let size = style.font.measure(&name);
-                    if size.x() > total_size.x() {
-                        total_size.set_x(size.x());
+                    if size.x > total_size.x {
+                        total_size.x = size.x;
                     }
-                    total_size += vec2!(0,size.y());
+                    total_size += vec2!(0,size.y);
                 },
                 MenuItem::Menu(name,_) => {
                     let size = style.font.measure(&name);
-                    if size.x() > total_size.x() {
-                        total_size.set_x(size.x());
+                    if size.x > total_size.x {
+                        total_size.x = size.x;
                     }
-                    total_size += vec2!(0,size.y());
+                    total_size += vec2!(0,size.y);
                 },
                 MenuItem::Separator => {
                     total_size += vec2!(0,MENU_SEPARATOR_HEIGHT);
@@ -142,40 +147,40 @@ impl Widget for Menu {
 
     fn draw(&self) {
         let style = self.style.borrow();
-        let mut r = rect!(0i32,0i32,self.r.get().sx(),0i32);
+        let mut r = rect!(0i32,0i32,self.r.get().s.x,0i32);
         for i in 0..self.items.len() {
             let item = &self.items[i];
             let mut color = style.item_color;
+            if let Some(n) = *self.current_item.borrow() {
+                if n == i {
+                    color = style.item_current_color;
+                }
+            }
             if let MenuHit::Item(n) = self.hit.get() {
                 if n == i {
                     color = style.item_hover_color;
-                }
-            }
-            if let Some(n) = self.current.get() {
-                if n == i {
-                    color = style.item_current_color;
                 }
             }
             let text_color = style.item_text_color;
             match item {
                 MenuItem::Action(name) => {
                     let size = style.font.measure(&name);
-                    r.set_sy(size.y());
+                    r.s.y = size.y;
                     self.ui.draw_rectangle(r,color,BlendMode::Replace);
-                    self.ui.draw_text(r.o(),&name,text_color,&style.font);
-                    r.set_oy(r.oy() + size.y());
+                    self.ui.draw_text(r.o,&name,text_color,&style.font);
+                    r.o.y += size.y;
                 },
                 MenuItem::Menu(name,_) => {
                     let size = style.font.measure(&name);
-                    r.set_sy(size.y());
+                    r.s.y = size.y;
                     self.ui.draw_rectangle(r,color,BlendMode::Replace);
                     self.ui.draw_text(vec2!(0,0),&name,text_color,&style.font);
-                    r.set_oy(r.oy() + size.y());
+                    r.o.y += size.y;
                 },
                 MenuItem::Separator => {
-                    r.set_sy(MENU_SEPARATOR_HEIGHT);
+                    r.s.y = MENU_SEPARATOR_HEIGHT;
                     self.ui.draw_rectangle(r,style.item_color,BlendMode::Replace);
-                    r.set_oy(r.oy() + MENU_SEPARATOR_HEIGHT);
+                    r.o.y += MENU_SEPARATOR_HEIGHT;
                 },
             }
         }
@@ -188,17 +193,53 @@ impl Widget for Menu {
     }
 
     fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
-        false
+        match self.hit.get() {
+            MenuHit::Nothing => {
+                false
+            },
+            MenuHit::Item(n) => {
+                // TODO: update the currently open submenu
+                false
+            },
+        }
     }
 
     fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
-        false
+        match self.hit.get() {
+            MenuHit::Nothing => {
+                false
+            },
+            MenuHit::Item(n) => {
+                false
+            },
+        }
     }
 
     fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
-        // TODO: if capturing, no change, otherwise:
         self.hit.set(self.find_hit(p));
-        false
+        match self.hit.get() {
+            MenuHit::Nothing => {
+                false
+            },
+            MenuHit::Item(n) => {
+                let current_n = *self.current_item.borrow();
+                if let Some(cn) = current_n {
+                    if cn != n {
+                        match &self.items[n] {
+                            MenuItem::Action(name) => {
+                                *self.current_item.borrow_mut() = Some(n);
+                            },
+                            MenuItem::Menu(name,menu) => {
+                                // TODO: open submenu
+                            },
+                            MenuItem::Separator => {
+                            },
+                        }
+                    }
+                }
+                false
+            },
+        }
     }
 
     fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {

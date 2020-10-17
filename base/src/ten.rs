@@ -24,7 +24,7 @@ impl<T: Clone + Copy + Zero> Ten<T> {
     pub fn new(size: Vec3<usize>) -> Ten<T> {
         Ten {
             size: size,
-            data: vec![T::zero(); (size.x() * size.y() * size.z()) as usize].into_boxed_slice(),
+            data: vec![T::zero(); (size.x * size.y * size.z) as usize].into_boxed_slice(),
             phantom: PhantomData,
         }
     }
@@ -36,7 +36,7 @@ impl<T: Clone + Copy + Zero> Ten<T> {
     /// * `p` - Coordinates of the element.
     /// * `v` - Element value.
     pub fn set(&mut self,p: Vec3<usize>,v: T) {
-        self.data[(p.z() * self.size.y() + p.y()) * self.size.x() + p.x()] = v;
+        self.data[(p.z * self.size.y + p.y) * self.size.x + p.x] = v;
     }
 
     /// (maybe) Get element from the array.
@@ -49,6 +49,6 @@ impl<T: Clone + Copy + Zero> Ten<T> {
     ///
     /// Element value.
     pub fn get(&self,p: Vec3<usize>) -> T {
-        self.data[(p.z() * self.size.y() + p.y()) * self.size.x() + p.x()]
+        self.data[(p.z * self.size.y + p.y) * self.size.x + p.x]
     }
 }

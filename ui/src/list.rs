@@ -45,8 +45,8 @@ pub struct List {
 const DEFAULT_LIST_ITEMS: i32 = 3;
 
 impl List {
-    pub fn new(ui: &Rc<UI>) -> Result<List,SystemError> {
-        Ok(List {
+    pub fn new(ui: &Rc<UI>) -> Result<Rc<List>,SystemError> {
+        Ok(Rc::new(List {
             ui: Rc::clone(&ui),
             style: RefCell::new(ListStyle {
                 font: Rc::clone(&ui.font),
@@ -55,7 +55,7 @@ impl List {
             hit: Cell::new(ListHit::Nothing),
             capturing: Cell::new(false),
             items: Vec::new(),
-        })
+        }))
     }
 
     pub fn find_hit(&self,p: Vec2<i32>) -> ListHit {
@@ -75,7 +75,7 @@ impl Widget for List {
     fn calc_min_size(&self) -> Vec2<i32> {
         let style = self.style.borrow();
         let size = style.font.measure("Text Item");
-        vec2!(size.x(),size.y() * DEFAULT_LIST_ITEMS)
+        vec2!(size.x,size.y * DEFAULT_LIST_ITEMS)
     }
 
     fn draw(&self) {

@@ -13,20 +13,19 @@
 - rustdoc
 - basic examples
 - simplify the mouse/capturing code
-- access vector coordinates by transmuting internally, rather than functions
 - timers
 - separate UI resources from draw context
 - design how buttons and menus trigger actions, action trait or closure
-- to speed up menus, maybe use map/unmap them instead of recreating them
 - Win32 implementation
 - explore Cocoa/Metal
 - explore web/WebGL, WASM interface; popup menus by divs over the canvas?
 - potentially improve the graphics commands, update OpenGL API towards Vulkan?
+- put constant dimensions in widget styles instead
 
 ## STILL TODO
 
 - MenuBar and Menu
-- states, enable/disable, in-menu toggles
+- in-menu toggles
 - pickers: color, date, file, time
 - messagebox
 - Grid

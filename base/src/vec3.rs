@@ -32,9 +32,9 @@ use std::{
 /// performance.
 #[derive(Copy,Clone,Debug)]
 pub struct Vec3<T: Simdable> {
-    _x: T,
-    _y: T,
-    _z: T,
+    pub x: T,
+    pub y: T,
+    pub z: T,
 }
 
 impl<T: Simdable> Vec3<T> {
@@ -50,7 +50,7 @@ impl<T: Simdable> Vec3<T> {
     ///
     /// The new vector.
     pub fn new(x: T,y: T,z: T) -> Self {
-        Vec3 { _x: x,_y: y,_z: z, }
+        Vec3 { x: x,y: y,z: z, }
     }
 
     /// Create new X-axis unit vector.
@@ -59,7 +59,7 @@ impl<T: Simdable> Vec3<T> {
     ///
     /// The new vector.
     pub fn unit_x() -> Self {
-        Vec3 { _x: T::one(),_y: T::zero(),_z: T::zero(), }
+        Vec3 { x: T::one(),y: T::zero(),z: T::zero(), }
     }
 
     /// Create new Y-axis unit vector.
@@ -68,7 +68,7 @@ impl<T: Simdable> Vec3<T> {
     ///
     /// The new vector.
     pub fn unit_y() -> Self {
-        Vec3 { _x: T::zero(),_y: T::one(),_z: T::zero(), }
+        Vec3 { x: T::zero(),y: T::one(),z: T::zero(), }
     }
 
     /// Create new Z-axis unit vector.
@@ -77,82 +77,28 @@ impl<T: Simdable> Vec3<T> {
     ///
     /// The new vector.
     pub fn unit_z() -> Self {
-        Vec3 { _x: T::zero(),_y: T::zero(),_z: T::one(), }
-    }
-
-    /// Get X-coordinate.
-    ///
-    /// **Returns**
-    ///
-    /// The X-coordinate.
-    pub fn x(&self) -> T {
-        self._x
-    }
-
-    /// Get Y-coordinate.
-    ///
-    /// **Returns**
-    ///
-    /// The Y-coordinate.
-    pub fn y(&self) -> T {
-        self._y
-    }
-
-    /// Get Z-coordinate.
-    ///
-    /// **Returns**
-    ///
-    /// The Z-coordinate.
-    pub fn z(&self) -> T {
-        self._z
-    }
-
-    /// Set X-coordinate.
-    ///
-    /// **Arguments**
-    ///
-    /// `x` - New X-coordinate.
-    pub fn set_x(&mut self,x: T) {
-        self._x = x;
-    }
-
-    /// Set Y-coordinate.
-    ///
-    /// **Arguments**
-    ///
-    /// `y` - New Y-coordinate.
-    pub fn set_y(&mut self,y: T) {
-        self._y = y;
-    }
-
-    /// Set Z-coordinate.
-    ///
-    /// **Arguments**
-    ///
-    /// `z` - New Z-coordinate.
-    pub fn set_z(&mut self,z: T) {
-        self._z = z;
+        Vec3 { x: T::zero(),y: T::zero(),z: T::one(), }
     }
 }
 
 // Vec3 == Vec3
 impl<T: Simdable> PartialEq for Vec3<T> {
     fn eq(&self,other: &Self) -> bool {
-        (self._x == other._x) &&
-        (self._y == other._y) &&
-        (self._z == other._z)
+        (self.x == other.x) &&
+        (self.y == other.y) &&
+        (self.z == other.z)
     }
 }
 
 impl<T: Simdable> Zero for Vec3<T> {
     fn zero() -> Self {
-        Vec3 { _x: T::zero(),_y: T::zero(),_z: T::zero(), }
+        Vec3 { x: T::zero(),y: T::zero(),z: T::zero(), }
     }
 }
 
 impl<T: Simdable> Display for Vec3<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
-        write!(f,"({},{},{})",self.x(),self.y(),self.z())
+        write!(f,"({},{},{})",self.x,self.y,self.z)
     }
 }
 
@@ -160,16 +106,16 @@ impl<T: Simdable> Display for Vec3<T> {
 impl<T: Simdable> Add<Vec3<T>> for Vec3<T> {
     type Output = Self;
     fn add(self,other: Self) -> Self {
-        Vec3 { _x: self._x + other._x,_y: self._y + other._y,_z: self._z + other._z, }
+        Vec3 { x: self.x + other.x,y: self.y + other.y,z: self.z + other.z, }
     }
 }
 
 // Vec3 += Vec3
 impl<T: Simdable> AddAssign<Vec3<T>> for Vec3<T> {
     fn add_assign(&mut self,other: Self) {
-        self._x += other._x;
-        self._y += other._y;
-        self._z += other._z;
+        self.x += other.x;
+        self.y += other.y;
+        self.z += other.z;
     }
 }
 
@@ -177,16 +123,16 @@ impl<T: Simdable> AddAssign<Vec3<T>> for Vec3<T> {
 impl<T: Simdable> Sub<Vec3<T>> for Vec3<T> {
     type Output = Self;
     fn sub(self,other: Self) -> Self {
-        Vec3 { _x: self._x - other._x,_y: self._y - other._y,_z: self._z - other._z, }
+        Vec3 { x: self.x - other.x,y: self.y - other.y,z: self.z - other.z, }
     }
 }
 
 // Vec3 -= Vec3
 impl<T: Simdable> SubAssign<Vec3<T>> for Vec3<T> {
     fn sub_assign(&mut self,other: Self) {
-        self._x -= other._x;
-        self._y -= other._y;
-        self._z -= other._z;
+        self.x -= other.x;
+        self.y -= other.y;
+        self.z -= other.z;
     }
 }
 
@@ -196,7 +142,7 @@ macro_rules! scalar_vec3_mul {
         impl Mul<Vec3<$t>> for $t {
             type Output = Vec3<$t>;
             fn mul(self,other: Vec3<$t>) -> Vec3<$t> {
-                Vec3 { _x: self * other._x,_y: self * other._y,_z: self * other._z, }
+                Vec3 { x: self * other.x,y: self * other.y,z: self * other.z, }
             }
         }        
     }
@@ -209,16 +155,16 @@ scalar_vec3_mul!(f64);
 impl<T: Simdable> Mul<T> for Vec3<T> {
     type Output = Self;
     fn mul(self,other: T) -> Self {
-        Vec3 { _x: self._x * other,_y: self._y * other,_z: self._z * other, }
+        Vec3 { x: self.x * other,y: self.y * other,z: self.z * other, }
     }
 }
 
 // Vec3 *= s
 impl<T: Simdable> MulAssign<T> for Vec3<T> {
     fn mul_assign(&mut self,other: T) {
-        self._x *= other;
-        self._y *= other;
-        self._z *= other;
+        self.x *= other;
+        self.y *= other;
+        self.z *= other;
     }
 }        
 
@@ -226,30 +172,30 @@ impl<T: Simdable> MulAssign<T> for Vec3<T> {
 impl<T: Simdable> Div<T> for Vec3<T> {
     type Output = Self;
     fn div(self,other: T) -> Self {
-        Vec3 { _x: self._x / other,_y: self._y / other,_z: self._z / other, }
+        Vec3 { x: self.x / other,y: self.y / other,z: self.z / other, }
     }
 }
 
 // Vec3 /= s
 impl<T: Simdable> DivAssign<T> for Vec3<T> {
     fn div_assign(&mut self,other: T) {
-        self._x /= other;
-        self._y /= other;
-        self._z /= other;
+        self.x /= other;
+        self.y /= other;
+        self.z /= other;
     }
 }
 
 // Vec3 = (Vec2,0)
 impl<T: Simdable> From<Vec2<T>> for Vec3<T> {
     fn from(v: Vec2<T>) -> Vec3<T> {
-        Vec3 { _x: v.x(),_y: v.y(),_z: T::zero(), }
+        Vec3 { x: v.x,y: v.y,z: T::zero(), }
     }
 }
 
 // Vec3 = Vec3A
 impl<T: Simdable> From<Vec3A<T>> for Vec3<T> {
     fn from(v: Vec3A<T>) -> Vec3<T> {
-        Vec3 { _x: v.x(),_y: v.y(),_z: v.z(), }
+        Vec3 { x: v.x,y: v.y,z: v.z, }
     }
 }
 
@@ -257,7 +203,7 @@ impl<T: Simdable> From<Vec3A<T>> for Vec3<T> {
 impl<T: Simdable + Neg<Output=T>> Neg for Vec3<T> {
     type Output = Self;
     fn neg(self) -> Self {
-        Vec3 { _x: -self._x,_y: -self._y,_z: -self._z, }
+        Vec3 { x: -self.x,y: -self.y,z: -self.z, }
     }
 }
 
@@ -265,11 +211,11 @@ macro_rules! vec3_float {
     ($t:ty) => {
         impl Vec3<$t> {
             pub fn dot(a: Self,b: Self) -> $t {
-                a._x * b._x + a._y * b._y
+                a.x * b.x + a.y * b.y
             }
         
             pub fn abs(&self) -> $t {
-                (self._x * self._x + self._y * self._y).sqrt()
+                (self.x * self.x + self.y * self.y).sqrt()
             }
         
             pub fn norm(&self) -> Self {

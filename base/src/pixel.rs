@@ -32,7 +32,7 @@ impl Pixel for R8 {
     }
 
     fn from_vec4(v: Vec4<u8>) -> Self {
-        R8 { d: v.x(), }
+        R8 { d: v.x, }
     }
 
     fn as_vec4(&self) -> Vec4<u8> {
@@ -70,9 +70,9 @@ impl Pixel for R3G3B2 {
     }
 
     fn from_vec4(v: Vec4<u8>) -> Self {
-        let r = (v.x() & 0xE0) as u8;
-        let g = ((v.y() >> 2) & 0x1C) as u8;
-        let b = ((v.z() >> 6) & 0x03) as u8;
+        let r = (v.x & 0xE0) as u8;
+        let g = ((v.y >> 2) & 0x1C) as u8;
+        let b = ((v.z >> 6) & 0x03) as u8;
         R3G3B2 { d: r | g | b, }
     }
 
@@ -118,10 +118,10 @@ impl Pixel for ARGB2 {
     }
 
     fn from_vec4(v: Vec4<u8>) -> Self {
-        let r = ((v.x() >> 6) & 0x03) as u8;
-        let g = ((v.y() >> 6) & 0x03) as u8;
-        let b = (v.z() & 0x03) as u8;
-        let a = ((v.w() >> 6) & 0x03) as u8;
+        let r = ((v.x >> 6) & 0x03) as u8;
+        let g = ((v.y >> 6) & 0x03) as u8;
+        let b = (v.z & 0x03) as u8;
+        let a = ((v.w >> 6) & 0x03) as u8;
         ARGB2 { d: (a << 6) | (r << 4) | (g << 2) | b, }
     }
 
@@ -168,9 +168,9 @@ impl Pixel for R5G6B5 {
     }
 
     fn from_vec4(v: Vec4<u8>) -> Self {
-        let r = ((v.x() >> 3) & 0x001F) as u16;
-        let g = ((v.y() >> 2) & 0x003F) as u16;
-        let b = ((v.z() >> 3) & 0x001F) as u16;
+        let r = ((v.x >> 3) & 0x001F) as u16;
+        let g = ((v.y >> 2) & 0x003F) as u16;
+        let b = ((v.z >> 3) & 0x001F) as u16;
         R5G6B5 { d: (r << 11) | (g << 5) | b, }
     }
 
@@ -216,10 +216,10 @@ impl Pixel for ARGB4 {
     }
 
     fn from_vec4(v: Vec4<u8>) -> Self {
-        let r = ((v.x() >> 4) & 0x000F) as u16;
-        let g = ((v.y() >> 4) & 0x000F) as u16;
-        let b = ((v.z() >> 4) & 0x000F) as u16;
-        let a = ((v.w() >> 4) & 0x000F) as u16;
+        let r = ((v.x >> 4) & 0x000F) as u16;
+        let g = ((v.y >> 4) & 0x000F) as u16;
+        let b = ((v.z >> 4) & 0x000F) as u16;
+        let a = ((v.w >> 4) & 0x000F) as u16;
         ARGB4 { d: (a << 12) | (r << 8) | (g << 4) | b, }
     }
 
@@ -267,10 +267,10 @@ impl Pixel for A1RGB5 {
     }
 
     fn from_vec4(v: Vec4<u8>) -> Self {
-        let r = ((v.x() >> 3) & 0x001F) as u16;
-        let g = ((v.y() >> 3) & 0x001F) as u16;
-        let b = ((v.z() >> 3) & 0x001F) as u16;
-        let a = ((v.w() >> 7) & 0x0001) as u16;
+        let r = ((v.x >> 3) & 0x001F) as u16;
+        let g = ((v.y >> 3) & 0x001F) as u16;
+        let b = ((v.z >> 3) & 0x001F) as u16;
+        let a = ((v.w >> 7) & 0x0001) as u16;
         A1RGB5 { d: (a << 15) | (r << 10) | (g << 5) | b, }
     }
 
@@ -322,7 +322,7 @@ impl Pixel for RGB8 {
     }
 
     fn from_vec4(v: Vec4<u8>) -> Self {
-        RGB8 { r: v.x(),g: v.y(),b: v.z(), }
+        RGB8 { r: v.x,g: v.y,b: v.z, }
     }
 
     fn as_vec4(&self) -> Vec4<u8> {
@@ -362,7 +362,7 @@ impl Pixel for ARGB8 {
     }
 
     fn from_vec4(v: Vec4<u8>) -> Self {
-        ARGB8 { a: v.w(),r: v.x(),g: v.y(),b: v.z(), }
+        ARGB8 { a: v.w,r: v.x,g: v.y,b: v.z, }
     }
 
     fn as_vec4(&self) -> Vec4<u8> {
@@ -408,10 +408,10 @@ impl Pixel for A2RGB10 {
     }
 
     fn from_vec4(v: Vec4<u8>) -> Self {
-        let mut r = v.x() as u32;
-        let mut g = v.y() as u32;
-        let mut b = v.z() as u32;
-        let mut a = v.w() as u32;
+        let mut r = v.x as u32;
+        let mut g = v.y as u32;
+        let mut b = v.z as u32;
+        let mut a = v.w as u32;
         r = (r << 2) | (r >> 6);
         g = (g << 2) | (g >> 6);
         b = (b << 2) | (b >> 6);

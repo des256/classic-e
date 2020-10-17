@@ -38,8 +38,8 @@ pub struct Stack {
 }
 
 impl Stack {
-    pub fn new_horizontal(ui: &Rc<UI>,children: Vec<Rc<dyn Widget>>) -> Result<Stack,SystemError> {
-        Ok(Stack {
+    pub fn new_horizontal(ui: &Rc<UI>,children: Vec<Rc<dyn Widget>>) -> Result<Rc<Stack>,SystemError> {
+        Ok(Rc::new(Stack {
             ui: Rc::clone(&ui),
             orientation: Orientation::Horizontal,
             style: RefCell::new(StackStyle { }),
@@ -47,11 +47,11 @@ impl Stack {
             hit: Cell::new(StackHit::Nothing),
             capturing: Cell::new(false),
             children: children,
-        })
+        }))
     }
 
-    pub fn new_vertical(ui: &Rc<UI>,children: Vec<Rc<dyn Widget>>) -> Result<Stack,SystemError> {
-        Ok(Stack {
+    pub fn new_vertical(ui: &Rc<UI>,children: Vec<Rc<dyn Widget>>) -> Result<Rc<Stack>,SystemError> {
+        Ok(Rc::new(Stack {
             ui: Rc::clone(&ui),
             orientation: Orientation::Vertical,
             style: RefCell::new(StackStyle { }),
@@ -59,7 +59,7 @@ impl Stack {
             hit: Cell::new(StackHit::Nothing),
             capturing: Cell::new(false),
             children: children,
-        })
+        }))
     }
 
     pub fn find_hit(&self,p: Vec2<i32>) -> StackHit {
@@ -85,16 +85,16 @@ impl Widget for Stack {
                 let mut ox = 0i32;
                 for child in self.children.iter() {
                     let size = child.calc_min_size();
-                    child.set_rect(rect!(vec2!(ox,0),vec2!(size.x(),r.sy())));
-                    ox += size.x();
+                    child.set_rect(rect!(vec2!(ox,0),vec2!(size.x,r.s.y)));
+                    ox += size.x;
                 }
             },
             Orientation::Vertical => {
                 let mut oy = 0i32;
                 for child in self.children.iter() {
                     let size = child.calc_min_size();
-                    child.set_rect(rect!(vec2!(0,oy),vec2!(r.sx(),size.y())));
-                    oy += size.y();
+                    child.set_rect(rect!(vec2!(0,oy),vec2!(r.s.x,size.y)));
+                    oy += size.y;
                 }
             },
         }
@@ -106,9 +106,9 @@ impl Widget for Stack {
                 let mut total_size = vec2!(0i32,0i32);
                 for child in self.children.iter() {
                     let size = child.calc_min_size();
-                    total_size += vec2!(size.x(),0);
-                    if size.y() > total_size.y() {
-                        total_size.set_y(size.y());
+                    total_size += vec2!(size.x,0);
+                    if size.y > total_size.y {
+                        total_size.y = size.y;
                     }
                 }
                 total_size
@@ -117,10 +117,10 @@ impl Widget for Stack {
                 let mut total_size = vec2!(0i32,0i32);
                 for child in self.children.iter() {
                     let size = child.calc_min_size();
-                    if size.x() > total_size.x() {
-                        total_size.set_x(size.x());
+                    if size.x > total_size.x {
+                        total_size.x = size.x;
                     }
-                    total_size += vec2!(0,size.y());
+                    total_size += vec2!(0,size.y);
                 }
                 total_size
             },
@@ -129,7 +129,7 @@ impl Widget for Stack {
 
     fn draw(&self) {
         for child in self.children.iter() {
-            let offset = child.rect().o();
+            let offset = child.rect().o;
             self.ui.delta_offset(offset);
             child.draw();
             self.ui.delta_offset(-offset);
@@ -150,7 +150,7 @@ impl Widget for Stack {
                     false
                 },
                 StackHit::Child(n) => {
-                    let result = self.children[n].mousepress(ui,window,p - self.children[n].rect().o(),b);
+                    let result = self.children[n].mousepress(ui,window,p - self.children[n].rect().o,b);
                     self.capturing.set(result);
                     result
                 },
@@ -162,7 +162,7 @@ impl Widget for Stack {
                     false
                 },
                 StackHit::Child(n) => {
-                    let result = self.children[n].mousepress(ui,window,p - self.children[n].rect().o(),b);
+                    let result = self.children[n].mousepress(ui,window,p - self.children[n].rect().o,b);
                     self.capturing.set(result);
                     result
                 },
@@ -178,7 +178,7 @@ impl Widget for Stack {
                     false
                 },
                 StackHit::Child(n) => {
-                    let result = self.children[n].mouserelease(ui,window,p - self.children[n].rect().o(),b);
+                    let result = self.children[n].mouserelease(ui,window,p - self.children[n].rect().o,b);
                     self.capturing.set(result);
                     result
                 },
@@ -190,7 +190,7 @@ impl Widget for Stack {
                     false
                 }
                 StackHit::Child(n) => {
-                    let result = self.children[n].mouserelease(ui,window,p - self.children[n].rect().o(),b);
+                    let result = self.children[n].mouserelease(ui,window,p - self.children[n].rect().o,b);
                     self.capturing.set(result);
                     result
                 },
@@ -206,7 +206,7 @@ impl Widget for Stack {
                     false
                 },
                 StackHit::Child(n) => {
-                    let result = self.children[n].mousemove(ui,window,p - self.children[n].rect().o());
+                    let result = self.children[n].mousemove(ui,window,p - self.children[n].rect().o);
                     self.capturing.set(result);
                     result
                 },
@@ -219,7 +219,7 @@ impl Widget for Stack {
                     false
                 },
                 StackHit::Child(n) => {
-                    let result = self.children[n].mousemove(ui,window,p - self.children[n].rect().o());
+                    let result = self.children[n].mousemove(ui,window,p - self.children[n].rect().o);
                     self.capturing.set(result);
                     result
                 }

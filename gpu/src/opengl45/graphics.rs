@@ -110,8 +110,8 @@ impl BindTarget for Framebuffer {
 #[cfg(target_os="windows")]
             wglMakeCurrent(graphics.system.hidden_hdc(),graphics.system.hglrc());
             gl::BindFramebuffer(gl::FRAMEBUFFER,self.fbo);
-            gl::Viewport(0,0,self.size.x() as i32,self.size.y() as i32);
-            gl::Scissor(0,0,self.size.x() as i32,self.size.y() as i32);
+            gl::Viewport(0,0,self.size.x as i32,self.size.y as i32);
+            gl::Scissor(0,0,self.size.x as i32,self.size.y as i32);
         }
     }
 }
@@ -143,8 +143,8 @@ impl BindTarget for Rc<Window> {
 #[cfg(target_os="windows")]
             let r = rect!(0i32,0i32,0i32,0i32);
             
-            gl::Viewport(0,0,r.s().x(),r.s().y());
-            gl::Scissor(0,0,r.s().x(),r.s().y());
+            gl::Viewport(0,0,r.s.x,r.s.y);
+            gl::Scissor(0,0,r.s.x,r.s.y);
         }
     }
 }
@@ -160,12 +160,12 @@ impl Graphics {
     /// 
     /// * `Ok(GPU)` - The created graphics context.
     /// * `Err(SystemError)` - The graphics context could not be created.
-    pub fn new(system: &Rc<System>) -> Result<Graphics,SystemError> {
-        Ok(Graphics {
+    pub fn new(system: &Rc<System>) -> Result<Rc<Graphics>,SystemError> {
+        Ok(Rc::new(Graphics {
             system: Rc::clone(system),
             sp: Cell::new(0),
             index_type: Cell::new(gl::UNSIGNED_INT),
-        })
+        }))
     }
 
     /// (temporary) Bind current target.
@@ -190,7 +190,7 @@ impl Graphics {
     pub fn clear<T: ColorParameter>(&self,color: T) {
         let color = color.as_vec4();
         unsafe {
-            gl::ClearColor(color.x(),color.y(),color.z(),color.w());
+            gl::ClearColor(color.x,color.y,color.z,color.w);
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
     }

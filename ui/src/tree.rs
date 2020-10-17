@@ -43,8 +43,8 @@ pub struct Tree {
 const DEFAULT_TREE_ITEMS: i32 = 3;
 
 impl Tree {
-    pub fn new(ui: &Rc<UI>) -> Result<Tree,SystemError> {
-        Ok(Tree {
+    pub fn new(ui: &Rc<UI>) -> Result<Rc<Tree>,SystemError> {
+        Ok(Rc::new(Tree {
             ui: Rc::clone(&ui),
             style: RefCell::new(TreeStyle {
                 font: Rc::clone(&ui.font),
@@ -52,7 +52,7 @@ impl Tree {
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(TreeHit::Nothing),
             items: Vec::new(),
-        })
+        }))
     }
 
     pub fn find_hit(&self,p: Vec2<i32>) -> TreeHit {
@@ -72,7 +72,7 @@ impl Widget for Tree {
     fn calc_min_size(&self) -> Vec2<i32> {
         let style = self.style.borrow();
         let size = style.font.measure("Text Item");
-        vec2!(size.x(),size.y() * DEFAULT_TREE_ITEMS)
+        vec2!(size.x,size.y * DEFAULT_TREE_ITEMS)
     }
 
     fn draw(&self) {

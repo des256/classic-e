@@ -48,8 +48,8 @@ pub struct ToolBar {
 const TOOLBAR_SEPARATOR_WIDTH: i32 = 10;
 
 impl ToolBar {
-    pub fn new(ui: &Rc<UI>,items: Vec<ToolBarItem>) -> Result<ToolBar,SystemError> {
-        Ok(ToolBar {
+    pub fn new(ui: &Rc<UI>,items: Vec<ToolBarItem>) -> Result<Rc<ToolBar>,SystemError> {
+        Ok(Rc::new(ToolBar {
             ui: Rc::clone(&ui),
             style: RefCell::new(ToolBarStyle {
                 item_text_color: 0xAAAAAA,
@@ -61,7 +61,7 @@ impl ToolBar {
             capturing: Cell::new(false),
             items: items,
             pressed: Cell::new(None),
-        })
+        }))
     }
 
     pub fn find_hit(&self,p: Vec2<i32>) -> ToolBarHit {
@@ -71,15 +71,15 @@ impl ToolBar {
             match item {
                 ToolBarItem::Action(texture) => {
                     let size = texture.size();
-                    let size = vec2!(size.x() as i32,size.y() as i32);
-                    r.set_s(size);
+                    let size = vec2!(size.x as i32,size.y as i32);
+                    r.s = size;
                     if r.contains(&p) {
                         return ToolBarHit::Item(i);
                     }        
-                    r.set_ox(r.ox() + size.x());
+                    r.o.x += size.x;
                 },
                 ToolBarItem::Separator => {
-                    r.set_ox(r.ox() + TOOLBAR_SEPARATOR_WIDTH);
+                    r.o.x += TOOLBAR_SEPARATOR_WIDTH;
                 },
             }
         }
@@ -102,10 +102,10 @@ impl Widget for ToolBar {
             match item {
                 ToolBarItem::Action(mat) => {
                     let size = mat.size();
-                    let size = vec2!(size.x() as i32,size.y() as i32);
-                    total_size += vec2!(size.x(),0);
-                    if size.y() > total_size.y() {
-                        total_size.set_y(size.y());
+                    let size = vec2!(size.x as i32,size.y as i32);
+                    total_size += vec2!(size.x,0);
+                    if size.y > total_size.y {
+                        total_size.y = size.y;
                     }
                 },
                 ToolBarItem::Separator => {
@@ -119,7 +119,7 @@ impl Widget for ToolBar {
 
     fn draw(&self) {
         let style = self.style.borrow();
-        let mut r = rect!(0i32,0i32,0i32,self.r.get().sy());
+        let mut r = rect!(0i32,0i32,0i32,self.r.get().s.y);
         for i in 0..self.items.len() {
             let item = &self.items[i];
             let color = if let ToolBarHit::Item(n) = self.hit.get() {
@@ -136,21 +136,21 @@ impl Widget for ToolBar {
             match item {
                 ToolBarItem::Action(texture) => {
                     let size = texture.size();
-                    let size = vec2!(size.x() as i32,size.y() as i32);
-                    r.set_sx(size.x());
+                    let size = vec2!(size.x as i32,size.y as i32);
+                    r.s.x = size.x;
                     self.ui.draw_rectangle(r,color,BlendMode::Replace);
-                    self.ui.draw_texture(r.o(),texture,BlendMode::Over);
-                    r.set_ox(r.ox() + size.x());
+                    self.ui.draw_texture(r.o,texture,BlendMode::Over);
+                    r.o.x += size.x;
                 },
                 ToolBarItem::Separator => {
-                    r.set_sx(TOOLBAR_SEPARATOR_WIDTH);
+                    r.s.x = TOOLBAR_SEPARATOR_WIDTH;
                     self.ui.draw_rectangle(r,style.item_color,BlendMode::Replace);
-                    r.set_ox(r.ox() + TOOLBAR_SEPARATOR_WIDTH);
+                    r.o.x += TOOLBAR_SEPARATOR_WIDTH;
                 },
             }
         }
-        r.set_sx(self.r.get().sx() - r.ox());
-        if r.sx() > 0 {
+        r.s.x = self.r.get().s.x - r.o.x;
+        if r.s.x > 0 {
             self.ui.draw_rectangle(r,style.item_color,BlendMode::Replace);
         }
     }

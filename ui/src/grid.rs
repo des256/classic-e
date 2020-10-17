@@ -31,12 +31,12 @@ pub struct Grid {
 }
 
 impl Grid {
-    pub fn new() -> Result<Grid,SystemError> {
-        Ok(Grid {
+    pub fn new() -> Result<Rc<Grid>,SystemError> {
+        Ok(Rc::new(Grid {
             r: Cell::new(rect!(0,0,0,0)),
             rows: RefCell::new(Vec::new()),
             columns: RefCell::new(Vec::new()),
-        })
+        }))
     }
 }
 

@@ -19,6 +19,7 @@ use{
 pub struct ProgressStyle {
     pub full_color: u32,
     pub empty_color: u32,
+    pub disabled_color: u32,
 }
 
 /// Progress indicator.
@@ -29,35 +30,40 @@ pub struct Progress {
     r: Cell<Rect<i32>>,
     full: Cell<f32>,
     value: Cell<f32>,
+    enabled: Cell<bool>,
 }
 
 impl Progress {
-    pub fn new_horizontal(ui: &Rc<UI>,full: f32) -> Result<Progress,SystemError> {
-        Ok(Progress {
+    pub fn new_horizontal(ui: &Rc<UI>,full: f32) -> Result<Rc<Progress>,SystemError> {
+        Ok(Rc::new(Progress {
             ui: Rc::clone(&ui),
             orientation: Orientation::Horizontal,
             style: RefCell::new(ProgressStyle {
                 full_color: 0xCC6633,
                 empty_color: 0x222222,
+                disabled_color: 0x888888,
             }),
             r: Cell::new(rect!(0,0,0,0)),
             full: Cell::new(full),
             value: Cell::new(0.0),
-        })
+            enabled: Cell::new(true),
+        }))
     }
 
-    pub fn new_vertical(ui: &Rc<UI>,full: f32) -> Result<Progress,SystemError> {
-        Ok(Progress {
+    pub fn new_vertical(ui: &Rc<UI>,full: f32) -> Result<Rc<Progress>,SystemError> {
+        Ok(Rc::new(Progress {
             ui: Rc::clone(&ui),
             orientation: Orientation::Vertical,
             style: RefCell::new(ProgressStyle {
                 full_color: 0xCC6633,
                 empty_color: 0x222222,
+                disabled_color: 0x888888,
             }),
             r: Cell::new(rect!(0,0,0,0)),
             full: Cell::new(full),
             value: Cell::new(0.0),
-        })
+            enabled: Cell::new(true),
+        }))
     }
 
     pub fn set_value(&self,value: f32) {
@@ -83,17 +89,21 @@ impl Widget for Progress {
 
     fn draw(&self) {
         let style = self.style.borrow();
+        let mut full_color = style.disabled_color;
+        if self.enabled.get() {
+            full_color = style.full_color;
+        }
         match self.orientation {
             Orientation::Horizontal => {
-                let pos = ((self.value.get() * (self.r.get().sx() as f32)) / self.full.get()) as i32;
-                self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(pos,self.r.get().sy())),style.full_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(pos,0),vec2!(self.r.get().sx() - pos,self.r.get().sy())),style.empty_color,BlendMode::Replace);
+                let pos = ((self.value.get() * (self.r.get().s.x as f32)) / self.full.get()) as i32;
+                self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(pos,self.r.get().s.y)),full_color,BlendMode::Replace);
+                self.ui.draw_rectangle(rect!(vec2!(pos,0),vec2!(self.r.get().s.x - pos,self.r.get().s.y)),style.empty_color,BlendMode::Replace);
             },    
             Orientation::Vertical => {
                 // invert position
-                let pos = (((self.full.get() - self.value.get()) * (self.r.get().sy() as f32)) / self.full.get()) as i32;
-                self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(self.r.get().sx(),pos)),style.empty_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(0,pos),vec2!(self.r.get().sx(),self.r.get().sy() - pos)),style.full_color,BlendMode::Replace);
+                let pos = (((self.full.get() - self.value.get()) * (self.r.get().s.y as f32)) / self.full.get()) as i32;
+                self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(self.r.get().s.x,pos)),style.empty_color,BlendMode::Replace);
+                self.ui.draw_rectangle(rect!(vec2!(0,pos),vec2!(self.r.get().s.x,self.r.get().s.y - pos)),full_color,BlendMode::Replace);
             },
         }
     }

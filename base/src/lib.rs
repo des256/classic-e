@@ -38,10 +38,10 @@ impl ColorParameter for u32 {
 impl ColorParameter for Vec4<f32> {
 
     fn as_u32(&self) -> u32 {
-        let r = ((self.x() * 255.0) as u32) << 16;
-        let g = ((self.y() * 255.0) as u32) << 8;
-        let b = (self.z() * 255.0) as u32;
-        let a = ((self.w() * 255.0) as u32) << 24;
+        let r = ((self.x * 255.0) as u32) << 16;
+        let g = ((self.y * 255.0) as u32) << 8;
+        let b = (self.z * 255.0) as u32;
+        let a = ((self.w * 255.0) as u32) << 24;
         a | r | g | b
     }
 

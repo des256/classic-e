@@ -30,6 +30,7 @@ pub struct SliderStyle {
     pub full_color: u32,
     pub tab_color: u32,
     pub tab_hover_color: u32,
+    pub disabled_color: u32,
 }
 
 /// Horizontal or vertical slider.
@@ -44,14 +45,15 @@ pub struct Slider {
     value: Cell<f32>,
     start_pos: Cell<i32>,
     start_p: Cell<Vec2<i32>>,
+    enabled: Cell<bool>,
 }
 
 const SLIDER_SIZE: i32 = 20;
 const SLIDER_GUTTER_SIZE: i32 = 10;
 
 impl Slider {
-    pub fn new_horizontal(ui: &Rc<UI>) -> Result<Slider,SystemError> {
-        Ok(Slider {
+    pub fn new_horizontal(ui: &Rc<UI>) -> Result<Rc<Slider>,SystemError> {
+        Ok(Rc::new(Slider {
             ui: Rc::clone(&ui),
             orientation: Orientation::Horizontal,
             style: RefCell::new(SliderStyle {
@@ -59,7 +61,8 @@ impl Slider {
                 empty_color: 0x222222,
                 full_color: 0xCC6633,
                 tab_color: 0xAAAAAA,
-                tab_hover_color: 0x3366CC,    
+                tab_hover_color: 0x3366CC, 
+                disabled_color: 0x888888,   
             }),
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(SliderHit::Nothing),
@@ -68,11 +71,12 @@ impl Slider {
             value: Cell::new(0.5),
             start_pos: Cell::new(0),
             start_p: Cell::new(vec2!(0,0)),
-        })
+            enabled: Cell::new(true),
+        }))
     }
 
-    pub fn new_vertical(ui: &Rc<UI>) -> Result<Slider,SystemError> {
-        Ok(Slider {
+    pub fn new_vertical(ui: &Rc<UI>) -> Result<Rc<Slider>,SystemError> {
+        Ok(Rc::new(Slider {
             ui: Rc::clone(&ui),
             orientation: Orientation::Vertical,
             style: RefCell::new(SliderStyle {
@@ -80,7 +84,8 @@ impl Slider {
                 empty_color: 0x222222,
                 full_color: 0xCC6633,
                 tab_color: 0xAAAAAA,
-                tab_hover_color: 0x3366CC,    
+                tab_hover_color: 0x3366CC, 
+                disabled_color: 0x888888,   
             }),
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(SliderHit::Nothing),
@@ -89,18 +94,19 @@ impl Slider {
             value: Cell::new(0.5),
             start_pos: Cell::new(0),
             start_p: Cell::new(vec2!(0,0)),
-        })
+            enabled: Cell::new(true),
+        }))
     }
 
     pub fn find_hit(&self,p: Vec2<i32>) -> SliderHit {
-        if rect!(vec2!(0,0),self.r.get().s()).contains(&p) {
+        if rect!(vec2!(0,0),self.r.get().s).contains(&p) {
             match self.orientation {
                 Orientation::Horizontal => {
-                    let pos = (self.value.get() * ((self.r.get().sx() - SLIDER_SIZE) as f32) / self.full.get()) as i32;
-                    if p.x() < pos {
+                    let pos = (self.value.get() * ((self.r.get().s.x - SLIDER_SIZE) as f32) / self.full.get()) as i32;
+                    if p.x < pos {
                         SliderHit::PageLess
                     }
-                    else if p.x() < pos + SLIDER_SIZE {
+                    else if p.x < pos + SLIDER_SIZE {
                         SliderHit::Tab
                     }
                     else {
@@ -109,11 +115,11 @@ impl Slider {
                 },
                 Orientation::Vertical => {
                     // invert position
-                    let pos = ((self.full.get() - self.value.get()) * ((self.r.get().sy() - SLIDER_SIZE) as f32) / self.full.get()) as i32;
-                    if p.y() < pos {
+                    let pos = ((self.full.get() - self.value.get()) * ((self.r.get().s.y - SLIDER_SIZE) as f32) / self.full.get()) as i32;
+                    if p.y < pos {
                         SliderHit::PageLess
                     }
-                    else if p.y() < pos + SLIDER_SIZE {
+                    else if p.y < pos + SLIDER_SIZE {
                         SliderHit::Tab
                     }
                     else {
@@ -161,16 +167,21 @@ impl Widget for Slider {
 
     fn draw(&self) {
         let style = self.style.borrow();
-        let tab_color = if let SliderHit::Tab = self.hit.get() {
-            style.tab_hover_color
+        let tab_color = if self.enabled.get() {
+            if let SliderHit::Tab = self.hit.get() {
+                style.tab_hover_color
+            }
+            else {
+                style.tab_color
+            }
         }
         else {
-            style.tab_color
+            style.disabled_color
         };
         let ridge = (SLIDER_SIZE - SLIDER_GUTTER_SIZE) / 2;
         match self.orientation {
             Orientation::Horizontal => {
-                let pos = (self.value.get() * ((self.r.get().sx() - SLIDER_SIZE) as f32) / self.full.get()) as i32;
+                let pos = (self.value.get() * ((self.r.get().s.x - SLIDER_SIZE) as f32) / self.full.get()) as i32;
                 if pos > 0 {
                     self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(ridge,SLIDER_SIZE)),style.color,BlendMode::Replace);
                     if pos > ridge {
@@ -180,18 +191,18 @@ impl Widget for Slider {
                     }
                 }
                 self.ui.draw_rectangle(rect!(vec2!(pos,0),vec2!(SLIDER_SIZE,SLIDER_SIZE)),tab_color,BlendMode::Replace);
-                if pos < self.r.get().sx() - SLIDER_SIZE {
-                    if pos < self.r.get().sx() - SLIDER_SIZE - ridge {
-                        self.ui.draw_rectangle(rect!(vec2!(pos + SLIDER_SIZE,0),vec2!(self.r.get().sx() - ridge - pos - SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
-                        self.ui.draw_rectangle(rect!(vec2!(pos + SLIDER_SIZE,ridge),vec2!(self.r.get().sx() - ridge - pos - SLIDER_SIZE,SLIDER_GUTTER_SIZE)),style.empty_color,BlendMode::Replace);
-                        self.ui.draw_rectangle(rect!(vec2!(pos + SLIDER_SIZE,ridge + SLIDER_GUTTER_SIZE),vec2!(self.r.get().sx() - ridge - pos - SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
+                if pos < self.r.get().s.x - SLIDER_SIZE {
+                    if pos < self.r.get().s.x - SLIDER_SIZE - ridge {
+                        self.ui.draw_rectangle(rect!(vec2!(pos + SLIDER_SIZE,0),vec2!(self.r.get().s.x - ridge - pos - SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
+                        self.ui.draw_rectangle(rect!(vec2!(pos + SLIDER_SIZE,ridge),vec2!(self.r.get().s.x - ridge - pos - SLIDER_SIZE,SLIDER_GUTTER_SIZE)),style.empty_color,BlendMode::Replace);
+                        self.ui.draw_rectangle(rect!(vec2!(pos + SLIDER_SIZE,ridge + SLIDER_GUTTER_SIZE),vec2!(self.r.get().s.x - ridge - pos - SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
                     }
-                    self.ui.draw_rectangle(rect!(vec2!(self.r.get().sx() - ridge,0),vec2!(ridge,SLIDER_SIZE)),style.color,BlendMode::Replace);
+                    self.ui.draw_rectangle(rect!(vec2!(self.r.get().s.x - ridge,0),vec2!(ridge,SLIDER_SIZE)),style.color,BlendMode::Replace);
                 }
             },
             Orientation::Vertical => {
                 // invert position
-                let pos = ((self.full.get() - self.value.get()) * ((self.r.get().sy() - SLIDER_SIZE) as f32) / self.full.get()) as i32;
+                let pos = ((self.full.get() - self.value.get()) * ((self.r.get().s.y - SLIDER_SIZE) as f32) / self.full.get()) as i32;
                 if pos > 0 {
                     self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
                     if pos > ridge {
@@ -201,13 +212,13 @@ impl Widget for Slider {
                     }
                 }
                 self.ui.draw_rectangle(rect!(vec2!(0,pos),vec2!(SLIDER_SIZE,SLIDER_SIZE)),tab_color,BlendMode::Replace);
-                if pos < self.r.get().sy() - SLIDER_SIZE {
-                    if pos < self.r.get().sy() - SLIDER_SIZE - ridge {
-                        self.ui.draw_rectangle(rect!(vec2!(0,pos + SLIDER_SIZE),vec2!(ridge,self.r.get().sy() - ridge - pos - SLIDER_SIZE)),style.color,BlendMode::Replace);
-                        self.ui.draw_rectangle(rect!(vec2!(ridge,pos + SLIDER_SIZE),vec2!(SLIDER_GUTTER_SIZE,self.r.get().sy() - ridge - pos - SLIDER_SIZE)),style.full_color,BlendMode::Replace);
-                        self.ui.draw_rectangle(rect!(vec2!(ridge + SLIDER_GUTTER_SIZE,pos + SLIDER_SIZE),vec2!(ridge,self.r.get().sy() - ridge - pos - SLIDER_SIZE)),style.color,BlendMode::Replace);
+                if pos < self.r.get().s.y - SLIDER_SIZE {
+                    if pos < self.r.get().s.y - SLIDER_SIZE - ridge {
+                        self.ui.draw_rectangle(rect!(vec2!(0,pos + SLIDER_SIZE),vec2!(ridge,self.r.get().s.y - ridge - pos - SLIDER_SIZE)),style.color,BlendMode::Replace);
+                        self.ui.draw_rectangle(rect!(vec2!(ridge,pos + SLIDER_SIZE),vec2!(SLIDER_GUTTER_SIZE,self.r.get().s.y - ridge - pos - SLIDER_SIZE)),style.full_color,BlendMode::Replace);
+                        self.ui.draw_rectangle(rect!(vec2!(ridge + SLIDER_GUTTER_SIZE,pos + SLIDER_SIZE),vec2!(ridge,self.r.get().s.y - ridge - pos - SLIDER_SIZE)),style.color,BlendMode::Replace);
                     }
-                    self.ui.draw_rectangle(rect!(vec2!(0,self.r.get().sy() - ridge),vec2!(SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
+                    self.ui.draw_rectangle(rect!(vec2!(0,self.r.get().s.y - ridge),vec2!(SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
                 }
             },
         }
@@ -251,11 +262,11 @@ impl Widget for Slider {
                     println!("Slider: start dragging Tab");
                     let pos = match self.orientation {
                         Orientation::Horizontal => {
-                            (self.value.get() * ((self.r.get().sx() - SLIDER_SIZE) as f32) / self.full.get()) as i32
+                            (self.value.get() * ((self.r.get().s.x - SLIDER_SIZE) as f32) / self.full.get()) as i32
                         },
                         Orientation::Vertical => {
                             // invert pos
-                            ((self.full.get() - self.value.get()) * ((self.r.get().sy() - SLIDER_SIZE) as f32) / self.full.get()) as i32
+                            ((self.full.get() - self.value.get()) * ((self.r.get().s.y - SLIDER_SIZE) as f32) / self.full.get()) as i32
                         },
                     };
                     self.start_pos.set(pos);
@@ -328,14 +339,14 @@ impl Widget for Slider {
                 SliderHit::Tab => {
                     match self.orientation {
                         Orientation::Horizontal => {
-                            let wanted_pos = self.start_pos.get() + p.x() - self.start_p.get().x();
-                            let wanted_value = (wanted_pos as f32) * self.full.get() / ((self.r.get().sx() - SLIDER_SIZE) as f32);
+                            let wanted_pos = self.start_pos.get() + p.x - self.start_p.get().x;
+                            let wanted_value = (wanted_pos as f32) * self.full.get() / ((self.r.get().s.x - SLIDER_SIZE) as f32);
                             self.set_value(wanted_value);
                         },
                         Orientation::Vertical => {
                             // invert position
-                            let wanted_pos = self.start_pos.get() + p.y() - self.start_p.get().y();
-                            let wanted_value = self.full.get() - ((wanted_pos as f32) * self.full.get() / ((self.r.get().sy() - SLIDER_SIZE) as f32));
+                            let wanted_pos = self.start_pos.get() + p.y - self.start_p.get().y;
+                            let wanted_value = self.full.get() - ((wanted_pos as f32) * self.full.get() / ((self.r.get().s.y - SLIDER_SIZE) as f32));
                             self.set_value(wanted_value);
                         },
                     }

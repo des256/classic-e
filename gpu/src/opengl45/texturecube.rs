@@ -72,7 +72,7 @@ impl Graphics {
     /// * `Ok(TextureCube)` - The new cube texture.
     /// * `Err(SystemError)` - The cube texture could not be created.
     pub fn create_texturecube_from_mats<T: GPUTextureFormat>(&self,src_xp: Mat<T>,src_xn: Mat<T>,src_yp: Mat<T>,src_yn: Mat<T>,src_zp: Mat<T>,src_zn: Mat<T>) -> Result<TextureCube<T>,SystemError> {
-        let texture = self.create_texturecube(src_xp.size.x())?;
+        let texture = self.create_texturecube(src_xp.size.x)?;
         texture.load(CubeFace::PositiveX,Vec2::<usize>::zero(),&src_xp);
         texture.load(CubeFace::NegativeX,Vec2::<usize>::zero(),&src_xn);
         texture.load(CubeFace::PositiveY,Vec2::<usize>::zero(),&src_yp);
@@ -102,7 +102,7 @@ impl<T: GPUTextureFormat> TextureCube<T> {
                 CubeFace::PositiveZ => gl::TEXTURE_CUBE_MAP_POSITIVE_Z,
                 CubeFace::NegativeZ => gl::TEXTURE_CUBE_MAP_NEGATIVE_Z,
             };
-            gl::TexSubImage2D(target,0,o.x() as i32,o.y() as i32,src.size.x() as i32,src.size.y() as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void);
+            gl::TexSubImage2D(target,0,o.x as i32,o.y as i32,src.size.x as i32,src.size.y as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void);
         }
     }
 

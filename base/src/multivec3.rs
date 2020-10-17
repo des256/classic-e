@@ -1,6 +1,7 @@
 // E - Multivector
 // Desmond Germans, 2020
 
+/*
 use crate::*;
 use std::{
     cmp::PartialEq,
@@ -280,40 +281,40 @@ impl<T: SimdableFloat> Zero for MultiVec3<T> {
 
 impl<T: SimdableFloat> Display for MultiVec3<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
-        let sx = if self.x() < T::zero() {
-            format!("{}x",self.x())
+        let sx = if self.x < T::zero() {
+            format!("{}x",self.x)
         } else {
-            format!("+{}x",self.x())
+            format!("+{}x",self.x)
         };
-        let sy = if self.y() < T::zero() {
-            format!("{}x",self.y())
+        let sy = if self.y < T::zero() {
+            format!("{}x",self.y)
         } else {
-            format!("+{}x",self.y())
+            format!("+{}x",self.y)
         };
-        let sz = if self.z() < T::zero() {
-            format!("{}z",self.z())
+        let sz = if self.z < T::zero() {
+            format!("{}z",self.z)
         } else {
-            format!("+{}z",self.z())
+            format!("+{}z",self.z)
         };
-        let sxy = if self.xy() < T::zero() {
-            format!("{}xy",self.xy())
+        let sxy = if self.xy < T::zero() {
+            format!("{}xy",self.xy)
         } else {
-            format!("+{}xy",self.xy())
+            format!("+{}xy",self.xy)
         };
-        let sxz = if self.xz() < T::zero() {
-            format!("{}xz",self.xz())
+        let sxz = if self.xz < T::zero() {
+            format!("{}xz",self.xz)
         } else {
-            format!("+{}xz",self.xz())
+            format!("+{}xz",self.xz)
         };
-        let syz = if self.yz() < T::zero() {
-            format!("{}yz",self.yz())
+        let syz = if self.yz < T::zero() {
+            format!("{}yz",self.yz)
         } else {
-            format!("+{}yz",self.yz())
+            format!("+{}yz",self.yz)
         };
-        let sxyz = if self.xyz() < T::zero() {
-            format!("{}xyz",self.xyz())
+        let sxyz = if self.xyz < T::zero() {
+            format!("{}xyz",self.xyz)
         } else {
-            format!("+{}xyz",self.xyz())
+            format!("+{}xyz",self.xyz)
         };
         write!(f,"{}{}{}{}{}{}{}{}",self.r(),sx,sy,sz,sxy,sxz,syz,sxyz)
     }
@@ -376,28 +377,28 @@ impl<T: SimdableFloat> Mul<MultiVec3<T>> for MultiVec3<T> {
     type Output = MultiVec3<T>;
     fn mul(self,other: MultiVec3<T>) -> Self {
         MultiVec3::new(
-            self.r() * other.r() + self.x() * other.x() + self.y() * other.y() + self.z() * other.z() - self.xy() * other.xy() - self.xz() * other.xz() - self.yz() * other.yz() - self.xyz() * other.xyz(),
-            self.r() * other.x() + self.x() * other.r() - self.y() * other.xy() - self.z() * other.xz() + self.xy() * other.y() + self.xz() * other.z() - self.yz() * other.xyz() - self.xyz() * other.yz(),
-            self.r() * other.y() + self.x() * other.xy() + self.y() * other.r() - self.z() * other.yz() - self.xy() * other.x() + self.xz() * other.xyz() + self.yz() * other.z() + self.xyz() * other.xz(),
-            self.r() * other.z() + self.x() * other.xz() + self.y() * other.yz() + self.z() * other.r() - self.xy() * other.xyz() - self.xz() * other.x() - self.yz() * other.y() - self.xyz() * other.xy(),
-            self.r() * other.xy() + self.x() * other.y() - self.y() * other.x() + self.z() * other.xyz() + self.xy() * other.r() - self.xz() * other.yz() + self.yz() * other.xz() + self.xyz() * other.z(),
-            self.r() * other.xz() + self.x() * other.z() - self.y() * other.xyz() - self.z() * other.x() + self.xy() * other.yz() + self.xz() * other.r() - self.yz() * other.xy() - self.xyz() * other.y(),
-            self.r() * other.yz() + self.x() * other.xyz() + self.y() * other.z() - self.z() * other.y() - self.xy() * other.xz() + self.xz() * other.xy() + self.yz() * other.r() + self.xyz() * other.x(),
-            self.r() * other.xyz() + self.x() * other.yz() + self.y() * other.xz() + self.z() * other.xy() + self.xy() * other.z() - self.xz() * other.y() + self.yz() * other.x() + self.xyz() * other.r()
+            self.r() * other.r() + self.x * other.x + self.y * other.y + self.z * other.z - self.xy * other.xy - self.xz * other.xz - self.yz * other.yz - self.xyz * other.xyz,
+            self.r() * other.x + self.x * other.r() - self.y * other.xy - self.z * other.xz + self.xy * other.y + self.xz * other.z - self.yz * other.xyz - self.xyz * other.yz,
+            self.r() * other.y + self.x * other.xy + self.y * other.r() - self.z * other.yz - self.xy * other.x + self.xz * other.xyz + self.yz * other.z + self.xyz * other.xz,
+            self.r() * other.z + self.x * other.xz + self.y * other.yz + self.z * other.r() - self.xy * other.xyz - self.xz * other.x - self.yz * other.y - self.xyz * other.xy,
+            self.r() * other.xy + self.x * other.y - self.y * other.x + self.z * other.xyz + self.xy * other.r() - self.xz * other.yz + self.yz * other.xz + self.xyz * other.z,
+            self.r() * other.xz + self.x * other.z - self.y * other.xyz - self.z * other.x + self.xy * other.yz + self.xz * other.r() - self.yz * other.xy - self.xyz * other.y,
+            self.r() * other.yz + self.x * other.xyz + self.y * other.z - self.z * other.y - self.xy * other.xz + self.xz * other.xy + self.yz * other.r() + self.xyz * other.x,
+            self.r() * other.xyz + self.x * other.yz + self.y * other.xz + self.z * other.xy + self.xy * other.z - self.xz * other.y + self.yz * other.x + self.xyz * other.r()
         )
     }
 }
 
 impl<T: SimdableFloat> MulAssign<MultiVec3<T>> for MultiVec3<T> {
     fn mul_assign(&mut self,other: MultiVec3<T>) {
-        let nr = self.r() * other.r() + self.x() * other.x() + self.y() * other.y() + self.z() * other.z() - self.xy() * other.xy() - self.xz() * other.xz() - self.yz() * other.yz() - self.xyz() * other.xyz();
-        let nx = self.r() * other.x() + self.x() * other.r() - self.y() * other.xy() - self.z() * other.xz() + self.xy() * other.y() + self.xz() * other.z() - self.yz() * other.xyz() - self.xyz() * other.yz();
-        let ny = self.r() * other.y() + self.x() * other.xy() + self.y() * other.r() - self.z() * other.yz() - self.xy() * other.x() + self.xz() * other.xyz() + self.yz() * other.z() + self.xyz() * other.xz();
-        let nz = self.r() * other.z() + self.x() * other.xz() + self.y() * other.yz() + self.z() * other.r() - self.xy() * other.xyz() - self.xz() * other.x() - self.yz() * other.y() - self.xyz() * other.xy();
-        let nxy = self.r() * other.xy() + self.x() * other.y() - self.y() * other.x() + self.z() * other.xyz() + self.xy() * other.r() - self.xz() * other.yz() + self.yz() * other.xz() + self.xyz() * other.z();
-        let nxz = self.r() * other.xz() + self.x() * other.z() - self.y() * other.xyz() - self.z() * other.x() + self.xy() * other.yz() + self.xz() * other.r() - self.yz() * other.xy() - self.xyz() * other.y();
-        let nyz = self.r() * other.yz() + self.x() * other.xyz() + self.y() * other.z() - self.z() * other.y() - self.xy() * other.xz() + self.xz() * other.xy() + self.yz() * other.r() + self.xyz() * other.x();
-        let nxyz = self.r() * other.xyz() + self.x() * other.yz() + self.y() * other.xz() + self.z() * other.xy() + self.xy() * other.z() - self.xz() * other.y() + self.yz() * other.x() + self.xyz() * other.r();
+        let nr = self.r() * other.r() + self.x * other.x + self.y * other.y + self.z * other.z - self.xy * other.xy - self.xz * other.xz - self.yz * other.yz - self.xyz * other.xyz;
+        let nx = self.r() * other.x + self.x * other.r() - self.y * other.xy - self.z * other.xz + self.xy * other.y + self.xz * other.z - self.yz * other.xyz - self.xyz * other.yz;
+        let ny = self.r() * other.y + self.x * other.xy + self.y * other.r() - self.z * other.yz - self.xy * other.x + self.xz * other.xyz + self.yz * other.z + self.xyz * other.xz;
+        let nz = self.r() * other.z + self.x * other.xz + self.y * other.yz + self.z * other.r() - self.xy * other.xyz - self.xz * other.x - self.yz * other.y - self.xyz * other.xy;
+        let nxy = self.r() * other.xy + self.x * other.y - self.y * other.x + self.z * other.xyz + self.xy * other.r() - self.xz * other.yz + self.yz * other.xz + self.xyz * other.z;
+        let nxz = self.r() * other.xz + self.x * other.z - self.y * other.xyz - self.z * other.x + self.xy * other.yz + self.xz * other.r() - self.yz * other.xy - self.xyz * other.y;
+        let nyz = self.r() * other.yz + self.x * other.xyz + self.y * other.z - self.z * other.y - self.xy * other.xz + self.xz * other.xy + self.yz * other.r() + self.xyz * other.x;
+        let nxyz = self.r() * other.xyz + self.x * other.yz + self.y * other.xz + self.z * other.xy + self.xy * other.z - self.xz * other.y + self.yz * other.x + self.xyz * other.r();
         self.0 = Simd8::new([nr,nx,ny,nz,nxy,nxz,nyz,nxyz]);
     }
 }
@@ -442,12 +443,13 @@ impl<T: SimdableFloat> From<Quat<T>> for MultiVec3<T> {
 
 impl<T: SimdableFloat> From<Vec3<T>> for MultiVec3<T> {
     fn from(v: Vec3<T>) -> MultiVec3<T> {
-        MultiVec3::new(T::zero(),v.x(),v.y(),v.z(),T::zero(),T::zero(),T::zero(),T::zero())
+        MultiVec3::new(T::zero(),v.x,v.y,v.z,T::zero(),T::zero(),T::zero(),T::zero())
     }
 }
 
 impl<T: SimdableFloat> From<Vec3A<T>> for MultiVec3<T> {
     fn from(v: Vec3A<T>) -> MultiVec3<T> {
-        MultiVec3::new(T::zero(),v.x(),v.y(),v.z(),T::zero(),T::zero(),T::zero(),T::zero())
+        MultiVec3::new(T::zero(),v.x,v.y,v.z,T::zero(),T::zero(),T::zero(),T::zero())
     }
 }
+*/

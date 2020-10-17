@@ -30,77 +30,77 @@ impl GPUUniformFormat for f32 {
 
 impl GPUUniformFormat for Vec2<u32> {
     fn len() -> usize { 8 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform2ui(location,value.x(),value.y()) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform2ui(location,value.x,value.y) }; }
 }
 
 impl GPUUniformFormat for Vec2<i32> {
     fn len() -> usize { 8 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform2i(location,value.x(),value.y()) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform2i(location,value.x,value.y) }; }
 }
 
 impl GPUUniformFormat for Vec2<f32> {
     fn len() -> usize { 8 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform2f(location,value.x(),value.y()) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform2f(location,value.x,value.y) }; }
 }
 
 impl GPUUniformFormat for Vec3<u32> {
     fn len() -> usize { 12 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform3ui(location,value.x(),value.y(),value.z()) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform3ui(location,value.x,value.y,value.z) }; }
 }
 
 impl GPUUniformFormat for Vec3<i32> {
     fn len() -> usize { 12 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform3i(location,value.x(),value.y(),value.z()) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform3i(location,value.x,value.y,value.z) }; }
 }
 
 impl GPUUniformFormat for Vec3<f32> {
     fn len() -> usize { 12 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform3f(location,value.x(),value.y(),value.z()) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform3f(location,value.x,value.y,value.z) }; }
 }
 
 impl GPUUniformFormat for Vec3A<u32> {
     fn len() -> usize { 16 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform4ui(location,value.x(),value.y(),value.z(),0) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform4ui(location,value.x,value.y,value.z,0) }; }
 }
 
 impl GPUUniformFormat for Vec3A<i32> {
     fn len() -> usize { 16 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform4i(location,value.x(),value.y(),value.z(),0) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform4i(location,value.x,value.y,value.z,0) }; }
 }
 
 impl GPUUniformFormat for Vec3A<f32> {
     fn len() -> usize { 16 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform4f(location,value.x(),value.y(),value.z(),0.0) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform4f(location,value.x,value.y,value.z,0.0) }; }
 }
 
 impl GPUUniformFormat for Vec4<u32> {
     fn len() -> usize { 16 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform4ui(location,value.x(),value.y(),value.z(),value.w()) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform4ui(location,value.x,value.y,value.z,value.w) }; }
 }
 
 impl GPUUniformFormat for Vec4<i32> {
     fn len() -> usize { 16 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform4i(location,value.x(),value.y(),value.z(),value.w()) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform4i(location,value.x,value.y,value.z,value.w) }; }
 }
 
 impl GPUUniformFormat for Vec4<f32> {
     fn len() -> usize { 16 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform4f(location,value.x(),value.y(),value.z(),value.w()) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform4f(location,value.x,value.y,value.z,value.w) }; }
 }
 
 impl GPUUniformFormat for Rect<u32> {
     fn len() -> usize { 16 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform4ui(location,value.ox(),value.oy(),value.sx(),value.sy()) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform4ui(location,value.o.x,value.o.y,value.s.x,value.s.y) }; }
 }
 
 impl GPUUniformFormat for Rect<i32> {
     fn len() -> usize { 16 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform4i(location,value.ox(),value.oy(),value.sx(),value.sy()) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform4i(location,value.o.x,value.o.y,value.s.x,value.s.y) }; }
 }
 
 impl GPUUniformFormat for Rect<f32> {
     fn len() -> usize { 16 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform4f(location,value.ox(),value.oy(),value.sx(),value.sy()) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform4f(location,value.o.x,value.o.y,value.s.x,value.s.y) }; }
 }
 
 impl GPUUniformFormat for Quat<f32> {

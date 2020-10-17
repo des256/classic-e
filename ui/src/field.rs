@@ -26,6 +26,7 @@ pub struct FieldStyle {
     pub font: Rc<Font>,
     pub color: u32,
     pub text_color: u32,
+    pub disabled_text_color: u32,
 }
 
 /// Text input field.
@@ -36,26 +37,29 @@ pub struct Field {
     hit: Cell<FieldHit>,
     capturing: Cell<bool>,
     text: RefCell<String>,
+    enabled: Cell<bool>,
 }
 
 impl Field {
-    pub fn new(ui: &Rc<UI>) -> Result<Field,SystemError> {
-        Ok(Field {
+    pub fn new(ui: &Rc<UI>) -> Result<Rc<Field>,SystemError> {
+        Ok(Rc::new(Field {
             ui: Rc::clone(&ui),
             style: RefCell::new(FieldStyle {
                 font: Rc::clone(&ui.font),
                 color: 0x222222,
-                text_color: 0xAAAAAA,    
+                text_color: 0xAAAAAA,
+                disabled_text_color: 0x888888,
             }),
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(FieldHit::Nothing),
             capturing: Cell::new(false),
             text: RefCell::new("Hello, World!".to_string()),
-        })
+            enabled: Cell::new(true),
+        }))
     }
 
     pub fn find_hit(&self,p: Vec2<i32>) -> FieldHit {
-        if rect!(vec2!(0,0),self.r.get().s()).contains(&p) {
+        if rect!(vec2!(0,0),self.r.get().s).contains(&p) {
             // TODO: find which character is being pointed at
             FieldHit::Character(0)
         }
@@ -82,8 +86,13 @@ impl Widget for Field {
 
     fn draw(&self) {
         let style = self.style.borrow();
-        self.ui.draw_rectangle(rect!(vec2!(0,0),self.r.get().s()),style.color,BlendMode::Replace);
-        self.ui.draw_text(vec2!(0,0),&self.text.borrow(),style.text_color,&style.font);
+        let color = style.color;
+        let mut text_color = style.disabled_text_color;
+        if self.enabled.get() {
+            text_color = style.text_color;
+        }
+        self.ui.draw_rectangle(rect!(vec2!(0,0),self.r.get().s),color,BlendMode::Replace);
+        self.ui.draw_text(vec2!(0,0),&self.text.borrow(),text_color,&style.font);
     }
 
     fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {

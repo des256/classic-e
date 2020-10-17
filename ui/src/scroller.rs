@@ -20,13 +20,13 @@ pub struct Scroller {
 }
 
 impl Scroller {
-    pub fn new(ui: &Rc<UI>,child: Rc<dyn Widget>) -> Result<Scroller,SystemError> {
-        Ok(Scroller {
+    pub fn new(ui: &Rc<UI>,child: Rc<dyn Widget>) -> Result<Rc<Scroller>,SystemError> {
+        Ok(Rc::new(Scroller {
             ui: Rc::clone(&ui),
             r: Cell::new(rect!(0,0,0,0)),
             child: child,
             offset: Cell::new(vec2!(0,0)),
-        })
+        }))
     }
 }
 
@@ -58,15 +58,15 @@ impl Widget for Scroller {
     }
 
     fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
-        self.child.mousepress(ui,window,p - self.rect().o() + self.offset.get(),b)
+        self.child.mousepress(ui,window,p - self.rect().o + self.offset.get(),b)
     }
 
     fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
-        self.child.mouserelease(ui,window,p - self.rect().o() + self.offset.get(),b)
+        self.child.mouserelease(ui,window,p - self.rect().o + self.offset.get(),b)
     }
 
     fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
-        self.child.mousemove(ui,window,p - self.rect().o() + self.offset.get())
+        self.child.mousemove(ui,window,p - self.rect().o + self.offset.get())
     }
 
     fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {

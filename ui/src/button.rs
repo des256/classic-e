@@ -46,8 +46,8 @@ pub struct Button {
 }
 
 impl Button {
-    pub fn new(ui: &Rc<UI>,name: &str) -> Result<Button,SystemError> {
-        Ok(Button {
+    pub fn new(ui: &Rc<UI>,name: &str) -> Result<Rc<Button>,SystemError> {
+        Ok(Rc::new(Button {
             ui: Rc::clone(&ui),
             style: RefCell::new(ButtonStyle {
                 font: Rc::clone(&ui.font),
@@ -64,11 +64,11 @@ impl Button {
             name: name.to_string(),
             enabled: Cell::new(true),
             pressed: Cell::new(false),
-        })
+        }))
     }
 
     pub fn find_hit(&self,p: Vec2<i32>) -> ButtonHit {
-        if rect!(vec2!(0,0),self.r.get().s()).contains(&p) {
+        if rect!(vec2!(0,0),self.r.get().s).contains(&p) {
             ButtonHit::Button
         }
         else {
@@ -116,7 +116,7 @@ impl Widget for Button {
         };
         let r = self.r.get();
         self.ui.draw_rectangle(r,color,BlendMode::Replace);
-        self.ui.draw_text(r.o(),&self.name,text_color,&style.font);
+        self.ui.draw_text(r.o,&self.name,text_color,&style.font);
     }
 
     fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {

@@ -711,7 +711,7 @@ impl WriteTypes for Vec<u8> {
 
 pub fn encode<T: pixel::Pixel>(image: &Mat<T>) -> Option<Vec<u8>> {
     let headersize = 108;
-    let stride = image.size.x() * 4;
+    let stride = image.size.x * 4;
     let palettesize = 0;
     let bpp = 32;
     let compression = 3;
@@ -720,7 +720,7 @@ pub fn encode<T: pixel::Pixel>(image: &Mat<T>) -> Option<Vec<u8>> {
     let greenmask: u32 = 0x0000FF00;
     let bluemask: u32 = 0x000000FF;
     let alphamask: u32 = 0xFF000000;
-    let imagesize = stride * image.size.y();
+    let imagesize = stride * image.size.y;
     let offset = 14 + headersize + palettesize;
     let filesize = offset + imagesize;
     let mut dst: Vec<u8> = Vec::new();
@@ -729,8 +729,8 @@ pub fn encode<T: pixel::Pixel>(image: &Mat<T>) -> Option<Vec<u8>> {
     dst.push32(0);  // 6
     dst.push32(offset as u32);  // 10
     dst.push32(headersize as u32);  // 14
-    dst.push32(image.size.x() as u32);  // 18
-    dst.push32(-(image.size.y() as i32) as u32);  // 22
+    dst.push32(image.size.x as u32);  // 18
+    dst.push32(-(image.size.y as i32) as u32);  // 22
     dst.push16(1);  // 26
     dst.push16(bpp);  // 28
     dst.push32(compression);  // 30
@@ -756,13 +756,13 @@ pub fn encode<T: pixel::Pixel>(image: &Mat<T>) -> Option<Vec<u8>> {
     dst.push32(0);  // 110
     dst.push32(0);  // 114
     dst.push32(0);  // 118
-    for y in 0..image.size.y() {
-        for x in 0..image.size.x() {
+    for y in 0..image.size.y {
+        for x in 0..image.size.x {
             let d: Vec4<u8> = image.get(vec2!(x,y)).as_vec4();
-            dst.push(d.z());
-            dst.push(d.y());
-            dst.push(d.x());
-            dst.push(d.w());
+            dst.push(d.z);
+            dst.push(d.y);
+            dst.push(d.x);
+            dst.push(d.w);
         }
     }
     Some(dst)

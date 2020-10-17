@@ -28,8 +28,8 @@ pub struct ToolTip {
 }
 
 impl ToolTip {
-    pub fn new(ui: &Rc<UI>,text: &str) -> Result<ToolTip,SystemError> {
-        Ok(ToolTip {
+    pub fn new(ui: &Rc<UI>,text: &str) -> Result<Rc<ToolTip>,SystemError> {
+        Ok(Rc::new(ToolTip {
             ui: Rc::clone(&ui),
             style: RefCell::new(ToolTipStyle {
                 font: Rc::clone(&ui.font),
@@ -37,7 +37,7 @@ impl ToolTip {
             }),
             p: Cell::new(vec2!(0,0)),
             text: text.to_string(),
-        })
+        }))
     }
 }
 
@@ -47,7 +47,7 @@ impl Widget for ToolTip {
     }
 
     fn set_rect(&self,r: Rect<i32>) {
-        self.p.set(r.o());
+        self.p.set(r.o);
     }
 
     fn calc_min_size(&self) -> Vec2<i32> {

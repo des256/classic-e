@@ -28,6 +28,7 @@ pub struct ToggleStyle {
     pub full_color: u32,
     pub tab_color: u32,
     pub tab_hover_color: u32,
+    pub disabled_color: u32,
 }
 
 /// On/off toggle.
@@ -39,14 +40,15 @@ pub struct Toggle {
     capturing: Cell<bool>,
     enabled: Cell<bool>,
     value: Cell<bool>,
+    closure: Box<dyn Fn(bool)>,
 }
 
 const TOGGLE_SIZE: i32 = 20;
 const TOGGLE_GUTTER_SIZE: i32 = 5;
 
 impl Toggle {
-    pub fn new(ui: &Rc<UI>) -> Result<Toggle,SystemError> {
-        Ok(Toggle {
+    pub fn new<C: Fn(bool) + 'static>(ui: &Rc<UI>,closure: C) -> Result<Rc<Toggle>,SystemError> {
+        Ok(Rc::new(Toggle {
             ui: Rc::clone(&ui),
             style: RefCell::new(ToggleStyle {
                 color: 0x444444,
@@ -54,17 +56,19 @@ impl Toggle {
                 full_color: 0xCC6633,
                 tab_color: 0xAAAAAA,
                 tab_hover_color: 0x3366CC,
+                disabled_color: 0x888888,
             }),
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(ToggleHit::Nothing),
             capturing: Cell::new(false),
             enabled: Cell::new(true),
             value: Cell::new(false),
-        })
+            closure: Box::new(closure),
+        }))
     }
 
     pub fn find_hit(&self,p: Vec2<i32>) -> ToggleHit {
-        if rect!(vec2!(0,0),self.r.get().s()).contains(&p) {
+        if rect!(vec2!(0,0),self.r.get().s).contains(&p) {
             ToggleHit::Toggle
         }
         else {
@@ -94,22 +98,28 @@ impl Widget for Toggle {
         let style = self.style.borrow();
         let mut left_color = style.full_color;
         let mut right_color = style.empty_color;
-        if self.value.get() {
-            right_color = if let ToggleHit::Toggle = self.hit.get() {
-                style.tab_hover_color
+        if self.enabled.get() {
+            if self.value.get() {
+                right_color = if let ToggleHit::Toggle = self.hit.get() {
+                    style.tab_hover_color
+                }
+                else {
+                    style.tab_color
+                };
             }
             else {
-                style.tab_color
-            };
+                left_color = if let ToggleHit::Toggle = self.hit.get() {
+                    style.tab_hover_color
+                }
+                else {
+                    style.tab_color
+                };
+            }
         }
         else {
-            left_color = if let ToggleHit::Toggle = self.hit.get() {
-                style.tab_hover_color
-            }
-            else {
-                style.tab_color
-            };
-        }
+            right_color = style.disabled_color;
+            left_color = style.disabled_color;
+        };
         self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(TOGGLE_SIZE,TOGGLE_SIZE)),left_color,BlendMode::Replace);
         self.ui.draw_rectangle(rect!(vec2!(TOGGLE_SIZE,0),vec2!(TOGGLE_SIZE,TOGGLE_SIZE)),right_color,BlendMode::Replace);
     }
@@ -156,6 +166,8 @@ impl Widget for Toggle {
                 ToggleHit::Toggle => {
                     println!("Toggle: stop clicking");
                     self.set_value(!self.value.get());
+                    println!("calling closure for {}",self.value.get());
+                    (self.closure)(self.value.get());
                     self.capturing.set(false);
                     self.mousemove(ui,window,p)
                 },

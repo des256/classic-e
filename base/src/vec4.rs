@@ -26,7 +26,12 @@ use std::{
 };
 
 #[derive(Copy,Clone,Debug)]
-pub struct Vec4<T: Simdable>(Simd4<T>);
+pub struct Vec4<T: Simdable> {
+    pub x: T,
+    pub y: T,
+    pub z: T,
+    pub w: T,
+}
 
 impl<T: Simdable> Vec4<T> {
     /// Create new vector.
@@ -42,7 +47,7 @@ impl<T: Simdable> Vec4<T> {
     ///
     /// The new vector.
     pub fn new(x: T,y: T,z: T,w: T) -> Self {
-        Vec4(Simd4::new([x,y,z,w]))
+        Vec4 { x: x,y: y,z: z,w: w, }
     }
 
     /// Create new X-axis unit vector.
@@ -51,7 +56,7 @@ impl<T: Simdable> Vec4<T> {
     ///
     /// The new vector.
     pub fn unit_x() -> Self {
-        Vec4(Simd4::new([T::one(),T::zero(),T::zero(),T::zero()]))
+        Vec4 { x: T::one(),y: T::zero(),z: T::zero(),w: T::zero(), }
     }
 
     /// Create new Y-axis unit vector.
@@ -60,7 +65,7 @@ impl<T: Simdable> Vec4<T> {
     ///
     /// The new vector.
     pub fn unit_y() -> Self {
-        Vec4(Simd4::new([T::zero(),T::one(),T::zero(),T::zero()]))
+        Vec4 { x: T::zero(),y: T::one(),z: T::zero(),w: T::zero(), }
     }
 
     /// Create new Z-axis unit vector.
@@ -69,7 +74,7 @@ impl<T: Simdable> Vec4<T> {
     ///
     /// The new vector.
     pub fn unit_z() -> Self {
-        Vec4(Simd4::new([T::zero(),T::zero(),T::one(),T::zero()]))
+        Vec4 { x: T::zero(),y: T::zero(),z: T::one(),w: T::zero(), }
     }
 
     /// Create new W-axis unit vector.
@@ -78,123 +83,60 @@ impl<T: Simdable> Vec4<T> {
     ///
     /// The new vector.
     pub fn unit_w() -> Self {
-        Vec4(Simd4::new([T::zero(),T::zero(),T::zero(),T::one()]))
-    }
-
-    /// Get X-coordinate.
-    ///
-    /// **Returns**
-    ///
-    /// The X-coordinate.
-    pub fn x(&self) -> T {
-        self.0.get(0)
-    }
-
-    /// Get Y-coordinate.
-    ///
-    /// **Returns**
-    ///
-    /// The Y-coordinate.
-    pub fn y(&self) -> T {
-        self.0.get(1)
-    }
-
-    /// Get Z-coordinate.
-    ///
-    /// **Returns**
-    ///
-    /// The Z-coordinate.
-    pub fn z(&self) -> T {
-        self.0.get(2)
-    }
-
-    /// Get W-coordinate.
-    ///
-    /// **Returns**
-    ///
-    /// The W-coordinate.
-    pub fn w(&self) -> T {
-        self.0.get(3)
-    }
-
-    /// Set X-coordinate.
-    ///
-    /// **Arguments**
-    ///
-    /// `x` - New X-coordinate.
-    pub fn set_x(&mut self,x: T) {
-        self.0.set(0,x);
-    }
-
-    /// Set Y-coordinate.
-    ///
-    /// **Arguments**
-    ///
-    /// `y` - New Y-coordinate.
-    pub fn set_y(&mut self,y: T) {
-        self.0.set(1,y);
-    }
-
-    /// Set Z-coordinate.
-    ///
-    /// **Arguments**
-    ///
-    /// `z` - New Z-coordinate.
-    pub fn set_z(&mut self,z: T) {
-        self.0.set(2,z);
-    }
-
-    /// Set W-coordinate.
-    ///
-    /// **Arguments**
-    ///
-    /// `w` - New W-coordinate.
-    pub fn set_w(&mut self,w: T) {
-        self.0.set(3,w);
+        Vec4 { x: T::zero(),y: T::zero(),z: T::zero(),w: T::one(), }
     }
 }
 
 impl<T: Simdable> PartialEq for Vec4<T> {
     fn eq(&self,other: &Self) -> bool {
-        Simd4::<T>::eq(&self.0,&other.0,0xF)
+        (self.x == other.x) &&
+        (self.y == other.y) &&
+        (self.z == other.z) &&
+        (self.w == other.w)
     }
 }
 
 impl<T: Simdable> Zero for Vec4<T> {
     fn zero() -> Self {
-        Vec4(Simd4::<T>::zero())
+        Vec4 { x: T::zero(),y: T::zero(),z: T::zero(),w: T::zero(), }
     }
 }
 
 impl<T: Simdable> Display for Vec4<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
-        write!(f,"({},{},{},{})",self.x(),self.y(),self.z(),self.w())
+        write!(f,"({},{},{},{})",self.x,self.y,self.z,self.w)
     }
 }
 
 impl<T: Simdable> Add<Vec4<T>> for Vec4<T> {
     type Output = Self;
     fn add(self,other: Self) -> Self {
-        Vec4(Simd4::<T>::add(self.0,other.0))
+        Vec4 { x: self.x + other.x,y: self.y + other.y,z: self.z + other.z,w: self.w + other.w, }
     }
 }
 
 impl<T: Simdable> AddAssign<Vec4<T>> for Vec4<T> {
     fn add_assign(&mut self,other: Self) {
-        self.0 = Simd4::<T>::add(self.0,other.0);
+        self.x += other.x;
+        self.y += other.y;
+        self.z += other.z;
+        self.w += other.w;
     }
 }
 
 impl<T: Simdable> Sub<Vec4<T>> for Vec4<T> {
     type Output = Self;
     fn sub(self,other: Self) -> Self {
-        Vec4(Simd4::<T>::sub(self.0,other.0))
+        Vec4 { x: self.x - other.x,y: self.y - other.y,z: self.z - other.z,w: self.w - other.w, }
     }
 }
 
 impl<T: Simdable> SubAssign<Vec4<T>> for Vec4<T> {
     fn sub_assign(&mut self,other: Self) {
-        self.0 = Simd4::<T>::sub(self.0,other.0);
+        self.x -= other.x;
+        self.y -= other.y;
+        self.z -= other.z;
+        self.w -= other.w;
     }
 }
 
@@ -203,7 +145,7 @@ macro_rules! scalar_vec4_mul {
         impl Mul<Vec4<$t>> for $t {
             type Output = Vec4<$t>;
             fn mul(self,other: Vec4<$t>) -> Vec4<$t> {
-                Vec4(Simd4::<$t>::mul(Simd4::<$t>::splat(self),other.0))
+                Vec4 { x: self * other.x,y: self * other.y,z: self * other.z,w: self * other.w, }
             }
         }
     }
@@ -225,33 +167,39 @@ scalar_vec4_mul!(isize);
 impl<T: Simdable> Mul<T> for Vec4<T> {
     type Output = Self;
     fn mul(self,other: T) -> Self {
-        Vec4(Simd4::<T>::mul(self.0,Simd4::splat(other)))
+        Vec4 { x: self.x * other,y: self.y * other,z: self.z * other,w: self.w * other, }
     }
 }
     
 impl<T: Simdable> MulAssign<T> for Vec4<T> {
     fn mul_assign(&mut self,other: T) {
-        self.0 = Simd4::<T>::mul(self.0,Simd4::splat(other));
+        self.x *= other;
+        self.y *= other;
+        self.z *= other;
+        self.w *= other;
     }
 }        
 
 impl<T: Simdable> Div<T> for Vec4<T> {
     type Output = Self;
     fn div(self,other: T) -> Self {
-        Vec4(Simd4::<T>::div(self.0,Simd4::splat(other)))
+        Vec4 { x: self.x / other,y: self.y / other,z: self.z / other,w: self.w / other, }
     }
 }
     
 impl<T: Simdable> DivAssign<T> for Vec4<T> {
     fn div_assign(&mut self,other: T) {
-        self.0 = Simd4::<T>::div(self.0,Simd4::splat(other));
+        self.x /= other;
+        self.y /= other;
+        self.z /= other;
+        self.w /= other;
     }
 }
 
-impl<T: Simdable> Neg for Vec4<T> {
+impl<T: Simdable + Neg<Output=T>> Neg for Vec4<T> {
     type Output = Self;
     fn neg(self) -> Self {
-        Vec4(Simd4::<T>::sub(Simd4::zero(),self.0))
+        Vec4 { x: -self.x,y: -self.y,z: -self.z,w: -self.w, }
     }
 }
 
@@ -259,11 +207,11 @@ macro_rules! vec4_float {
     ($t:ty) => {
         impl Vec4<$t> {
             pub fn dot(a: Self,b: Self) -> $t {
-                Simd4::<$t>::dot(a.0,b.0,0xF)
+                a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w
             }
         
             pub fn abs(&self) -> $t {
-                Simd4::dot(self.0,self.0,0xF).sqrt()
+                (self.x * self.x + self.y * self.y + self.z * self.z + self.w * self.w).sqrt()
             }
         
             pub fn norm(&self) -> Self {

@@ -37,7 +37,7 @@ impl Graphics {
             gl::TexParameteri(gl::TEXTURE_3D,gl::TEXTURE_WRAP_R,gl::REPEAT as i32);
             gl::TexParameteri(gl::TEXTURE_3D,gl::TEXTURE_MIN_FILTER,gl::LINEAR as i32);
             gl::TexParameteri(gl::TEXTURE_3D,gl::TEXTURE_MAG_FILTER,gl::LINEAR as i32);
-            gl::TexStorage3D(gl::TEXTURE_3D,1,T::gl_internal_format(),size.x() as i32,size.y() as i32,size.z() as i32);
+            gl::TexStorage3D(gl::TEXTURE_3D,1,T::gl_internal_format(),size.x as i32,size.y as i32,size.z as i32);
         }
         Ok(Texture3D {
             tex: tex,
@@ -74,7 +74,7 @@ impl<T: GPUTextureFormat> Texture3D<T> {
     pub fn load(&self,o: Vec3<usize>,src: &Ten<T>) {
         unsafe {
             gl::BindTexture(gl::TEXTURE_3D,self.tex);
-            gl::TexSubImage3D(gl::TEXTURE_3D,0,o.x() as i32,o.y() as i32,o.z() as i32,src.size.x() as i32,src.size.y() as i32,src.size.z() as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void);
+            gl::TexSubImage3D(gl::TEXTURE_3D,0,o.x as i32,o.y as i32,o.z as i32,src.size.x as i32,src.size.y as i32,src.size.z as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void);
         }
     }
 

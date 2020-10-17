@@ -42,7 +42,7 @@ pub struct UI {
 }
 
 impl UI {
-    pub fn new(system: &Rc<System>,graphics: &Rc<Graphics>,font_path: &str) -> Result<UI,SystemError> {
+    pub fn new(system: &Rc<System>,graphics: &Rc<Graphics>,font_path: &str) -> Result<Rc<UI>,SystemError> {
 
         // generic vertex shader
         let vs = r#"
@@ -174,7 +174,7 @@ impl UI {
         // the main font for now
         let font = Rc::new(Font::new(&proto_sans,16)?);
 
-        Ok(UI {
+        Ok(Rc::new(UI {
             system: Rc::clone(system),
             graphics: Rc::clone(graphics),
             flat_shader: flat_shader,
@@ -193,7 +193,7 @@ impl UI {
             drop_uiwindows: RefCell::new(Vec::new()),
             current_capturing_id: Cell::new(None),
             running: Cell::new(true),
-        })
+        }))
     }
 
     pub fn terminate(&self) {
@@ -231,7 +231,7 @@ impl UI {
     }
 
     pub fn set_window_size(&self,size: Vec2<i32>) {
-        self.two_over_window_size.set(vec2!(2.0 / (size.x() as f32),2.0 / (size.y() as f32)));
+        self.two_over_window_size.set(vec2!(2.0 / (size.x as f32),2.0 / (size.y as f32)));
     }
 
     pub fn reset_offset(&self) {
@@ -248,10 +248,10 @@ impl UI {
         let ofs = self.offset.get();
         self.draw_ub.load(0,&vec![TexRect {
             r: rect!(
-                (r.ox() + ofs.x()) as f32,
-                (r.oy() + ofs.y()) as f32,
-                r.sx() as f32,
-                r.sy() as f32
+                (r.o.x + ofs.x) as f32,
+                (r.o.y + ofs.y) as f32,
+                r.s.x as f32,
+                r.s.y as f32
             ),
             t: rect!(0.0,0.0,0.0,0.0),
         }]);
@@ -270,10 +270,10 @@ impl UI {
         let ofs = self.offset.get();
         self.draw_ub.load(0,&vec![TexRect {
             r: rect!(
-                (p.x() + ofs.x()) as f32,
-                (p.y() + ofs.y()) as f32,
-                texture.size().x() as f32,
-                texture.size().y() as f32
+                (p.x + ofs.x) as f32,
+                (p.y + ofs.y) as f32,
+                texture.size().x as f32,
+                texture.size().y as f32
             ),
             t: rect!(0.0,0.0,1.0,1.0),
         }]);
@@ -295,40 +295,40 @@ impl UI {
         let mut buffer: Vec<TexRect> = Vec::new();
         for s in font.proto.sets.iter() {
             if s.font_size == font.font_size {
-                let mut v = vec2!(p.x() + ofs.x(),p.y() + ofs.y() + (font.ratio * (s.y_bearing as f32)) as i32);
+                let mut v = vec2!(p.x + ofs.x,p.y + ofs.y + (font.ratio * (s.y_bearing as f32)) as i32);
                 for c in text.chars() {
                     let code = c as u32;
                     for ch in s.characters.iter() {
                         if ch.n == code {
                             buffer.push(TexRect {
                                 r: rect!(
-                                    (v.x() + (font.ratio * (ch.bearing.x() as f32)) as i32) as f32,
-                                    (v.y() - (font.ratio * (ch.bearing.y() as f32)) as i32) as f32,
-                                    ((font.ratio * (ch.r.sx() as f32)) as i32) as f32,
-                                    ((font.ratio * (ch.r.sy() as f32)) as i32) as f32
+                                    (v.x + (font.ratio * (ch.bearing.x as f32)) as i32) as f32,
+                                    (v.y - (font.ratio * (ch.bearing.y as f32)) as i32) as f32,
+                                    ((font.ratio * (ch.r.s.x as f32)) as i32) as f32,
+                                    ((font.ratio * (ch.r.s.y as f32)) as i32) as f32
                                 ),
                                 t: rect!(
-                                    (ch.r.ox() as f32) / (font.proto.texture.size().x() as f32),
-                                    (ch.r.oy() as f32) / (font.proto.texture.size().y() as f32),
-                                    (ch.r.sx() as f32) / (font.proto.texture.size().x() as f32),
-                                    (ch.r.sy() as f32) / (font.proto.texture.size().y() as f32)
+                                    (ch.r.o.x as f32) / (font.proto.texture.size().x as f32),
+                                    (ch.r.o.y as f32) / (font.proto.texture.size().y as f32),
+                                    (ch.r.s.x as f32) / (font.proto.texture.size().x as f32),
+                                    (ch.r.s.y as f32) / (font.proto.texture.size().y as f32)
                                 ),
                             });
                             /*buffer.push(TexRect {
                                 r: rect!(
-                                    (v.x() + (font.ratio * (ch.bearing.x() as f32)) as i32) as f32,
-                                    (v.y() - (font.ratio * (ch.bearing.y() as f32)) as i32) as f32,
+                                    (v.x + (font.ratio * (ch.bearing.x as f32)) as i32) as f32,
+                                    (v.y - (font.ratio * (ch.bearing.y as f32)) as i32) as f32,
                                     ((font.ratio * (ch.r.sx() as f32)) as i32) as f32,
                                     ((font.ratio * (ch.r.sy() as f32)) as i32) as f32
                                 ),
                                 t: rect!(
-                                    (ch.r.ox() as f32) / (font.proto.texture.size().x() as f32),
-                                    (ch.r.oy() as f32) / (font.proto.texture.size().y() as f32),
-                                    (ch.r.sx() as f32) / (font.proto.texture.size().x() as f32),
-                                    (ch.r.sy() as f32) / (font.proto.texture.size().y() as f32)
+                                    (ch.r.ox() as f32) / (font.proto.texture.size().x as f32),
+                                    (ch.r.oy() as f32) / (font.proto.texture.size().y as f32),
+                                    (ch.r.sx() as f32) / (font.proto.texture.size().x as f32),
+                                    (ch.r.sy() as f32) / (font.proto.texture.size().y as f32)
                                 ),
                             });*/
-                            v.set_x(v.x() + (font.ratio * (ch.advance as f32)) as i32);
+                            v.x += (font.ratio * (ch.advance as f32)) as i32;
                             break;
                         }
                     }
@@ -360,20 +360,20 @@ impl UIWindow {
         rced_self
     }
 
-    pub fn new_frame(ui: &Rc<UI>,r: Rect<i32>,title: &str,widget: &Rc<dyn Widget>) -> Result<Rc<UIWindow>,SystemError> {
+    pub fn new_frame(ui: &Rc<UI>,r: Rect<i32>,title: &str,widget: Rc<dyn Widget>) -> Result<Rc<UIWindow>,SystemError> {
         Ok(UIWindow {
             ui: Rc::clone(&ui),
             window: Window::new_frame(&ui.system,r,title)?,
-            widget: Rc::clone(&widget),
+            widget: widget,
             capturing: Cell::new(false),
         }.register())
     }
 
-    pub fn new_popup(ui: &Rc<UI>,r: Rect<i32>,parent: &Rc<UIWindow>,widget: &Rc<dyn Widget>) -> Result<Rc<UIWindow>,SystemError> {
+    pub fn new_popup(ui: &Rc<UI>,r: Rect<i32>,widget: Rc<dyn Widget>) -> Result<Rc<UIWindow>,SystemError> {
         Ok(UIWindow {
             ui: Rc::clone(&ui),
-            window: Window::new_popup(&ui.system,&parent.window,r)?,
-            widget: Rc::clone(&widget),
+            window: Window::new_popup(&ui.system,r)?,
+            widget: widget,
             capturing: Cell::new(false),
         }.register())
     }
@@ -388,6 +388,18 @@ impl UIWindow {
                 break;
             }
         }
+    }
+    
+    pub fn configure(&self,r: Rect<i32>) {
+        self.window.configure(&r);
+    }
+
+    pub fn show(&self) {
+        self.window.show();
+    }
+
+    pub fn hide(&self) {
+        self.window.hide();
     }
 
     fn dispatch_platform_event(window: &Rc<UIWindow>,platform_event: platform::Event) {
@@ -454,7 +466,7 @@ impl UIWindow {
         self.ui.graphics.clear(0xFF001122);
 
         // prepare draw context
-        self.ui.set_window_size(self.window.r.get().s());
+        self.ui.set_window_size(self.window.r.get().s);
         self.ui.reset_offset();
 
         // draw the widget hierarchy

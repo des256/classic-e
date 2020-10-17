@@ -411,7 +411,7 @@ impl System {
         match r {
             EXPOSE => {
                 let expose: &ExposeEvent = unsafe { cast_event(&xcb_event) };
-                //let r = rect!(expose.x() as isize,expose.y() as isize,expose.width() as isize,expose.height() as isize);
+                //let r = rect!(expose.x as isize,expose.y as isize,expose.width() as isize,expose.height() as isize);
                 let xid = expose.window() as XID;
                 return Some((xid,Event::Render));
             },

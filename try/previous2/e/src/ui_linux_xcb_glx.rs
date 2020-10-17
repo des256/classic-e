@@ -416,7 +416,7 @@ impl<'a> UI {
                 xcb::EXPOSE => {
                     let expose: &xcb::ExposeEvent = unsafe { xcb::cast_event(&xcb_event) };
                     let rect = isize_r {
-                        o: isize_2 { x: expose.x() as isize,y: expose.y() as isize, },
+                        o: isize_2 { x: expose.x as isize,y: expose.y as isize, },
                         s: isize_2 { x: expose.width() as isize,y: expose.height() as isize, },
                     };
                     for i in 0..self.windows.len() {
@@ -469,7 +469,7 @@ impl<'a> UI {
                 xcb::CONFIGURE_NOTIFY => {
                     let configure_notify: &xcb::ConfigureNotifyEvent = unsafe { xcb::cast_event(&xcb_event) };
                     let rect = isize_r {
-                        o: isize_2 { x: configure_notify.x() as isize,y: configure_notify.y() as isize, },
+                        o: isize_2 { x: configure_notify.x as isize,y: configure_notify.y as isize, },
                         s: isize_2 { x: configure_notify.width() as isize,y: configure_notify.height() as isize, },
                     };
                     for i in 0..self.windows.len() {
