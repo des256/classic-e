@@ -176,6 +176,9 @@ pub use mat2x2::*;
 mod mat3x3;
 pub use mat3x3::*;
 
+mod mat3x3a;
+pub use mat3x3a::*;
+
 mod mat4x4;
 pub use mat4x4::*;
 

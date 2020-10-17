@@ -31,7 +31,7 @@ pub struct Mat3x3A<T: FloatNumber> {
     pub x: Vec3A<T>,
     pub y: Vec3A<T>,
     pub z: Vec3A<T>,
-    _w: Vec3A<T>,
+    pub(crate) _w: Vec3A<T>,
 }
 
 impl<T: FloatNumber> Mat3x3A<T> {
@@ -54,9 +54,9 @@ impl<T: FloatNumber> Mat3x3A<T> {
     /// The new vector.
     pub fn new(xx: T,xy: T,xz: T,yx: T,yy: T,yz: T,zx: T,zy: T,zz: T) -> Self {
         Mat3x3A {
-            x: vec3!(xx,xy,xz),
-            y: vec3!(yx,yy,yz),
-            z: vec3!(zx,zy,zz),
+            x: vec3a!(xx,xy,xz),
+            y: vec3a!(yx,yy,yz),
+            z: vec3a!(zx,zy,zz),
             _w: Vec3A::<T>::zero(),
         }
     }
@@ -68,9 +68,9 @@ impl<T: FloatNumber> Mat3x3A<T> {
     /// The unit matrix.
     pub fn unit() -> Self {
         Mat3x3A {
-            x: vec3!(T::one(),T::zero(),T::zero()),
-            y: vec3!(T::zero(),T::one(),T::zero()),
-            z: vec3!(T::zero(),T::zero(),T::one()),
+            x: vec3a!(T::one(),T::zero(),T::zero()),
+            y: vec3a!(T::zero(),T::one(),T::zero()),
+            z: vec3a!(T::zero(),T::zero(),T::one()),
             _w: Vec3A::<T>::zero(),
         }
     }
@@ -86,9 +86,9 @@ impl<T: FloatNumber> Mat3x3A<T> {
     /// The scale matrix.
     pub fn scale(s: Vec3A<T>) -> Mat3x3A<T> {
         Mat3x3A {
-            x: vec3!(s.x,T::zero(),T::zero()),
-            y: vec3!(T::zero(),s.y,T::zero()),
-            z: vec3!(T::zero(),T::zero(),s.z),
+            x: vec3a!(s.x,T::zero(),T::zero()),
+            y: vec3a!(T::zero(),s.y,T::zero()),
+            z: vec3a!(T::zero(),T::zero(),s.z),
             _w: Vec3A::<T>::zero(),
         }
     }
@@ -127,9 +127,9 @@ impl<T: FloatNumber> Mat3x3A<T> {
         let rj = s * q.r * q.j;
         jj *= s;
         Mat3x3A {
-            x: vec3!(T::one() - (ii + jj),ri - kj,rj + ki),
-            y: vec3!(ri + kj,T::one() - (rr + jj),ij - kr),
-            z: vec3!(rj - ki,ij + kr,T::one() - (rr + ii)),
+            x: vec3a!(T::one() - (ii + jj),ri - kj,rj + ki),
+            y: vec3a!(ri + kj,T::one() - (rr + jj),ij - kr),
+            z: vec3a!(rj - ki,ij + kr,T::one() - (rr + ii)),
             _w: Vec3A::<T>::zero(),
         }
     }
@@ -145,10 +145,10 @@ impl<T: FloatNumber> Mat3x3A<T> {
     ///
     /// Normal transformation matrix.
     pub fn normal_from(m: Mat4x4<T>) -> Mat3x3A<T> {
-        Mat3x3 {
-            x: vec3!(m.x.x,m.x.y,m.x.z),
-            y: vec3!(m.y.x,m.y.y,m.y.z),
-            z: vec3!(m.z.x,m.z.y,m.z.z),
+        Mat3x3A {
+            x: vec3a!(m.x.x,m.x.y,m.x.z),
+            y: vec3a!(m.y.x,m.y.y,m.y.z),
+            z: vec3a!(m.z.x,m.z.y,m.z.z),
             _w: Vec3A::<T>::zero(),
         }.inverse().transpose()
     }
@@ -201,9 +201,9 @@ impl<T: FloatNumber> Mat3x3A<T> {
             let mh = b * g - a * h;
             let mi = a * e - b * d;
             Mat3x3A {
-                x: vec3!(ma,md,mg),
-                y: vec3!(mb,me,mh),
-                z: vec3!(mc,mf,mi),
+                x: vec3a!(ma,md,mg),
+                y: vec3a!(mb,me,mh),
+                z: vec3a!(mc,mf,mi),
                 _w: Vec3A::<T>::zero(),
             } / nd
         }
@@ -215,9 +215,9 @@ impl<T: FloatNumber> Mat3x3A<T> {
     /// Calculate transpose of 3x3-matrix.
     pub fn transpose(&self) -> Mat3x3A<T> {
         Mat3x3A {
-            x: vec3!(self.x.x,self.y.x,self.z.x),
-            y: vec3!(self.x.y,self.y.y,self.z.y),
-            z: vec3!(self.x.z,self.y.z,self.z.z),
+            x: vec3a!(self.x.x,self.y.x,self.z.x),
+            y: vec3a!(self.x.y,self.y.y,self.z.y),
+            z: vec3a!(self.x.z,self.y.z,self.z.z),
             _w: Vec3A::<T>::zero(),
         }
     }
@@ -309,15 +309,15 @@ macro_rules! scalar_mat3x3a_mul {
                     x: self * other.x,
                     y: self * other.y,
                     z: self * other.z,
-                    _w: Vec3A::<T>::zero(),
+                    _w: Vec3A::<$t>::zero(),
                 }
             }
         }
     }
 }
 
-scalar_mat3x3_mul!(f32);
-scalar_mat3x3_mul!(f64);
+scalar_mat3x3a_mul!(f32);
+scalar_mat3x3a_mul!(f64);
 
 impl<T: FloatNumber> Mul<Vec3A<T>> for Mat3x3A<T> {
     type Output = Vec3A<T>;
@@ -326,7 +326,7 @@ impl<T: FloatNumber> Mul<Vec3A<T>> for Mat3x3A<T> {
             x: self.x.x * other.x + self.y.x * other.y + self.z.x * other.z,
             y: self.x.y * other.x + self.y.y * other.y + self.z.y * other.z,
             z: self.x.z * other.x + self.y.z * other.y + self.z.z * other.z,
-            _w: Vec3A::<T>::zero(),
+            _w: <T>::zero(),
         }
     }
 }
@@ -335,17 +335,17 @@ impl<T: FloatNumber> Mul<Mat3x3A<T>> for Mat3x3A<T> {
     type Output = Mat3x3A<T>;
     fn mul(self,other: Mat3x3A<T>) -> Self::Output {
         Mat3x3A {
-            x: vec3!(
+            x: vec3a!(
                 self.x.x * other.x.x + self.y.x * other.x.y + self.z.x * other.x.z,
                 self.x.y * other.x.x + self.y.y * other.x.y + self.z.y * other.x.z,
                 self.x.z * other.x.x + self.y.z * other.x.y + self.z.z * other.x.z
             ),
-            y: vec3!(
+            y: vec3a!(
                 self.x.x * other.y.x + self.y.x * other.y.y + self.z.x * other.y.z,
                 self.x.y * other.y.x + self.y.y * other.y.y + self.z.y * other.y.z,
                 self.x.z * other.y.x + self.y.z * other.y.y + self.z.z * other.y.z
             ),
-            z: vec3!(
+            z: vec3a!(
                 self.x.x * other.z.x + self.y.x * other.z.y + self.z.x * other.z.z,
                 self.x.y * other.z.x + self.y.y * other.z.y + self.z.y * other.z.z,
                 self.x.z * other.z.x + self.y.z * other.z.y + self.z.z * other.z.z
@@ -362,6 +362,7 @@ impl<T: FloatNumber> Div<T> for Mat3x3A<T> {
             x: self.x / other,
             y: self.y / other,
             z: self.z / other,
+            _w: Vec3A::<T>::zero(),
         }
     }
 }
@@ -387,17 +388,17 @@ impl<T: FloatNumber> MulAssign<Mat3x3A<T>> for Vec3A<T> {
 
 impl<T: FloatNumber> MulAssign<Mat3x3A<T>> for Mat3x3A<T> {
     fn mul_assign(&mut self,other: Mat3x3A<T>) {
-        let x = vec3!(
+        let x = vec3a!(
             self.x.x * other.x.x + self.y.x * other.x.y + self.z.x * other.x.z,
             self.x.y * other.x.x + self.y.y * other.x.y + self.z.y * other.x.z,
             self.x.z * other.x.x + self.y.z * other.x.y + self.z.z * other.x.z
         );
-        let y = vec3!(
+        let y = vec3a!(
             self.x.x * other.y.x + self.y.x * other.y.y + self.z.x * other.y.z,
             self.x.y * other.y.x + self.y.y * other.y.y + self.z.y * other.y.z,
             self.x.z * other.y.x + self.y.z * other.y.y + self.z.z * other.y.z
         );
-        let z = vec3!(
+        let z = vec3a!(
             self.x.x * other.z.x + self.y.x * other.z.y + self.z.x * other.z.z,
             self.x.y * other.z.x + self.y.y * other.z.y + self.z.y * other.z.z,
             self.x.z * other.z.x + self.y.z * other.z.y + self.z.z * other.z.z
@@ -419,10 +420,11 @@ impl<T: FloatNumber> DivAssign<T> for Mat3x3A<T> {
 impl<T: FloatNumber> Neg for Mat3x3A<T> {
     type Output = Mat3x3A<T>;
     fn neg(self) -> Self::Output {
-        Mat3x3 {
+        Mat3x3A {
             x: -self.x,
             y: -self.y,
             z: -self.z,
+            _w: Vec3A::<T>::zero(),
         }
     }
 }
@@ -443,10 +445,10 @@ macro_rules! mat3x3a_rotations {
                 let sa = a.sin();
                 let ca = a.cos();
                 Mat3x3A {
-                    x: vec3!(1.0,0.0,0.0),
-                    y: vec3!(0.0,ca,sa),
-                    z: vec3!(0.0,-sa,ca),
-                    _w: Vec3A::<T>::zero(),
+                    x: vec3a!(1.0,0.0,0.0),
+                    y: vec3a!(0.0,ca,sa),
+                    z: vec3a!(0.0,-sa,ca),
+                    _w: Vec3A::<$t>::zero(),
                 }
             }
 
@@ -463,10 +465,10 @@ macro_rules! mat3x3a_rotations {
                 let sa = a.sin();
                 let ca = a.cos();
                 Mat3x3A {
-                    x: vec3!(ca,0.0,-sa),
-                    y: vec3!(0.0,1.0,0.0),
-                    z: vec3!(sa,0.0,ca),
-                    _w: Vec3A::<T>::zero(),
+                    x: vec3a!(ca,0.0,-sa),
+                    y: vec3a!(0.0,1.0,0.0),
+                    z: vec3a!(sa,0.0,ca),
+                    _w: Vec3A::<$t>::zero(),
                 }
             }
 
@@ -483,10 +485,10 @@ macro_rules! mat3x3a_rotations {
                 let sa = a.sin();
                 let ca = a.cos();
                 Mat3x3A {
-                    x: vec3!(ca,sa,0.0),
-                    y: vec3!(-sa,ca,0.0),
-                    z: vec3!(0.0,0.0,1.0),
-                    _w: Vec3A::<T>::zero(),
+                    x: vec3a!(ca,sa,0.0),
+                    y: vec3a!(-sa,ca,0.0),
+                    z: vec3a!(0.0,0.0,1.0),
+                    _w: Vec3A::<$t>::zero(),
                 }
             }
         }

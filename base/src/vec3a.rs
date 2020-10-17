@@ -34,7 +34,7 @@ pub struct Vec3A<T: Number> {
     pub x: T,
     pub y: T,
     pub z: T,
-    _w: T,
+    pub(crate) _w: T,
 }
 
 impl<T: Number> Vec3A<T> {
