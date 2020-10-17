@@ -13,7 +13,7 @@ use gl::types::GLuint;
 pub struct Texture2D<T: GPUTextureFormat> {
     _graphics: Rc<Graphics>,
     pub tex: GLuint,
-    size: Vec2<usize>,
+    pub size: Vec2<usize>,
     phantom: PhantomData<T>,
 }
 
@@ -124,10 +124,6 @@ impl<T: GPUTextureFormat> Texture2D<T> {
             TextureWrap::Repeat => unsafe { gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_WRAP_T,gl::REPEAT as i32); },
             TextureWrap::Mirror => unsafe { gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_WRAP_T,gl::MIRRORED_REPEAT as i32); },            
         }
-    }
-
-    pub fn size(&self) -> Vec2<usize> {
-        self.size
     }
 }
 

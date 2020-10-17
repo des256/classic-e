@@ -22,7 +22,7 @@ pub enum CubeFace {
 pub struct TextureCube<T: GPUTextureFormat> {
     _graphics: Rc<Graphics>,
     pub tex: GLuint,
-    size: usize,
+    pub size: usize,
     phantom: PhantomData<T>,
 }
 
@@ -169,10 +169,6 @@ impl<T: GPUTextureFormat> TextureCube<T> {
             TextureWrap::Repeat => unsafe { gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_WRAP_R,gl::REPEAT as i32); },
             TextureWrap::Mirror => unsafe { gl::TexParameteri(gl::TEXTURE_2D,gl::TEXTURE_WRAP_R,gl::MIRRORED_REPEAT as i32); },            
         }
-    }
-
-    pub fn size(&self) -> usize {
-        self.size
     }
 }
 
