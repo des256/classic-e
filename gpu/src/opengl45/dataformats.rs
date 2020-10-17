@@ -105,7 +105,7 @@ impl GPUUniformFormat for Rect<f32> {
 
 impl GPUUniformFormat for Quat<f32> {
     fn len() -> usize { 16 }
-    fn set(location: i32,value: Self) { unsafe { gl::Uniform4f(location,value.r(),value.i(),value.j(),value.k()) }; }
+    fn set(location: i32,value: Self) { unsafe { gl::Uniform4f(location,value.r,value.i,value.j,value.k) }; }
 }
 
 pub trait GPUVertexFormat {

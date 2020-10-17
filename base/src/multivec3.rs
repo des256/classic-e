@@ -1,7 +1,6 @@
 // E - Multivector
 // Desmond Germans, 2020
 
-/*
 use crate::*;
 use std::{
     cmp::PartialEq,
@@ -26,9 +25,14 @@ use std::{
 
 /// 3D multivector.
 #[derive(Copy,Clone,Debug)]
-pub struct MultiVec3<T: SimdableFloat>(Simd8<T>);
+pub struct MultiVec3<T: FloatNumber> {
+    pub r: T,
+    pub x: T,pub y: T,pub z: T,
+    pub xy: T,pub xz: T,pub yz: T,
+    pub xyz: T,
+}
 
-impl<T: SimdableFloat> MultiVec3<T> {
+impl<T: FloatNumber> MultiVec3<T> {
     /// Create new 3D multivector.
     ///
     /// **Arguments**
@@ -47,7 +51,12 @@ impl<T: SimdableFloat> MultiVec3<T> {
         xy: T,xz: T,yz: T,
         xyz: T
     ) -> Self {
-        MultiVec3(Simd8::new([r,x,y,z,xy,xz,yz,xyz]))
+        MultiVec3 {
+            r: r,
+            x: x,y: y,z: z,
+            xy: xy,xz: xz,yz: yz,
+            xyz: xyz,
+        }
     }
 
     /// Create new multivector containing a unit scalar.
@@ -56,7 +65,12 @@ impl<T: SimdableFloat> MultiVec3<T> {
     ///
     /// The new multivector.
     pub fn unit_r() -> Self {
-        MultiVec3(Simd8::new([T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
+        MultiVec3 {
+            r: T::one(),
+            x: T::zero(),y: T::zero(),z: T::zero(),
+            xy: T::zero(),xz: T::zero(),yz: T::zero(),
+            xyz: T::zero(),
+        }
     }
 
     /// Create new multivector containing a unit X-vector.
@@ -65,7 +79,12 @@ impl<T: SimdableFloat> MultiVec3<T> {
     ///
     /// The new multivector.
     pub fn unit_x() -> Self {
-        MultiVec3(Simd8::new([T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
+        MultiVec3 {
+            r: T::zero(),
+            x: T::zero(),y: T::zero(),z: T::zero(),
+            xy: T::zero(),xz: T::zero(),yz: T::zero(),
+            xyz: T::zero(),
+        }
     }
 
     /// Create new multivector containing a unit Y-vector.
@@ -74,7 +93,12 @@ impl<T: SimdableFloat> MultiVec3<T> {
     ///
     /// The new multivector.
     pub fn unit_y() -> Self {
-        MultiVec3(Simd8::new([T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero()]))
+        MultiVec3 {
+            r: T::zero(),
+            x: T::zero(),y: T::one(),z: T::zero(),
+            xy: T::zero(),xz: T::zero(),yz: T::zero(),
+            xyz: T::zero(),
+        }
     }
 
     /// Create new multivector containing a unit Z-vector.
@@ -83,7 +107,12 @@ impl<T: SimdableFloat> MultiVec3<T> {
     ///
     /// The new multivector.
     pub fn unit_z() -> Self {
-        MultiVec3(Simd8::new([T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero(),T::zero()]))
+        MultiVec3 {
+            r: T::zero(),
+            x: T::zero(),y: T::zero(),z: T::one(),
+            xy: T::zero(),xz: T::zero(),yz: T::zero(),
+            xyz: T::zero(),
+        }
     }
 
     /// Create new multivector containing a unit XY-bivector.
@@ -92,7 +121,12 @@ impl<T: SimdableFloat> MultiVec3<T> {
     ///
     /// The new multivector.
     pub fn unit_xy() -> Self {
-        MultiVec3(Simd8::new([T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero(),T::zero()]))
+        MultiVec3 {
+            r: T::zero(),
+            x: T::zero(),y: T::zero(),z: T::zero(),
+            xy: T::one(),xz: T::zero(),yz: T::zero(),
+            xyz: T::zero(),
+        }
     }
 
     /// Create new multivector containing a unit XZ-bivector.
@@ -101,7 +135,12 @@ impl<T: SimdableFloat> MultiVec3<T> {
     ///
     /// The new multivector.
     pub fn unit_xz() -> Self {
-        MultiVec3(Simd8::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero(),T::zero()]))
+        MultiVec3 {
+            r: T::zero(),
+            x: T::zero(),y: T::zero(),z: T::zero(),
+            xy: T::zero(),xz: T::one(),yz: T::zero(),
+            xyz: T::zero(),
+        }
     }
 
     /// Create new multivector containing a unit YZ-bivector.
@@ -110,7 +149,12 @@ impl<T: SimdableFloat> MultiVec3<T> {
     ///
     /// The new multivector.
     pub fn unit_yz() -> Self {
-        MultiVec3(Simd8::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one(),T::zero()]))
+        MultiVec3 {
+            r: T::zero(),
+            x: T::zero(),y: T::zero(),z: T::zero(),
+            xy: T::zero(),xz: T::zero(),yz: T::one(),
+            xyz: T::zero(),
+        }
     }
 
     /// Create new multivector containing a unit pseudoscalar.
@@ -119,167 +163,36 @@ impl<T: SimdableFloat> MultiVec3<T> {
     ///
     /// The new multivector.
     pub fn unit_xyz() -> Self {
-        MultiVec3(Simd8::new([T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::one()]))
-    }
-
-    /// Get scalar component.
-    ///
-    /// **Returns**
-    ///
-    /// The scalar component.
-    pub fn r(&self) -> T {
-        self.0.get(0)
-    }
-
-    /// Get X-vector component.
-    ///
-    /// **Returns**
-    ///
-    /// The X-vector component.
-    pub fn x(&self) -> T {
-        self.0.get(1)
-    }
-
-    /// Get Y-vector component.
-    ///
-    /// **Returns**
-    ///
-    /// The Y-vector component.
-    pub fn y(&self) -> T {
-        self.0.get(2)
-    }
-
-    /// Get Z-vector component.
-    ///
-    /// **Returns**
-    ///
-    /// The Z-vector component.
-    pub fn z(&self) -> T {
-        self.0.get(3)
-    }
-
-    /// Get XY-bivector component.
-    ///
-    /// **Returns**
-    ///
-    /// The XY-bivector component.
-    pub fn xy(&self) -> T {
-        self.0.get(4)
-    }
-
-    /// Get XZ-bivector component.
-    ///
-    /// **Returns**
-    ///
-    /// The XZ-bivector component.
-    pub fn xz(&self) -> T {
-        self.0.get(5)
-    }
-
-    /// Get YZ-bivector component.
-    ///
-    /// **Returns**
-    ///
-    /// The YZ-bivector component.
-    pub fn yz(&self) -> T {
-        self.0.get(6)
-    }
-
-    /// Get pseudoscalar component.
-    ///
-    /// **Returns**
-    ///
-    /// The pseudoscalar component.
-    pub fn xyz(&self) -> T {
-        self.0.get(7)
-    }
-
-    /// Set scalar component.
-    ///
-    /// **Arguments**
-    ///
-    /// `r` - New scalar component.
-    pub fn set_r(&mut self,r: T) {
-        self.0.set(0,r);
-    }
-
-    /// Set X-vector component.
-    ///
-    /// **Arguments**
-    ///
-    /// `x` - New X-vector component.
-    pub fn set_x(&mut self,x: T) {
-        self.0.set(1,x);
-    }
-
-    /// Set Y-vector component.
-    ///
-    /// **Arguments**
-    ///
-    /// `y` - New Y-vector component.
-    pub fn set_y(&mut self,y: T) {
-        self.0.set(2,y);
-    }
-
-    /// Set Z-vector component.
-    ///
-    /// **Arguments**
-    ///
-    /// `z` - New Z-vector component.
-    pub fn set_z(&mut self,z: T) {
-        self.0.set(3,z);
-    }
-
-    /// Set XY-bivector component.
-    ///
-    /// **Arguments**
-    ///
-    /// `xy` - New XY-bivector component.
-    pub fn set_xy(&mut self,xy: T) {
-        self.0.set(4,xy);
-    }
-
-    /// Set XZ-bivector component.
-    ///
-    /// **Arguments**
-    ///
-    /// `xz` - New XZ-bivector component.
-    pub fn set_xz(&mut self,xz: T) {
-        self.0.set(5,xz);
-    }
-
-    /// Set YZ-bivector component.
-    ///
-    /// **Arguments**
-    ///
-    /// `yz` - New YZ-bivector component.
-    pub fn set_yz(&mut self,yz: T) {
-        self.0.set(6,yz);
-    }
-
-    /// Set pseudoscalar component.
-    ///
-    /// **Arguments**
-    ///
-    /// `xy` - New pseudoscalar component.
-    pub fn set_xyz(&mut self,xyz: T) {
-        self.0.set(7,xyz);
+        MultiVec3 {
+            r: T::zero(),
+            x: T::zero(),y: T::zero(),z: T::zero(),
+            xy: T::zero(),xz: T::zero(),yz: T::zero(),
+            xyz: T::one(),
+        }
     }
 }
 
-impl<T: SimdableFloat> PartialEq for MultiVec3<T> {
+impl<T: FloatNumber> PartialEq for MultiVec3<T> {
     fn eq(&self,other: &Self) -> bool {
-        Simd8::eq(&self.0,&other.0,0xFF)
+        (self.r == other.r) &&
+        (self.x == other.x) && (self.y == other.y) && (self.z == other.z) &&
+        (self.xy == other.xy) && (self.xz == other.xz) && (self.xz == other.xz) &&
+        (self.xyz == other.xyz)
     }
 }
 
-impl<T: SimdableFloat> Zero for MultiVec3<T> {
+impl<T: FloatNumber> Zero for MultiVec3<T> {
     fn zero() -> Self {
-        MultiVec3(Simd8::zero())
+        MultiVec3 {
+            r: T::zero(),
+            x: T::zero(),y: T::zero(),z: T::zero(),
+            xy: T::zero(),xz: T::zero(),yz: T::zero(),
+            xyz: T::zero(),
+        }
     }
 }
 
-impl<T: SimdableFloat> Display for MultiVec3<T> {
+impl<T: FloatNumber> Display for MultiVec3<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
         let sx = if self.x < T::zero() {
             format!("{}x",self.x)
@@ -316,33 +229,49 @@ impl<T: SimdableFloat> Display for MultiVec3<T> {
         } else {
             format!("+{}xyz",self.xyz)
         };
-        write!(f,"{}{}{}{}{}{}{}{}",self.r(),sx,sy,sz,sxy,sxz,syz,sxyz)
+        write!(f,"{}{}{}{}{}{}{}{}",self.r,sx,sy,sz,sxy,sxz,syz,sxyz)
     }
 }
 
-impl<T: SimdableFloat> Add<MultiVec3<T>> for MultiVec3<T> {
+impl<T: FloatNumber> Add<MultiVec3<T>> for MultiVec3<T> {
     type Output = Self;
     fn add(self,other: MultiVec3<T>) -> Self {
-        MultiVec3(Simd8::add(self.0,other.0))
+        MultiVec3 {
+            r: self.r + other.r,
+            x: self.x + other.x,y: self.y + other.y,z: self.z + other.z,
+            xy: self.xy + other.xy,xz: self.xz + other.xz,yz: self.yz + other.yz,
+            xyz: self.xyz + other.xyz,
+        }
     }
 }
 
-impl<T: SimdableFloat> AddAssign<MultiVec3<T>> for MultiVec3<T> {
+impl<T: FloatNumber> AddAssign<MultiVec3<T>> for MultiVec3<T> {
     fn add_assign(&mut self,other: Self) {
-        self.0 = Simd8::add(self.0,other.0);
+        self.r += other.r;
+        self.x += other.x; self.y += other.y; self.z += other.z;
+        self.xy += other.xy; self.xz += other.xz; self.yz += other.yz;
+        self.xyz += other.xyz;
     }
 }
 
-impl<T: SimdableFloat> Sub<MultiVec3<T>> for MultiVec3<T> {
+impl<T: FloatNumber> Sub<MultiVec3<T>> for MultiVec3<T> {
     type Output = Self;
     fn sub(self,other: MultiVec3<T>) -> Self {
-        MultiVec3(Simd8::sub(self.0,other.0))
+        MultiVec3 {
+            r: self.r - other.r,
+            x: self.x - other.x,y: self.y - other.y,z: self.z - other.z,
+            xy: self.xy - other.xy,xz: self.xz - other.xz,yz: self.yz - other.yz,
+            xyz: self.xyz - other.xyz,
+        }
     }
 }
 
-impl<T: SimdableFloat> SubAssign<MultiVec3<T>> for MultiVec3<T> {
+impl<T: FloatNumber> SubAssign<MultiVec3<T>> for MultiVec3<T> {
     fn sub_assign(&mut self,other: Self) {
-        self.0 = Simd8::sub(self.0,other.0);
+        self.r -= other.r;
+        self.x -= other.x; self.y -= other.y; self.z -= other.z;
+        self.xy -= other.xy; self.xz -= other.xz; self.yz -= other.yz;
+        self.xyz -= other.xyz;
     }
 }
 
@@ -351,7 +280,12 @@ macro_rules! scalar_multivec3_mul {
         impl Mul<MultiVec3<$t>> for $t {
             type Output = MultiVec3<$t>;
             fn mul(self,other: MultiVec3<$t>) -> MultiVec3<$t> {
-                MultiVec3(Simd8::mul(Simd8::splat(self),other.0))
+                MultiVec3 {
+                    r: self * other.r,
+                    x: self * other.x,y: self * other.y,z: self * other.z,
+                    xy: self * other.xy,xz: self * other.xz,yz: self * other.yz,
+                    xyz: self * other.xyz,
+                }
             }
         }        
     }
@@ -360,96 +294,144 @@ macro_rules! scalar_multivec3_mul {
 scalar_multivec3_mul!(f32);
 scalar_multivec3_mul!(f64);
 
-impl<T: SimdableFloat> Mul<T> for MultiVec3<T> {
+impl<T: FloatNumber> Mul<T> for MultiVec3<T> {
     type Output = MultiVec3<T>;
     fn mul(self,other: T) -> Self {
-        MultiVec3(Simd8::mul(self.0,Simd8::splat(other)))
+        MultiVec3 {
+            r: self.r * other,
+            x: self.x * other,y: self.y * other,z: self.z * other,
+            xy: self.xy * other,xz: self.xz * other,yz: self.yz * other,
+            xyz: self.xyz * other,
+        }
     }
 }
 
-impl<T: SimdableFloat> MulAssign<T> for MultiVec3<T> {
+impl<T: FloatNumber> MulAssign<T> for MultiVec3<T> {
     fn mul_assign(&mut self,other: T) {
-        self.0 = Simd8::mul(self.0,Simd8::splat(other));
+        self.r *= other;
+        self.x *= other; self.y *= other; self.z *= other;
+        self.xy *= other; self.xz *= other; self.yz *= other;
+        self.xyz *= other;
     }
 }
 
-impl<T: SimdableFloat> Mul<MultiVec3<T>> for MultiVec3<T> {
+impl<T: FloatNumber> Mul<MultiVec3<T>> for MultiVec3<T> {
     type Output = MultiVec3<T>;
     fn mul(self,other: MultiVec3<T>) -> Self {
-        MultiVec3::new(
-            self.r() * other.r() + self.x * other.x + self.y * other.y + self.z * other.z - self.xy * other.xy - self.xz * other.xz - self.yz * other.yz - self.xyz * other.xyz,
-            self.r() * other.x + self.x * other.r() - self.y * other.xy - self.z * other.xz + self.xy * other.y + self.xz * other.z - self.yz * other.xyz - self.xyz * other.yz,
-            self.r() * other.y + self.x * other.xy + self.y * other.r() - self.z * other.yz - self.xy * other.x + self.xz * other.xyz + self.yz * other.z + self.xyz * other.xz,
-            self.r() * other.z + self.x * other.xz + self.y * other.yz + self.z * other.r() - self.xy * other.xyz - self.xz * other.x - self.yz * other.y - self.xyz * other.xy,
-            self.r() * other.xy + self.x * other.y - self.y * other.x + self.z * other.xyz + self.xy * other.r() - self.xz * other.yz + self.yz * other.xz + self.xyz * other.z,
-            self.r() * other.xz + self.x * other.z - self.y * other.xyz - self.z * other.x + self.xy * other.yz + self.xz * other.r() - self.yz * other.xy - self.xyz * other.y,
-            self.r() * other.yz + self.x * other.xyz + self.y * other.z - self.z * other.y - self.xy * other.xz + self.xz * other.xy + self.yz * other.r() + self.xyz * other.x,
-            self.r() * other.xyz + self.x * other.yz + self.y * other.xz + self.z * other.xy + self.xy * other.z - self.xz * other.y + self.yz * other.x + self.xyz * other.r()
-        )
+        MultiVec3 {
+            r: self.r * other.r + self.x * other.x + self.y * other.y + self.z * other.z - self.xy * other.xy - self.xz * other.xz - self.yz * other.yz - self.xyz * other.xyz,
+            x: self.r * other.x + self.x * other.r - self.y * other.xy - self.z * other.xz + self.xy * other.y + self.xz * other.z - self.yz * other.xyz - self.xyz * other.yz,
+            y: self.r * other.y + self.x * other.xy + self.y * other.r - self.z * other.yz - self.xy * other.x + self.xz * other.xyz + self.yz * other.z + self.xyz * other.xz,
+            z: self.r * other.z + self.x * other.xz + self.y * other.yz + self.z * other.r - self.xy * other.xyz - self.xz * other.x - self.yz * other.y - self.xyz * other.xy,
+            xy: self.r * other.xy + self.x * other.y - self.y * other.x + self.z * other.xyz + self.xy * other.r - self.xz * other.yz + self.yz * other.xz + self.xyz * other.z,
+            xz: self.r * other.xz + self.x * other.z - self.y * other.xyz - self.z * other.x + self.xy * other.yz + self.xz * other.r - self.yz * other.xy - self.xyz * other.y,
+            yz: self.r * other.yz + self.x * other.xyz + self.y * other.z - self.z * other.y - self.xy * other.xz + self.xz * other.xy + self.yz * other.r + self.xyz * other.x,
+            xyz: self.r * other.xyz + self.x * other.yz + self.y * other.xz + self.z * other.xy + self.xy * other.z - self.xz * other.y + self.yz * other.x + self.xyz * other.r,
+        }
     }
 }
 
-impl<T: SimdableFloat> MulAssign<MultiVec3<T>> for MultiVec3<T> {
+impl<T: FloatNumber> MulAssign<MultiVec3<T>> for MultiVec3<T> {
     fn mul_assign(&mut self,other: MultiVec3<T>) {
-        let nr = self.r() * other.r() + self.x * other.x + self.y * other.y + self.z * other.z - self.xy * other.xy - self.xz * other.xz - self.yz * other.yz - self.xyz * other.xyz;
-        let nx = self.r() * other.x + self.x * other.r() - self.y * other.xy - self.z * other.xz + self.xy * other.y + self.xz * other.z - self.yz * other.xyz - self.xyz * other.yz;
-        let ny = self.r() * other.y + self.x * other.xy + self.y * other.r() - self.z * other.yz - self.xy * other.x + self.xz * other.xyz + self.yz * other.z + self.xyz * other.xz;
-        let nz = self.r() * other.z + self.x * other.xz + self.y * other.yz + self.z * other.r() - self.xy * other.xyz - self.xz * other.x - self.yz * other.y - self.xyz * other.xy;
-        let nxy = self.r() * other.xy + self.x * other.y - self.y * other.x + self.z * other.xyz + self.xy * other.r() - self.xz * other.yz + self.yz * other.xz + self.xyz * other.z;
-        let nxz = self.r() * other.xz + self.x * other.z - self.y * other.xyz - self.z * other.x + self.xy * other.yz + self.xz * other.r() - self.yz * other.xy - self.xyz * other.y;
-        let nyz = self.r() * other.yz + self.x * other.xyz + self.y * other.z - self.z * other.y - self.xy * other.xz + self.xz * other.xy + self.yz * other.r() + self.xyz * other.x;
-        let nxyz = self.r() * other.xyz + self.x * other.yz + self.y * other.xz + self.z * other.xy + self.xy * other.z - self.xz * other.y + self.yz * other.x + self.xyz * other.r();
-        self.0 = Simd8::new([nr,nx,ny,nz,nxy,nxz,nyz,nxyz]);
+        let r = self.r * other.r + self.x * other.x + self.y * other.y + self.z * other.z - self.xy * other.xy - self.xz * other.xz - self.yz * other.yz - self.xyz * other.xyz;
+        let x = self.r * other.x + self.x * other.r - self.y * other.xy - self.z * other.xz + self.xy * other.y + self.xz * other.z - self.yz * other.xyz - self.xyz * other.yz;
+        let y = self.r * other.y + self.x * other.xy + self.y * other.r - self.z * other.yz - self.xy * other.x + self.xz * other.xyz + self.yz * other.z + self.xyz * other.xz;
+        let z = self.r * other.z + self.x * other.xz + self.y * other.yz + self.z * other.r - self.xy * other.xyz - self.xz * other.x - self.yz * other.y - self.xyz * other.xy;
+        let xy = self.r * other.xy + self.x * other.y - self.y * other.x + self.z * other.xyz + self.xy * other.r - self.xz * other.yz + self.yz * other.xz + self.xyz * other.z;
+        let xz = self.r * other.xz + self.x * other.z - self.y * other.xyz - self.z * other.x + self.xy * other.yz + self.xz * other.r - self.yz * other.xy - self.xyz * other.y;
+        let yz = self.r * other.yz + self.x * other.xyz + self.y * other.z - self.z * other.y - self.xy * other.xz + self.xz * other.xy + self.yz * other.r + self.xyz * other.x;
+        let xyz = self.r * other.xyz + self.x * other.yz + self.y * other.xz + self.z * other.xy + self.xy * other.z - self.xz * other.y + self.yz * other.x + self.xyz * other.r;
+        self.r = r;
+        self.x = x; self.y = y; self.z = z;
+        self.xy = xy; self.xz = xz; self.yz = yz;
+        self.xyz = xyz;
     }
 }
 
-impl<T: SimdableFloat> Div<T> for MultiVec3<T> {
+impl<T: FloatNumber> Div<T> for MultiVec3<T> {
     type Output = MultiVec3<T>;
     fn div(self,other: T) -> Self {
-        MultiVec3(Simd8::div(self.0,Simd8::splat(other)))
+        MultiVec3 {
+            r: self.r / other,
+            x: self.x / other,y: self.y / other,z: self.z / other,
+            xy: self.xy / other,xz: self.xz / other,yz: self.yz / other,
+            xyz: self.xyz,
+        }
     }
 }
 
-impl<T: SimdableFloat> DivAssign<T> for MultiVec3<T> {
+impl<T: FloatNumber> DivAssign<T> for MultiVec3<T> {
     fn div_assign(&mut self,other: T) {
-        self.0 = Simd8::div(self.0,Simd8::splat(other));
+        self.r /= other;
+        self.x /= other; self.y /= other; self.z /= other;
+        self.xy /= other; self.xz /= other; self.yz /= other;
+        self.xyz /= other;
     }
 }
 
-impl<T: SimdableFloat> Neg for MultiVec3<T> {
+impl<T: FloatNumber> Neg for MultiVec3<T> {
     type Output = MultiVec3<T>;
     fn neg(self) -> MultiVec3<T> {
-        MultiVec3(Simd8::sub(Simd8::zero(),self.0))
+        MultiVec3 {
+            r: -self.r,
+            x: -self.x,y: -self.y,z: -self.z,
+            xy: -self.xy,xz: -self.xz,yz: -self.yz,
+            xyz: -self.xyz,
+        }
     }
 }
 
-impl<T: SimdableFloat> From<T> for MultiVec3<T> {
+impl<T: FloatNumber> From<T> for MultiVec3<T> {
     fn from(v: T) -> MultiVec3<T> {
-        MultiVec3::new(v,T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero())
+        MultiVec3 {
+            r: v,
+            x: T::zero(),y: T::zero(),z: T::zero(),
+            xy: T::zero(),xz: T::zero(),yz: T::zero(),
+            xyz: T::zero(),
+        }
     }
 }
 
-impl<T: SimdableFloat> From<Complex<T>> for MultiVec3<T> {
+impl<T: FloatNumber> From<Complex<T>> for MultiVec3<T> {
     fn from(v: Complex<T>) -> MultiVec3<T> {
-        MultiVec3::new(v.r(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),T::zero(),v.i())
+        MultiVec3 {
+            r: v.r,
+            x: T::zero(),y: T::zero(),z: T::zero(),
+            xy: T::zero(),xz: T::zero(),yz: T::zero(),
+            xyz: v.i,
+        }
     }
 }
 
-impl<T: SimdableFloat> From<Quat<T>> for MultiVec3<T> {
+impl<T: FloatNumber> From<Quat<T>> for MultiVec3<T> {
     fn from(v: Quat<T>) -> MultiVec3<T> {
-        MultiVec3::new(v.r(),T::zero(),T::zero(),T::zero(),v.i(),v.j(),v.k(),T::zero())
+        MultiVec3 {
+            r: v.r,
+            x: T::zero(),y: T::zero(),z: T::zero(),
+            xy: v.i,xz: v.j,yz: v.k,
+            xyz: T::zero(),
+        }
     }
 }
 
-impl<T: SimdableFloat> From<Vec3<T>> for MultiVec3<T> {
+impl<T: FloatNumber> From<Vec3<T>> for MultiVec3<T> {
     fn from(v: Vec3<T>) -> MultiVec3<T> {
-        MultiVec3::new(T::zero(),v.x,v.y,v.z,T::zero(),T::zero(),T::zero(),T::zero())
+        MultiVec3 {
+            r: T::zero(),
+            x: v.x,y: v.y,z: v.z,
+            xy: T::zero(),xz: T::zero(),yz: T::zero(),
+            xyz: T::zero(),
+        }
     }
 }
 
-impl<T: SimdableFloat> From<Vec3A<T>> for MultiVec3<T> {
+impl<T: FloatNumber> From<Vec3A<T>> for MultiVec3<T> {
     fn from(v: Vec3A<T>) -> MultiVec3<T> {
-        MultiVec3::new(T::zero(),v.x,v.y,v.z,T::zero(),T::zero(),T::zero(),T::zero())
+        MultiVec3 {
+            r: T::zero(),
+            x: v.x,y: v.y,z: v.z,
+            xy: T::zero(),xz: T::zero(),yz: T::zero(),
+            xyz: T::zero(),
+        }
     }
 }
-*/

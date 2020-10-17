@@ -103,7 +103,7 @@ impl<T: GPUTextureFormat> TextureCube<T> {
                 CubeFace::PositiveZ => gl::TEXTURE_CUBE_MAP_POSITIVE_Z,
                 CubeFace::NegativeZ => gl::TEXTURE_CUBE_MAP_NEGATIVE_Z,
             };
-            gl::TexSubImage2D(target,0,o.x as i32,o.y as i32,src.size.x as i32,src.size.y as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void);
+            gl::TexSubImage2D(target,0,o.x as i32,o.y as i32,src.size.x as i32,src.size.y as i32,T::gl_format(),T::gl_type(),src.data().as_ptr() as *const c_void);
         }
     }
 

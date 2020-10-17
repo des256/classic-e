@@ -70,7 +70,7 @@ impl ToolBar {
             let item = &self.items[i];
             match item {
                 ToolBarItem::Action(texture) => {
-                    let size = texture.size();
+                    let size = texture.size;
                     let size = vec2!(size.x as i32,size.y as i32);
                     r.s = size;
                     if r.contains(&p) {
@@ -101,7 +101,7 @@ impl Widget for ToolBar {
         for item in self.items.iter() {
             match item {
                 ToolBarItem::Action(mat) => {
-                    let size = mat.size();
+                    let size = mat.size;
                     let size = vec2!(size.x as i32,size.y as i32);
                     total_size += vec2!(size.x,0);
                     if size.y > total_size.y {
@@ -135,7 +135,7 @@ impl Widget for ToolBar {
             };
             match item {
                 ToolBarItem::Action(texture) => {
-                    let size = texture.size();
+                    let size = texture.size;
                     let size = vec2!(size.x as i32,size.y as i32);
                     r.s.x = size.x;
                     self.ui.draw_rectangle(r,color,BlendMode::Replace);

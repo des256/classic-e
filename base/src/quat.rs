@@ -25,9 +25,14 @@ use std::{
 
 /// Quaternion.
 #[derive(Copy,Clone,Debug)]
-pub struct Quat<T: SimdableFloat>(Simd4<T>);
+pub struct Quat<T: FloatNumber> {
+    pub r: T,
+    pub i: T,
+    pub j: T,
+    pub k: T,
+}
 
-impl<T: SimdableFloat> Quat<T> {
+impl<T: FloatNumber> Quat<T> {
     /// Create new quaternion.
     ///
     /// **Arguments**
@@ -41,143 +46,100 @@ impl<T: SimdableFloat> Quat<T> {
     ///
     /// New quaternion.
     pub fn new(r: T,i: T,j: T,k: T) -> Quat<T> {
-        Quat(Simd4::new([r,i,j,k]))
-    }
-
-    /// Get real component.
-    ///
-    /// **Returns**
-    ///
-    /// The real component of the quaternion.
-    pub fn r(&self) -> T {
-        self.0.get(0)
-    }
-
-    /// Get I-component.
-    ///
-    /// **Returns**
-    ///
-    /// The I-component of the quaternion.
-    pub fn i(&self) -> T {
-        self.0.get(1)
-    }
-
-    /// Get J-component.
-    ///
-    /// **Returns**
-    ///
-    /// The J-component of the quaternion.
-    pub fn j(&self) -> T {
-        self.0.get(2)
-    }
-
-    /// Get K-component.
-    ///
-    /// **Returns**
-    ///
-    /// The K-component of the quaternion.
-    pub fn k(&self) -> T {
-        self.0.get(3)
-    }
-
-    /// Set real component.
-    ///
-    /// **Arguments**
-    ///
-    /// * `r` - New real component.
-    pub fn set_r(&mut self,r: T) {
-        self.0.set(0,r);
-    }
-
-    /// Set I-component.
-    ///
-    /// **Arguments**
-    ///
-    /// * `i` - New I-component.
-    pub fn set_i(&mut self,i: T) {
-        self.0.set(1,i);
-    }
-
-    /// Set J-component.
-    ///
-    /// **Arguments**
-    ///
-    /// * `j` - New J-component.
-    pub fn set_j(&mut self,j: T) {
-        self.0.set(2,j);
-    }
-
-    /// Set K-component.
-    ///
-    /// **Arguments**
-    ///
-    /// * `k` - New K-component.
-    pub fn set_k(&mut self,k: T) {
-        self.0.set(3,k);
+        Quat {
+            r: r,
+            i: i,
+            j: j,
+            k: k,
+        }
     }
 }
 
 // Quat == Quat
-impl<T: SimdableFloat> PartialEq for Quat<T> {
+impl<T: FloatNumber> PartialEq for Quat<T> {
     fn eq(&self,other: &Self) -> bool {
-        Simd4::eq(&self.0,&other.0,0xF)
+        (self.r == other.r) &&
+        (self.i == other.i) &&
+        (self.j == other.j) &&
+        (self.k == other.k)
     }
 }
 
-impl<T: SimdableFloat> Zero for Quat<T> {
+impl<T: FloatNumber> Zero for Quat<T> {
     fn zero() -> Self {
-        Quat(Simd4::zero())
+        Quat {
+            r: T::zero(),
+            i: T::zero(),
+            j: T::zero(),
+            k: T::zero(),
+        }
     }
 }
 
-impl<T: SimdableFloat> Display for Quat<T> {
+impl<T: FloatNumber> Display for Quat<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
-        let si = if self.i() < T::zero() {
-            format!("{}i",self.i())
+        let si = if self.i < T::zero() {
+            format!("{}i",self.i)
         } else {
-            format!("+{}i",self.i())
+            format!("+{}i",self.i)
         };
-        let sj = if self.j() < T::zero() {
-            format!("{}j",self.j())
+        let sj = if self.j < T::zero() {
+            format!("{}j",self.j)
         } else {
-            format!("+{}j",self.j())
+            format!("+{}j",self.j)
         };
-        let sk = if self.k() < T::zero() {
-            format!("{}k",self.k())
+        let sk = if self.k < T::zero() {
+            format!("{}k",self.k)
         } else {
-            format!("+{}k",self.k())
+            format!("+{}k",self.k)
         };
-        write!(f,"{}{}{}{}",self.r(),si,sj,sk)
+        write!(f,"{}{}{}{}",self.r,si,sj,sk)
     }
 }
 
 // Quat + Quat
-impl<T: SimdableFloat> Add<Quat<T>> for Quat<T> {
+impl<T: FloatNumber> Add<Quat<T>> for Quat<T> {
     type Output = Self;
     fn add(self,other: Self) -> Self {
-        Quat(Simd4::add(self.0,other.0))
+        Quat {
+            r: self.r + other.r,
+            i: self.i + other.i,
+            j: self.j + other.j,
+            k: self.k + other.k,
+        }
     }
 }
 
 // Quat += Quat
-impl<T: SimdableFloat> AddAssign<Quat<T>> for Quat<T> {
+impl<T: FloatNumber> AddAssign<Quat<T>> for Quat<T> {
     fn add_assign(&mut self,other: Self) {
-        self.0 = Simd4::add(self.0,other.0);
+        self.r += other.r;
+        self.i += other.i;
+        self.j += other.j;
+        self.k += other.k;
     }
 }
 
 // Quat - Quat
-impl<T: SimdableFloat> Sub<Quat<T>> for Quat<T> {
+impl<T: FloatNumber> Sub<Quat<T>> for Quat<T> {
     type Output = Self;
     fn sub(self,other: Self) -> Self {
-        Quat(Simd4::sub(self.0,other.0))
+        Quat {
+            r: self.r - other.r,
+            i: self.i - other.i,
+            j: self.j - other.j,
+            k: self.k - other.k,
+        }
     }
 }
 
 // Quat -= Quat
-impl<T: SimdableFloat> SubAssign<Quat<T>> for Quat<T> {
+impl<T: FloatNumber> SubAssign<Quat<T>> for Quat<T> {
     fn sub_assign(&mut self,other: Self) {
-        self.0 = Simd4::sub(self.0,other.0);
+        self.r -= other.r;
+        self.i -= other.i;
+        self.j -= other.j;
+        self.k -= other.k;
     }
 }
 
@@ -187,7 +149,12 @@ macro_rules! scalar_quat_mul {
         impl Mul<Quat<$t>> for $t {
             type Output = Quat<$t>;
             fn mul(self,other: Quat<$t>) -> Quat<$t> {
-                Quat(Simd4::mul(Simd4::splat(self),other.0))
+                Quat {
+                    r: self * other.r,
+                    i: self * other.i,
+                    j: self * other.j,
+                    k: self * other.k,
+                }
             }
         }        
     }
@@ -197,48 +164,69 @@ scalar_quat_mul!(f32);
 scalar_quat_mul!(f64);
 
 // Quat * s
-impl<T: SimdableFloat> Mul<T> for Quat<T> {
+impl<T: FloatNumber> Mul<T> for Quat<T> {
     type Output = Self;
     fn mul(self,other: T) -> Self {
-        Quat(Simd4::mul(self.0,Simd4::splat(other)))
+        Quat {
+            r: self.r * other,
+            i: self.i * other,
+            j: self.j * other,
+            k: self.k * other,
+        }
     }
 }
 
 // TODO: Quat * Quat
 
 // Quat *= s
-impl<T: SimdableFloat> MulAssign<T> for Quat<T> {
+impl<T: FloatNumber> MulAssign<T> for Quat<T> {
     fn mul_assign(&mut self,other: T) {
-        self.0 = Simd4::mul(self.0,Simd4::splat(other));
+        self.r *= other;
+        self.i *= other;
+        self.j *= other;
+        self.k *= other;
     }
 } 
 
 // TODO: Quat *= Quat
 
 // Quat / s
-impl<T: SimdableFloat> Div<T> for Quat<T> {
+impl<T: FloatNumber> Div<T> for Quat<T> {
     type Output = Self;
     fn div(self,other: T) -> Self {
-        Quat(Simd4::div(self.0,Simd4::splat(other)))
+        Quat {
+            r: self.r / other,
+            i: self.i / other,
+            j: self.j / other,
+            k: self.k / other,
+        }
     }
 }
 
 // TODO: Quat / Quat
 
 // Quat /= s
-impl<T: SimdableFloat> DivAssign<T> for Quat<T> {
+impl<T: FloatNumber> DivAssign<T> for Quat<T> {
     fn div_assign(&mut self,other: T) {
-        self.0 = Simd4::div(self.0,Simd4::splat(other));
+        self.r /= other;
+        self.i /= other;
+        self.j /= other;
+        self.k /= other;
     }
 }
 
 // TODO: Quat /= Quat
 
 // -Quat
-impl<T: SimdableFloat> Neg for Quat<T> {
+impl<T: FloatNumber> Neg for Quat<T> {
     type Output = Quat<T>;
     fn neg(self) -> Quat<T> {
-        Quat(Simd4::sub(Simd4::zero(),self.0))
+        Quat {
+            r: -self.r,
+            i: -self.i,
+            j: -self.j,
+            k: -self.k,
+        }
     }
 }
 

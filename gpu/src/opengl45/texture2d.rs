@@ -74,7 +74,7 @@ impl<T: GPUTextureFormat> Texture2D<T> {
     pub fn load(&self,o: Vec2<usize>,src: &Mat<T>) {
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D,self.tex);
-            gl::TexSubImage2D(gl::TEXTURE_2D,0,o.x as i32,o.y as i32,src.size.x as i32,src.size.y as i32,T::gl_format(),T::gl_type(),src.data.as_ptr() as *const c_void) };
+            gl::TexSubImage2D(gl::TEXTURE_2D,0,o.x as i32,o.y as i32,src.size.x as i32,src.size.y as i32,T::gl_format(),T::gl_type(),src.data().as_ptr() as *const c_void) };
     }
 
     /// (temporary) Set texture filter mode.

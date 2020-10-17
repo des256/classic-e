@@ -1,13 +1,21 @@
 // E - Ten
 // Desmond Germans, 2020
 
-use crate::*;
-use std::marker::PhantomData;
+use {
+    crate::*,
+    std::{
+        marker::PhantomData,
+        ops::{
+            Index,
+            IndexMut,
+        },
+    },
+};
 
 /// Generic 3-dimensional array of elements.
 pub struct Ten<T: Clone + Copy + Zero> {
     pub size: Vec3<usize>,
-    pub data: Box<[T]>,
+    data: Box<[T]>,
     phantom: PhantomData<T>,
 }
 
@@ -29,26 +37,50 @@ impl<T: Clone + Copy + Zero> Ten<T> {
         }
     }
 
-    /// (maybe) Set element in the array.
-    ///
-    /// **Arguments**
-    ///
-    /// * `p` - Coordinates of the element.
-    /// * `v` - Element value.
-    pub fn set(&mut self,p: Vec3<usize>,v: T) {
-        self.data[(p.z * self.size.y + p.y) * self.size.x + p.x] = v;
+    pub fn data(&self) -> &[T] {
+        &self.data
     }
 
-    /// (maybe) Get element from the array.
-    ///
-    /// **Arguments**
-    ///
-    /// * `p` - Coordinates of the element.
-    ///
-    /// **Returns**
-    ///
-    /// Element value.
-    pub fn get(&self,p: Vec3<usize>) -> T {
-        self.data[(p.z * self.size.y + p.y) * self.size.x + p.x]
+    pub fn data_mut(&mut self) -> &mut [T] {
+        &mut self.data
+    }
+}
+
+impl<T: Clone + Copy + Zero> Index<(usize,usize,usize)> for Ten<T> {
+    type Output = T;
+    fn index(&self,index: (usize,usize,usize)) -> &Self::Output {
+        &self.data[(index.2 * self.size.y + index.1) * self.size.x + index.0]
+    }
+}
+
+impl<T: Clone + Copy + Zero> IndexMut<(usize,usize,usize)> for Ten<T> {
+    fn index_mut(&mut self,index: (usize,usize,usize)) -> &mut Self::Output {
+        &mut self.data[(index.2 * self.size.y + index.1) * self.size.x + index.0]
+    }
+}
+
+impl<T: Clone + Copy + Zero> Index<usize> for Ten<T> {
+    type Output = T;
+    fn index(&self,index: usize) -> &Self::Output {
+        &self.data[index]
+    }
+}
+
+impl<T: Clone + Copy + Zero> IndexMut<usize> for Ten<T> {
+    fn index_mut(&mut self,index: usize) -> &mut Self::Output {
+        &mut self.data[index]
+    }
+}
+
+impl<T: Clone + Copy + Zero> Index<Vec3<usize>> for Ten<T> {
+    type Output = T;
+    fn index(&self,index: Vec3<usize>) -> &Self::Output {
+        &self.data[(index.z * self.size.y + index.y) * self.size.x + index.x]
+    }
+}
+
+impl<T: Clone + Copy + Zero> IndexMut<Vec3<usize>> for Ten<T> {
+    fn index_mut(&mut self,index: Vec3<usize>) -> &mut Self::Output {
+        &mut self.data[(index.z * self.size.y + index.y) * self.size.x + index.x]
     }
 }

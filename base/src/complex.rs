@@ -25,9 +25,12 @@ use std::{
 
 /// Complex number.
 #[derive(Copy,Clone,Debug)]
-pub struct Complex<T: SimdableFloat>(Simd2<T>);
+pub struct Complex<T: FloatNumber> {
+    pub r: T,
+    pub i: T,
+}
 
-impl<T: SimdableFloat> Complex<T> {
+impl<T: FloatNumber> Complex<T> {
     /// Create new complex number.
     ///
     /// **Arguments**
@@ -39,67 +42,38 @@ impl<T: SimdableFloat> Complex<T> {
     ///
     /// New complex number.
     pub fn new(r: T,i: T) -> Complex<T> {
-        Complex(Simd2::new([r,i]))
-    }
-
-    /// Get real component.
-    ///
-    /// **Returns**
-    ///
-    /// The real component of the complex number.
-    pub fn r(&self) -> T {
-        self.0.get(0)
-    }
-
-    /// Get imaginary component.
-    ///
-    /// **Returns**
-    ///
-    /// The imaginary component of the complex number.
-    pub fn i(&self) -> T {
-        self.0.get(1)
-    }
-
-    /// Set real component.
-    ///
-    /// **Arguments**
-    ///
-    /// * `r` - New real component.
-    pub fn set_r(&mut self,r: T) {
-        self.0.set(0,r);
-    }
-
-    /// Set imaginary component.
-    ///
-    /// **Arguments**
-    ///
-    /// * `i` - New imaginary component.
-    pub fn set_i(&mut self,i: T) {
-        self.0.set(1,i);
+        Complex {
+            r: r,
+            i: i,
+        }
     }
 }
 
 // Complex == Complex
-impl<T: SimdableFloat> PartialEq for Complex<T> {
+impl<T: FloatNumber> PartialEq for Complex<T> {
     fn eq(&self,other: &Self) -> bool {
-        Simd2::eq(&self.0,&other.0,0x3)
+        (self.r == other.r) &&
+        (self.i == other.i)
     }
 }
 
-impl<T: SimdableFloat> Zero for Complex<T> {
+impl<T: FloatNumber> Zero for Complex<T> {
     fn zero() -> Self {
-        Complex(Simd2::zero())
+        Complex {
+            r: T::zero(),
+            i: T::zero(),
+        }
     }
 }
 
-impl<T: SimdableFloat> Display for Complex<T> {
+impl<T: FloatNumber> Display for Complex<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
-        let si = if self.i() < T::zero() {
-            format!("{}i",self.i())
+        let si = if self.i < T::zero() {
+            format!("{}i",self.i)
         } else {
-            format!("+{}i",self.i())
+            format!("+{}i",self.i)
         };
-        write!(f,"{}{}",self.r(),si)
+        write!(f,"{}{}",self.r,si)
     }
 }
 
@@ -109,7 +83,10 @@ macro_rules! scalar_complex_mul {
         impl Add<Complex<$t>> for $t {
             type Output = Complex<$t>;
             fn add(self,other: Complex<$t>) -> Complex<$t> {
-                Complex::new(self + other.r(),other.i())
+                Complex {
+                    r: self + other.r,
+                    i: other.i,
+                }
             }
         }
     }
@@ -119,32 +96,36 @@ scalar_complex_mul!(f32);
 scalar_complex_mul!(f64);
 
 // Complex + s
-impl<T: SimdableFloat> Add<T> for Complex<T> {
+impl<T: FloatNumber> Add<T> for Complex<T> {
     type Output = Self;
     fn add(self,other: T) -> Self {
-        Complex::new(self.r() + other,self.i())
+        Complex::new(self.r + other,self.i)
     }
 }
 
 // Complex + Complex
-impl<T: SimdableFloat> Add<Complex<T>> for Complex<T> {
+impl<T: FloatNumber> Add<Complex<T>> for Complex<T> {
     type Output = Self;
     fn add(self,other: Self) -> Self {
-        Complex(Simd2::add(self.0,other.0))
+        Complex {
+            r: self.r + other.r,
+            i: self.i + other.i,
+        }
     }
 }
 
 // Complex += s
-impl<T: SimdableFloat> AddAssign<T> for Complex<T> {
+impl<T: FloatNumber> AddAssign<T> for Complex<T> {
     fn add_assign(&mut self,other: T) {
-        self.0 = Simd2::new([self.r() + other,self.i()]);
+        self.r += other;
     }
 }
 
 // Complex += Complex
-impl<T: SimdableFloat> AddAssign<Complex<T>> for Complex<T> {
+impl<T: FloatNumber> AddAssign<Complex<T>> for Complex<T> {
     fn add_assign(&mut self,other: Self) {
-        self.0 = Simd2::add(self.0,other.0);
+        self.r += other.r;
+        self.i += other.i;
     }
 }
 
@@ -154,7 +135,10 @@ macro_rules! scalar_complex_sub {
         impl Sub<Complex<$t>> for $t {
             type Output = Complex<$t>;
             fn sub(self,other: Complex<$t>) -> Complex<$t> {
-                Complex::new(self - other.r(),-other.i())
+                Complex {
+                    r: self - other.r,
+                    i: -other.i,
+                }
             }
         }        
     }
@@ -164,32 +148,39 @@ scalar_complex_sub!(f32);
 scalar_complex_sub!(f64);
 
 // Complex - s
-impl<T: SimdableFloat> Sub<T> for Complex<T> {
+impl<T: FloatNumber> Sub<T> for Complex<T> {
     type Output = Self;
     fn sub(self,other: T) -> Self {
-        Complex::new(self.r() - other,self.i())
+        Complex {
+            r: self.r - other,
+            i: self.i,
+        }
     }
 }
 
 // Complex - Complex
-impl<T: SimdableFloat> Sub<Complex<T>> for Complex<T> {
+impl<T: FloatNumber> Sub<Complex<T>> for Complex<T> {
     type Output = Self;
     fn sub(self,other: Self) -> Self {
-        Complex(Simd2::sub(self.0,other.0))
+        Complex {
+            r: self.r - other.r,
+            i: self.i - other.i,
+        }
     }
 }
 
 // Complex -= s
-impl<T: SimdableFloat> SubAssign<T> for Complex<T> {
+impl<T: FloatNumber> SubAssign<T> for Complex<T> {
     fn sub_assign(&mut self,other: T) {
-        self.0 = Simd2::new([self.r() - other,self.i()])
+        self.r -= other;
     }
 }
 
 // Complex -= Complex
-impl<T: SimdableFloat> SubAssign<Complex<T>> for Complex<T> {
+impl<T: FloatNumber> SubAssign<Complex<T>> for Complex<T> {
     fn sub_assign(&mut self,other: Self) {
-        self.0 = Simd2::sub(self.0,other.0);
+        self.r -= other.r;
+        self.i -= other.i;
     }
 }
 
@@ -199,7 +190,10 @@ macro_rules! scalar_complex_mul {
         impl Mul<Complex<$t>> for $t {
             type Output = Complex<$t>;
             fn mul(self,other: Complex<$t>) -> Complex<$t> {
-                Complex(Simd2::mul(Simd2::splat(self),other.0))
+                Complex {
+                    r: self * other.r,
+                    i: self * other.i,
+                }
             }
         }        
     }
@@ -209,65 +203,76 @@ scalar_complex_mul!(f32);
 scalar_complex_mul!(f64);
 
 // Complex * s
-impl<T: SimdableFloat> Mul<T> for Complex<T> {
+impl<T: FloatNumber> Mul<T> for Complex<T> {
     type Output = Self;
     fn mul(self,other: T) -> Self {
-        Complex(Simd2::mul(self.0,Simd2::splat(other)))
+        Complex {
+            r: self.r * other,
+            i: self.i * other,
+        }
     }
 }
 
 // Complex * Complex
-impl<T: SimdableFloat> Mul<Complex<T>> for Complex<T> {
+impl<T: FloatNumber> Mul<Complex<T>> for Complex<T> {
     type Output = Self;
     fn mul(self,other: Self) -> Self {
-        Complex::new(
-            self.r() * other.r() - self.i() * other.i(),
-            self.r() * other.i() + self.i() * other.r()
-        )
+        Complex {
+            r: self.r * other.r - self.i * other.i,
+            i: self.r * other.i + self.i * other.r,
+        }
     }
 }
 
 // Complex *= s
-impl<T: SimdableFloat> MulAssign<T> for Complex<T> {
+impl<T: FloatNumber> MulAssign<T> for Complex<T> {
     fn mul_assign(&mut self,other: T) {
-        self.0 = Simd2::mul(self.0,Simd2::splat(other));
+        self.r *= other;
+        self.i *= other;
     }
 } 
 
 // Complex *= Complex
-impl<T: SimdableFloat> MulAssign<Complex<T>> for Complex<T> {
+impl<T: FloatNumber> MulAssign<Complex<T>> for Complex<T> {
     fn mul_assign(&mut self,other: Complex<T>) {
-        self.0 = Simd2::new([
-            self.r() * other.r() - self.i() * other.i(),
-            self.r() * other.i() + self.i() * other.r()
-        ]);
+        let r = self.r * other.r - self.i * other.i;
+        let i = self.r * other.i + self.i * other.r;
+        self.r = r;
+        self.i = i;
     }
 }
 
 // Complex / s
-impl<T: SimdableFloat> Div<T> for Complex<T> {
+impl<T: FloatNumber> Div<T> for Complex<T> {
     type Output = Self;
     fn div(self,other: T) -> Self {
-        Complex(Simd2::div(self.0,Simd2::splat(other)))
+        Complex {
+            r: self.r / other,
+            i: self.i / other,
+        }
     }
 }
 
 // TODO: Complex / Complex
 
 // Complex /= s
-impl<T: SimdableFloat> DivAssign<T> for Complex<T> {
+impl<T: FloatNumber> DivAssign<T> for Complex<T> {
     fn div_assign(&mut self,other: T) {
-        self.0 = Simd2::div(self.0,Simd2::splat(other));
+        self.r /= other;
+        self.i /= other;
     }
 }
 
 // TODO: Complex /= Complex
 
 // -Complex
-impl<T: SimdableFloat> Neg for Complex<T> {
+impl<T: FloatNumber> Neg for Complex<T> {
     type Output = Complex<T>;
     fn neg(self) -> Complex<T> {
-        Complex(Simd2::sub(Simd2::zero(),self.0))
+        Complex {
+            r: -self.r,
+            i: -self.i,
+        }
     }
 }
 

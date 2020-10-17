@@ -272,8 +272,8 @@ impl UI {
             r: rect!(
                 (p.x + ofs.x) as f32,
                 (p.y + ofs.y) as f32,
-                texture.size().x as f32,
-                texture.size().y as f32
+                texture.size.x as f32,
+                texture.size.y as f32
             ),
             t: rect!(0.0,0.0,1.0,1.0),
         }]);
@@ -308,10 +308,10 @@ impl UI {
                                     ((font.ratio * (ch.r.s.y as f32)) as i32) as f32
                                 ),
                                 t: rect!(
-                                    (ch.r.o.x as f32) / (font.proto.texture.size().x as f32),
-                                    (ch.r.o.y as f32) / (font.proto.texture.size().y as f32),
-                                    (ch.r.s.x as f32) / (font.proto.texture.size().x as f32),
-                                    (ch.r.s.y as f32) / (font.proto.texture.size().y as f32)
+                                    (ch.r.o.x as f32) / (font.proto.texture.size.x as f32),
+                                    (ch.r.o.y as f32) / (font.proto.texture.size.y as f32),
+                                    (ch.r.s.x as f32) / (font.proto.texture.size.x as f32),
+                                    (ch.r.s.y as f32) / (font.proto.texture.size.y as f32)
                                 ),
                             });
                             /*buffer.push(TexRect {

@@ -25,15 +25,16 @@ use std::{
     },
 };
 
+/// 4D Vector.
 #[derive(Copy,Clone,Debug)]
-pub struct Vec4<T: Simdable> {
+pub struct Vec4<T: Number> {
     pub x: T,
     pub y: T,
     pub z: T,
     pub w: T,
 }
 
-impl<T: Simdable> Vec4<T> {
+impl<T: Number> Vec4<T> {
     /// Create new vector.
     ///
     /// **Arguments**
@@ -87,7 +88,7 @@ impl<T: Simdable> Vec4<T> {
     }
 }
 
-impl<T: Simdable> PartialEq for Vec4<T> {
+impl<T: Number> PartialEq for Vec4<T> {
     fn eq(&self,other: &Self) -> bool {
         (self.x == other.x) &&
         (self.y == other.y) &&
@@ -96,26 +97,26 @@ impl<T: Simdable> PartialEq for Vec4<T> {
     }
 }
 
-impl<T: Simdable> Zero for Vec4<T> {
+impl<T: Number> Zero for Vec4<T> {
     fn zero() -> Self {
         Vec4 { x: T::zero(),y: T::zero(),z: T::zero(),w: T::zero(), }
     }
 }
 
-impl<T: Simdable> Display for Vec4<T> {
+impl<T: Number> Display for Vec4<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
         write!(f,"({},{},{},{})",self.x,self.y,self.z,self.w)
     }
 }
 
-impl<T: Simdable> Add<Vec4<T>> for Vec4<T> {
+impl<T: Number> Add<Vec4<T>> for Vec4<T> {
     type Output = Self;
     fn add(self,other: Self) -> Self {
         Vec4 { x: self.x + other.x,y: self.y + other.y,z: self.z + other.z,w: self.w + other.w, }
     }
 }
 
-impl<T: Simdable> AddAssign<Vec4<T>> for Vec4<T> {
+impl<T: Number> AddAssign<Vec4<T>> for Vec4<T> {
     fn add_assign(&mut self,other: Self) {
         self.x += other.x;
         self.y += other.y;
@@ -124,14 +125,14 @@ impl<T: Simdable> AddAssign<Vec4<T>> for Vec4<T> {
     }
 }
 
-impl<T: Simdable> Sub<Vec4<T>> for Vec4<T> {
+impl<T: Number> Sub<Vec4<T>> for Vec4<T> {
     type Output = Self;
     fn sub(self,other: Self) -> Self {
         Vec4 { x: self.x - other.x,y: self.y - other.y,z: self.z - other.z,w: self.w - other.w, }
     }
 }
 
-impl<T: Simdable> SubAssign<Vec4<T>> for Vec4<T> {
+impl<T: Number> SubAssign<Vec4<T>> for Vec4<T> {
     fn sub_assign(&mut self,other: Self) {
         self.x -= other.x;
         self.y -= other.y;
@@ -164,14 +165,14 @@ scalar_vec4_mul!(f64);
 scalar_vec4_mul!(usize);
 scalar_vec4_mul!(isize);
 
-impl<T: Simdable> Mul<T> for Vec4<T> {
+impl<T: Number> Mul<T> for Vec4<T> {
     type Output = Self;
     fn mul(self,other: T) -> Self {
         Vec4 { x: self.x * other,y: self.y * other,z: self.z * other,w: self.w * other, }
     }
 }
     
-impl<T: Simdable> MulAssign<T> for Vec4<T> {
+impl<T: Number> MulAssign<T> for Vec4<T> {
     fn mul_assign(&mut self,other: T) {
         self.x *= other;
         self.y *= other;
@@ -180,14 +181,14 @@ impl<T: Simdable> MulAssign<T> for Vec4<T> {
     }
 }        
 
-impl<T: Simdable> Div<T> for Vec4<T> {
+impl<T: Number> Div<T> for Vec4<T> {
     type Output = Self;
     fn div(self,other: T) -> Self {
         Vec4 { x: self.x / other,y: self.y / other,z: self.z / other,w: self.w / other, }
     }
 }
     
-impl<T: Simdable> DivAssign<T> for Vec4<T> {
+impl<T: Number> DivAssign<T> for Vec4<T> {
     fn div_assign(&mut self,other: T) {
         self.x /= other;
         self.y /= other;
@@ -196,7 +197,7 @@ impl<T: Simdable> DivAssign<T> for Vec4<T> {
     }
 }
 
-impl<T: Simdable + Neg<Output=T>> Neg for Vec4<T> {
+impl<T: Number + Neg<Output=T>> Neg for Vec4<T> {
     type Output = Self;
     fn neg(self) -> Self {
         Vec4 { x: -self.x,y: -self.y,z: -self.z,w: -self.w, }

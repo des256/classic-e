@@ -5,6 +5,30 @@
 //!
 //! It's E. E for everything.
 
+use {
+    std::{
+        fmt::{
+            Display,
+            Debug,
+        },
+        ops::{
+            Add,
+            Sub,
+            Mul,
+            Div,
+            AddAssign,
+            SubAssign,
+            MulAssign,
+            DivAssign,
+            Neg,
+        },
+        cmp::{
+            PartialEq,
+            PartialOrd,
+        },
+    },
+};
+
 /// System error result.
 #[derive(Copy,Clone,Debug)]
 pub enum SystemError {
@@ -12,7 +36,76 @@ pub enum SystemError {
     Generic,
 }
 
-/// Trait for anything that needs a color specification.
+/// Additive identity.
+pub trait Zero {
+    fn zero() -> Self;
+}
+
+impl Zero for u8 { fn zero() -> Self { 0 } }
+impl Zero for i8 { fn zero() -> Self { 0 } }
+impl Zero for u16 { fn zero() -> Self { 0 } }
+impl Zero for i16 { fn zero() -> Self { 0 } }
+impl Zero for u32 { fn zero() -> Self { 0 } }
+impl Zero for i32 { fn zero() -> Self { 0 } }
+impl Zero for u64 { fn zero() -> Self { 0 } }
+impl Zero for i64 { fn zero() -> Self { 0 } }
+impl Zero for f32 { fn zero() -> Self { 0.0 } }
+impl Zero for f64 { fn zero() -> Self { 0.0 } }
+impl Zero for usize { fn zero() -> Self { 0 } }
+impl Zero for isize { fn zero() -> Self { 0 } }
+
+/// Multiplicative identity.
+pub trait One {
+    fn one() -> Self;
+}
+
+impl One for u8 { fn one() -> Self { 1 } }
+impl One for i8 { fn one() -> Self { 1 } }
+impl One for u16 { fn one() -> Self { 1 } }
+impl One for i16 { fn one() -> Self { 1 } }
+impl One for u32 { fn one() -> Self { 1 } }
+impl One for i32 { fn one() -> Self { 1 } }
+impl One for u64 { fn one() -> Self { 1 } }
+impl One for i64 { fn one() -> Self { 1 } }
+impl One for f32 { fn one() -> Self { 1.0 } }
+impl One for f64 { fn one() -> Self { 1.0 } }
+impl One for usize { fn one() -> Self { 1 } }
+impl One for isize { fn one() -> Self { 1 } }
+
+#[doc(hidden)]
+pub trait Number: Sized + Copy + Clone + Zero + One + Display + Debug + PartialEq + PartialOrd + Add<Output=Self> + Sub<Output=Self> + Mul<Output=Self> + Div<Output=Self> + AddAssign + SubAssign + MulAssign + DivAssign { }
+
+#[doc(hidden)]
+pub trait SignedNumber: Number + Neg<Output=Self> { }
+
+#[doc(hidden)]
+pub trait FloatNumber: SignedNumber { }
+
+impl Number for u8 { }
+impl Number for i8 { }
+impl Number for u16 { }
+impl Number for i16 { }
+impl Number for u32 { }
+impl Number for i32 { }
+impl Number for u64 { }
+impl Number for i64 { }
+impl Number for f32 { }
+impl Number for f64 { }
+impl Number for usize { }
+impl Number for isize { }
+
+impl SignedNumber for i8 { }
+impl SignedNumber for i16 { }
+impl SignedNumber for i32 { }
+impl SignedNumber for i64 { }
+impl SignedNumber for f32 { }
+impl SignedNumber for f64 { }
+impl SignedNumber for isize { }
+
+impl FloatNumber for f32 { }
+impl FloatNumber for f64 { }
+
+/// (MAYBE) Trait for anything that needs a color specification.
 pub trait ColorParameter {
 
     /// Convert into u32.
@@ -50,9 +143,6 @@ impl ColorParameter for Vec4<f32> {
     }
 }
 
-mod simd;
-pub use simd::*;
-
 mod mat;
 pub use mat::*;
 
@@ -79,6 +169,15 @@ pub use vec3a::*;
 
 mod vec4;
 pub use vec4::*;
+
+mod mat2x2;
+pub use mat2x2::*;
+
+mod mat3x3;
+pub use mat3x3::*;
+
+mod mat4x4;
+pub use mat4x4::*;
 
 mod multivec2;
 pub use multivec2::*;

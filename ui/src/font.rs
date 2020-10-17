@@ -98,7 +98,7 @@ impl FontProto {
         let mut mat = Mat::<pixel::R8>::new(vec2!(atlas_size_x as usize,atlas_size_y as usize));
         for y in 0..atlas_size_y as usize {
             for x in 0..atlas_size_x as usize {
-                mat.set(vec2!(x,y),pixel::R8 { d: bref[y * (atlas_size_x as usize) + x] });
+                mat[(x,y)] = pixel::R8 { d: bref[y * (atlas_size_x as usize) + x] };
             }
         }
         let texture = Texture2D::new_from_mat(&graphics,mat)?;

@@ -536,7 +536,7 @@ fn make_c<T: pixel::Pixel>(c: T,gamma: f32) -> T {
     T::from_rgba(ur,ug,ub,ua)
 }
 
-fn decode_pixels<T: pixel::Pixel>(dst: &mut [T],src: &[u8],width: usize,height: usize,stride: usize,x0: usize,y0: usize,dx: usize,dy: usize,itype: Type,palette: &[T; 256],gamma: f32) {
+fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,height: usize,stride: usize,x0: usize,y0: usize,dx: usize,dy: usize,itype: Type,palette: &[T; 256],gamma: f32) {
     let mut sp = 0;
     match itype {
         Type::L1 => {
@@ -1048,7 +1048,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
         for i in 0..7 {
             if apresent[i] {
                 let raw_data = unfilter(&filtered_data[sp..sp + adsize[i] as usize],aheight[i] as usize,astride[i] as usize,bpp);
-                decode_pixels(&mut result.data,&raw_data,awidth[i] as usize,aheight[i] as usize,width as usize,ax0[i] as usize,ay0[i] as usize,adx[i] as usize,ady[i] as usize,itype,&palette,gamma);
+                decode_pixels(&mut result,&raw_data,awidth[i] as usize,aheight[i] as usize,width as usize,ax0[i] as usize,ay0[i] as usize,adx[i] as usize,ady[i] as usize,itype,&palette,gamma);
                 sp += adsize[i] as usize;
             }
         }
@@ -1072,7 +1072,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
         //let after_unfilter = Instant::now();
         
         let mut result = Mat::new(vec2!(width as usize,height as usize));
-        decode_pixels(&mut result.data,&raw_data,width as usize,height as usize,width as usize,0,0,1,1,itype,&palette,gamma);
+        decode_pixels(&mut result,&raw_data,width as usize,height as usize,width as usize,0,0,1,1,itype,&palette,gamma);
         
         //let after_decode = Instant::now();
 

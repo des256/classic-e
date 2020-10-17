@@ -31,13 +31,13 @@ use std::{
 /// based on underlying SIMD access. Use this for storage, not for
 /// performance.
 #[derive(Copy,Clone,Debug)]
-pub struct Vec3<T: Simdable> {
+pub struct Vec3<T: Number> {
     pub x: T,
     pub y: T,
     pub z: T,
 }
 
-impl<T: Simdable> Vec3<T> {
+impl<T: Number> Vec3<T> {
     /// Create new vector.
     ///
     /// **Arguments**
@@ -82,7 +82,7 @@ impl<T: Simdable> Vec3<T> {
 }
 
 // Vec3 == Vec3
-impl<T: Simdable> PartialEq for Vec3<T> {
+impl<T: Number> PartialEq for Vec3<T> {
     fn eq(&self,other: &Self) -> bool {
         (self.x == other.x) &&
         (self.y == other.y) &&
@@ -90,20 +90,20 @@ impl<T: Simdable> PartialEq for Vec3<T> {
     }
 }
 
-impl<T: Simdable> Zero for Vec3<T> {
+impl<T: Number> Zero for Vec3<T> {
     fn zero() -> Self {
         Vec3 { x: T::zero(),y: T::zero(),z: T::zero(), }
     }
 }
 
-impl<T: Simdable> Display for Vec3<T> {
+impl<T: Number> Display for Vec3<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
         write!(f,"({},{},{})",self.x,self.y,self.z)
     }
 }
 
 // Vec3 + Vec3
-impl<T: Simdable> Add<Vec3<T>> for Vec3<T> {
+impl<T: Number> Add<Vec3<T>> for Vec3<T> {
     type Output = Self;
     fn add(self,other: Self) -> Self {
         Vec3 { x: self.x + other.x,y: self.y + other.y,z: self.z + other.z, }
@@ -111,7 +111,7 @@ impl<T: Simdable> Add<Vec3<T>> for Vec3<T> {
 }
 
 // Vec3 += Vec3
-impl<T: Simdable> AddAssign<Vec3<T>> for Vec3<T> {
+impl<T: Number> AddAssign<Vec3<T>> for Vec3<T> {
     fn add_assign(&mut self,other: Self) {
         self.x += other.x;
         self.y += other.y;
@@ -120,7 +120,7 @@ impl<T: Simdable> AddAssign<Vec3<T>> for Vec3<T> {
 }
 
 // Vec3 - Vec3
-impl<T: Simdable> Sub<Vec3<T>> for Vec3<T> {
+impl<T: Number> Sub<Vec3<T>> for Vec3<T> {
     type Output = Self;
     fn sub(self,other: Self) -> Self {
         Vec3 { x: self.x - other.x,y: self.y - other.y,z: self.z - other.z, }
@@ -128,7 +128,7 @@ impl<T: Simdable> Sub<Vec3<T>> for Vec3<T> {
 }
 
 // Vec3 -= Vec3
-impl<T: Simdable> SubAssign<Vec3<T>> for Vec3<T> {
+impl<T: Number> SubAssign<Vec3<T>> for Vec3<T> {
     fn sub_assign(&mut self,other: Self) {
         self.x -= other.x;
         self.y -= other.y;
@@ -152,7 +152,7 @@ scalar_vec3_mul!(f32);
 scalar_vec3_mul!(f64);
 
 // Vec3 * s
-impl<T: Simdable> Mul<T> for Vec3<T> {
+impl<T: Number> Mul<T> for Vec3<T> {
     type Output = Self;
     fn mul(self,other: T) -> Self {
         Vec3 { x: self.x * other,y: self.y * other,z: self.z * other, }
@@ -160,7 +160,7 @@ impl<T: Simdable> Mul<T> for Vec3<T> {
 }
 
 // Vec3 *= s
-impl<T: Simdable> MulAssign<T> for Vec3<T> {
+impl<T: Number> MulAssign<T> for Vec3<T> {
     fn mul_assign(&mut self,other: T) {
         self.x *= other;
         self.y *= other;
@@ -169,7 +169,7 @@ impl<T: Simdable> MulAssign<T> for Vec3<T> {
 }        
 
 // Vec3 / s
-impl<T: Simdable> Div<T> for Vec3<T> {
+impl<T: Number> Div<T> for Vec3<T> {
     type Output = Self;
     fn div(self,other: T) -> Self {
         Vec3 { x: self.x / other,y: self.y / other,z: self.z / other, }
@@ -177,7 +177,7 @@ impl<T: Simdable> Div<T> for Vec3<T> {
 }
 
 // Vec3 /= s
-impl<T: Simdable> DivAssign<T> for Vec3<T> {
+impl<T: Number> DivAssign<T> for Vec3<T> {
     fn div_assign(&mut self,other: T) {
         self.x /= other;
         self.y /= other;
@@ -186,21 +186,21 @@ impl<T: Simdable> DivAssign<T> for Vec3<T> {
 }
 
 // Vec3 = (Vec2,0)
-impl<T: Simdable> From<Vec2<T>> for Vec3<T> {
+impl<T: Number> From<Vec2<T>> for Vec3<T> {
     fn from(v: Vec2<T>) -> Vec3<T> {
         Vec3 { x: v.x,y: v.y,z: T::zero(), }
     }
 }
 
 // Vec3 = Vec3A
-impl<T: Simdable> From<Vec3A<T>> for Vec3<T> {
+impl<T: Number> From<Vec3A<T>> for Vec3<T> {
     fn from(v: Vec3A<T>) -> Vec3<T> {
         Vec3 { x: v.x,y: v.y,z: v.z, }
     }
 }
 
 // -Vec3
-impl<T: Simdable + Neg<Output=T>> Neg for Vec3<T> {
+impl<T: Number + Neg<Output=T>> Neg for Vec3<T> {
     type Output = Self;
     fn neg(self) -> Self {
         Vec3 { x: -self.x,y: -self.y,z: -self.z, }

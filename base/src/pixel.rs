@@ -54,6 +54,41 @@ impl PartialEq<R8> for R8 {
     }
 }
 
+/// 16-bit RG pixel format.
+#[allow(dead_code)]
+#[derive(Copy,Clone,Debug)]
+pub struct RG8 {
+    pub d: u16,
+}
+
+impl Pixel for RG8 {
+    fn from_rgba(r: u8,g: u8,_b: u8,_a: u8) -> Self {
+        RG8 { d: ((r as u16) << 8) + (g as u16), }
+    }
+
+    fn from_vec4(v: Vec4<u8>) -> Self {
+        RG8 { d: ((v.x as u16) << 8) + (v.y as u16), }
+    }
+
+    fn as_vec4(&self) -> Vec4<u8> {
+        vec4!((self.d >> 8) as u8,(self.d & 0xFF) as u8,0,255)
+    }
+}
+
+impl Zero for RG8 {
+    /// Return black R8 pixel.
+    fn zero() -> RG8 {
+        RG8 { d: 0x0000, }
+    }
+}
+
+impl PartialEq<RG8> for RG8 {
+    /// Check if two RG8 pixels are equal.
+    fn eq(&self,other: &RG8) -> bool {
+        self.d == other.d
+    }
+}
+
 /// 8-bit RGB pixel format.
 #[allow(dead_code)]
 #[derive(Copy,Clone,Debug)]

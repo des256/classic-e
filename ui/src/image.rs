@@ -38,7 +38,7 @@ impl Widget for Image {
     }
 
     fn calc_min_size(&self) -> Vec2<i32> {
-        let size = self.image.size();
+        let size = self.image.size;
         vec2!(size.x as i32,size.y as i32)
     }
 

@@ -11,12 +11,12 @@ use std::fmt::{
 
 /// Rectangle.
 #[derive(Copy,Clone,Debug)]
-pub struct Rect<T: Simdable> {
+pub struct Rect<T: Number> {
     pub o: Vec2<T>,
     pub s: Vec2<T>,
 }
 
-impl<T: Simdable> Rect<T> {
+impl<T: Number> Rect<T> {
     /// Create new rectangle.
     ///
     /// **Arguments**
@@ -65,13 +65,13 @@ impl<T: Simdable> Rect<T> {
     }
 }
 
-impl<T: Simdable> Zero for Rect<T> {
+impl<T: Number> Zero for Rect<T> {
     fn zero() -> Self {
         Rect { o: Vec2::<T>::zero(),s: Vec2::<T>::zero(), }
     }
 }
 
-impl<T: Simdable> Display for Rect<T> {
+impl<T: Number> Display for Rect<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
         write!(f,"({},{} {}x{})",self.o.x,self.o.y,self.s.x,self.s.y)
     }

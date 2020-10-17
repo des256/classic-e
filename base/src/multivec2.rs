@@ -25,13 +25,13 @@ use std::{
 
 /// 2D multivector.
 #[derive(Copy,Clone,Debug)]
-pub struct MultiVec2<T: SimdableFloat> {
+pub struct MultiVec2<T: FloatNumber> {
     pub r: T,
     pub x: T,pub y: T,
     pub xy: T,
 }
 
-impl<T: SimdableFloat> MultiVec2<T> {
+impl<T: FloatNumber> MultiVec2<T> {
     /// Create new 2D multivector.
     ///
     /// **Arguments**
@@ -105,7 +105,7 @@ impl<T: SimdableFloat> MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat> PartialEq for MultiVec2<T> {
+impl<T: FloatNumber> PartialEq for MultiVec2<T> {
     fn eq(&self,other: &Self) -> bool {
         (self.r == other.r) &&
         (self.x == other.x) && (self.y == other.y) &&
@@ -113,7 +113,8 @@ impl<T: SimdableFloat> PartialEq for MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat> Zero for MultiVec2<T> {
+impl<T: FloatNumber> Zero for MultiVec2<T> {
+    /// Additive identity.
     fn zero() -> Self {
         MultiVec2 {
             r: T::zero(),
@@ -123,7 +124,7 @@ impl<T: SimdableFloat> Zero for MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat> Display for MultiVec2<T> {
+impl<T: FloatNumber> Display for MultiVec2<T> {
     fn fmt(&self,f: &mut Formatter) -> Result {
         let sx = if self.x < T::zero() {
             format!("{}x",self.x)
@@ -144,7 +145,7 @@ impl<T: SimdableFloat> Display for MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat> Add<MultiVec2<T>> for MultiVec2<T> {
+impl<T: FloatNumber> Add<MultiVec2<T>> for MultiVec2<T> {
     type Output = Self;
     fn add(self,other: MultiVec2<T>) -> Self {
         MultiVec2 {
@@ -155,7 +156,7 @@ impl<T: SimdableFloat> Add<MultiVec2<T>> for MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat> AddAssign<MultiVec2<T>> for MultiVec2<T> {
+impl<T: FloatNumber> AddAssign<MultiVec2<T>> for MultiVec2<T> {
     fn add_assign(&mut self,other: Self) {
         self.r += other.r;
         self.x += other.x; self.y += other.y;
@@ -163,7 +164,7 @@ impl<T: SimdableFloat> AddAssign<MultiVec2<T>> for MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat> Sub<MultiVec2<T>> for MultiVec2<T> {
+impl<T: FloatNumber> Sub<MultiVec2<T>> for MultiVec2<T> {
     type Output = Self;
     fn sub(self,other: MultiVec2<T>) -> Self {
         MultiVec2 {
@@ -174,7 +175,7 @@ impl<T: SimdableFloat> Sub<MultiVec2<T>> for MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat> SubAssign<MultiVec2<T>> for MultiVec2<T> {
+impl<T: FloatNumber> SubAssign<MultiVec2<T>> for MultiVec2<T> {
     fn sub_assign(&mut self,other: Self) {
         self.r -= other.r;
         self.x -= other.x; self.y -= other.y;
@@ -200,7 +201,7 @@ macro_rules! scalar_multivec2_mul {
 scalar_multivec2_mul!(f32);
 scalar_multivec2_mul!(f64);
 
-impl<T: SimdableFloat> Mul<T> for MultiVec2<T> {
+impl<T: FloatNumber> Mul<T> for MultiVec2<T> {
     type Output = MultiVec2<T>;
     fn mul(self,other: T) -> Self {
         MultiVec2 {
@@ -211,7 +212,7 @@ impl<T: SimdableFloat> Mul<T> for MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat> MulAssign<T> for MultiVec2<T> {
+impl<T: FloatNumber> MulAssign<T> for MultiVec2<T> {
     fn mul_assign(&mut self,other: T) {
         self.r *= other;
         self.x *= other; self.y *= other;
@@ -219,7 +220,7 @@ impl<T: SimdableFloat> MulAssign<T> for MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat> Mul<MultiVec2<T>> for MultiVec2<T> {
+impl<T: FloatNumber> Mul<MultiVec2<T>> for MultiVec2<T> {
     type Output = MultiVec2<T>;
     fn mul(self,other: MultiVec2<T>) -> Self {
         MultiVec2 {
@@ -231,7 +232,7 @@ impl<T: SimdableFloat> Mul<MultiVec2<T>> for MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat> MulAssign<MultiVec2<T>> for MultiVec2<T> {
+impl<T: FloatNumber> MulAssign<MultiVec2<T>> for MultiVec2<T> {
     fn mul_assign(&mut self,other: MultiVec2<T>) {
         let nr = self.r * other.r - self.x * other.x - self.y * other.y - self.xy * other.xy;
         let nx = self.r * other.x + self.x * other.r + self.y * other.xy - self.xy * other.y;
@@ -243,7 +244,7 @@ impl<T: SimdableFloat> MulAssign<MultiVec2<T>> for MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat> Div<T> for MultiVec2<T> {
+impl<T: FloatNumber> Div<T> for MultiVec2<T> {
     type Output = MultiVec2<T>;
     fn div(self,other: T) -> Self {
         MultiVec2 {
@@ -254,7 +255,7 @@ impl<T: SimdableFloat> Div<T> for MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat> DivAssign<T> for MultiVec2<T> {
+impl<T: FloatNumber> DivAssign<T> for MultiVec2<T> {
     fn div_assign(&mut self,other: T) {
         self.r /= other;
         self.x /= other; self.y /= other;
@@ -262,7 +263,7 @@ impl<T: SimdableFloat> DivAssign<T> for MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat + Neg<Output=T>> Neg for MultiVec2<T> {
+impl<T: FloatNumber + Neg<Output=T>> Neg for MultiVec2<T> {
     type Output = MultiVec2<T>;
     fn neg(self) -> MultiVec2<T> {
         MultiVec2 {
@@ -273,20 +274,20 @@ impl<T: SimdableFloat + Neg<Output=T>> Neg for MultiVec2<T> {
     }
 }
 
-impl<T: SimdableFloat> From<T> for MultiVec2<T> {
+impl<T: FloatNumber> From<T> for MultiVec2<T> {
     fn from(v: T) -> MultiVec2<T> {
         MultiVec2::<T>::new(v,T::zero(),T::zero(),T::zero())
     }
 }
 
-impl<T: SimdableFloat> From<Vec2<T>> for MultiVec2<T> {
+impl<T: FloatNumber> From<Vec2<T>> for MultiVec2<T> {
     fn from(v: Vec2<T>) -> MultiVec2<T> {
         MultiVec2::<T>::new(T::zero(),v.x,v.y,T::zero())
     }
 }
 
-impl<T: SimdableFloat> From<Complex<T>> for MultiVec2<T> {
+impl<T: FloatNumber> From<Complex<T>> for MultiVec2<T> {
     fn from(v: Complex<T>) -> MultiVec2<T> {
-        MultiVec2::<T>::new(v.r(),T::zero(),T::zero(),v.i())
+        MultiVec2::<T>::new(v.r,T::zero(),T::zero(),v.i)
     }
 }
