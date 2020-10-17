@@ -35,7 +35,7 @@ pub struct Field {
     style: RefCell<FieldStyle>,
     r: Cell<Rect<i32>>,
     hit: Cell<FieldHit>,
-    capturing: Cell<bool>,
+    _capturing: Cell<bool>,
     text: RefCell<String>,
     enabled: Cell<bool>,
 }
@@ -52,7 +52,7 @@ impl Field {
             }),
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(FieldHit::Nothing),
-            capturing: Cell::new(false),
+            _capturing: Cell::new(false),
             text: RefCell::new("Hello, World!".to_string()),
             enabled: Cell::new(true),
         }))
@@ -95,27 +95,27 @@ impl Widget for Field {
         self.ui.draw_text(vec2!(0,0),&self.text.borrow(),text_color,&style.font);
     }
 
-    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keyrelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,_ui: &UI,_window: &Rc<UIWindow>,_p: Vec2<i32>,_b: MouseButton) -> bool {
         false
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_p: Vec2<i32>,_b: MouseButton) -> bool {
         false
     }
 
-    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
+    fn mousemove(&self,_ui: &UI,_window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
         // TODO: if capturing, no change, otherwise:
         self.hit.set(self.find_hit(p));
         false
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
+    fn mousewheel(&self,_ui: &UI,_window: &Rc<UIWindow>,_w: MouseWheel) -> bool {
         false
     }
 }

@@ -110,7 +110,7 @@ fn main() -> Result<(),SystemError> {
 
     let slider1 = Slider::new_horizontal(&ui)?;
 
-    let toggle = Toggle::new(&ui,|state| { })?;
+    let toggle = Toggle::new(&ui,|_| { })?;
 
     let stack1_children: Vec<Rc<dyn Widget>> = vec![
         button,

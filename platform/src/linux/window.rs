@@ -41,7 +41,7 @@ use {
             ATOM_STRING,
             unmap_window,
             ATOM_PRIMARY,
-            ATOM_WINDOW,
+            //ATOM_WINDOW,
             configure_window,
             CONFIG_WINDOW_X,
             CONFIG_WINDOW_Y,
@@ -117,7 +117,7 @@ impl Window {
             32,
             &encoded_pointer_dwords
         ).request_check() {
-            Ok(o) => { },
+            Ok(_) => { },
             Err(e) => { println!("response type {:?}, error code {:?}",e.response_type(),e.error_code()) },
         }
         Ok(window)
@@ -250,20 +250,16 @@ impl Window {
 
     pub fn show(&self) {
         //println!("show {}",self.id);
-        unsafe {
-            map_window(&self.system.connection,self.id as u32);
-            self.system.connection.flush();
-            //XSync(self.system.connection.get_raw_dpy(),False);
-        }
+        map_window(&self.system.connection,self.id as u32);
+        self.system.connection.flush();
+        //XSync(self.system.connection.get_raw_dpy(),False);
     }
 
     pub fn hide(&self) {
         //println!("hide {}",self.id);
-        unsafe {
-            unmap_window(&self.system.connection,self.id as u32);
-            self.system.connection.flush();
-            //XSync(self.system.connection.get_raw_dpy(),False);
-        }
+        unmap_window(&self.system.connection,self.id as u32);
+        self.system.connection.flush();
+        //XSync(self.system.connection.get_raw_dpy(),False);
     }
 
     pub fn configure(&self,r: &Rect<i32>) {

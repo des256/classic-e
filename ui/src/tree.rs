@@ -32,11 +32,11 @@ pub struct TreeItem {
 
 /// Tree.
 pub struct Tree {
-    ui: Rc<UI>,
+    _ui: Rc<UI>,
     style: RefCell<TreeStyle>,
     r: Cell<Rect<i32>>,
-    hit: Cell<TreeHit>,
-    items: Vec<TreeItem>,
+    _hit: Cell<TreeHit>,
+    _items: Vec<TreeItem>,
     // TBD: current or multiple currents
 }
 
@@ -45,17 +45,17 @@ const DEFAULT_TREE_ITEMS: i32 = 3;
 impl Tree {
     pub fn new(ui: &Rc<UI>) -> Result<Rc<Tree>,SystemError> {
         Ok(Rc::new(Tree {
-            ui: Rc::clone(&ui),
+            _ui: Rc::clone(&ui),
             style: RefCell::new(TreeStyle {
                 font: Rc::clone(&ui.font),
             }),
             r: Cell::new(rect!(0,0,0,0)),
-            hit: Cell::new(TreeHit::Nothing),
-            items: Vec::new(),
+            _hit: Cell::new(TreeHit::Nothing),
+            _items: Vec::new(),
         }))
     }
 
-    pub fn find_hit(&self,p: Vec2<i32>) -> TreeHit {
+    pub fn find_hit(&self,_p: Vec2<i32>) -> TreeHit {
         TreeHit::Nothing  // Should be Item(i) once we know how Scroller works
     }
 }
@@ -79,26 +79,25 @@ impl Widget for Tree {
         // TODO: draw the tree items
     }
 
-    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keyrelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,_ui: &UI,_window: &Rc<UIWindow>,_p: Vec2<i32>,_b: MouseButton) -> bool {
         false
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_p: Vec2<i32>,_b: MouseButton) -> bool {
         false
     }
 
-    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
-        self.hit.set(self.find_hit(p));
+    fn mousemove(&self,_ui: &UI,_window: &Rc<UIWindow>,_p: Vec2<i32>) -> bool {
         false
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
+    fn mousewheel(&self,_ui: &UI,_window: &Rc<UIWindow>,_w: MouseWheel) -> bool {
         false
     }
 }

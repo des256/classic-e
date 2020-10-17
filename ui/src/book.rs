@@ -176,10 +176,10 @@ impl Widget for Book {
         }
     }
 
-    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keyrelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
     fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
@@ -189,7 +189,7 @@ impl Widget for Book {
                     self.capturing.set(false);
                     false
                 },
-                BookHit::Tab(n) => {
+                BookHit::Tab(_n) => {
                     true
                 },
                 BookHit::Page => {
@@ -260,7 +260,7 @@ impl Widget for Book {
                 BookHit::Nothing => {
                     false
                 },
-                BookHit::Tab(n) => {
+                BookHit::Tab(_n) => {
                     false
                 },
                 BookHit::Page => {
@@ -306,7 +306,7 @@ impl Widget for Book {
                 BookHit::Nothing => {
                     false
                 },
-                BookHit::Tab(n) => {
+                BookHit::Tab(_n) => {
                     true
                 },
                 BookHit::Page => {
@@ -323,7 +323,7 @@ impl Widget for Book {
         }
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
+    fn mousewheel(&self,_ui: &UI,_window: &Rc<UIWindow>,_w: MouseWheel) -> bool {
         false
     }
 }

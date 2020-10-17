@@ -11,7 +11,7 @@ use{
 
 /// Message box.
 pub struct MessageBox {
-    r: Cell<Rect<i32>>,
+    _r: Cell<Rect<i32>>,
 }
 
 // TBD after other components are finished

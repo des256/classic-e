@@ -8,8 +8,8 @@ use ui::*;
 use std::rc::Rc;
 
 const FONT_DIR: &str = "/home/desmond/e/static/fonts";
-const ICON_DIR: &str = "/home/desmond/e/static/images/icons";
-const IMAGE_PATH: &str = "/home/desmond/e/static/images/world.png";
+//const ICON_DIR: &str = "/home/desmond/e/static/images/icons";
+//const IMAGE_PATH: &str = "/home/desmond/e/static/images/world.png";
 
 fn dispatch(graphics: &Graphics,window: &Rc<Window>,event: Event) {
     match event {

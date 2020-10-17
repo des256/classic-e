@@ -44,7 +44,7 @@ pub struct Toggle {
 }
 
 const TOGGLE_SIZE: i32 = 20;
-const TOGGLE_GUTTER_SIZE: i32 = 5;
+//const TOGGLE_GUTTER_SIZE: i32 = 5;
 
 impl Toggle {
     pub fn new<C: Fn(bool) + 'static>(ui: &Rc<UI>,closure: C) -> Result<Rc<Toggle>,SystemError> {
@@ -124,13 +124,13 @@ impl Widget for Toggle {
         self.ui.draw_rectangle(rect!(vec2!(TOGGLE_SIZE,0),vec2!(TOGGLE_SIZE,TOGGLE_SIZE)),right_color,BlendMode::Replace);
     }
 
-    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keyrelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,_ui: &UI,_window: &Rc<UIWindow>,_p: Vec2<i32>,_b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ToggleHit::Nothing => {
@@ -156,7 +156,7 @@ impl Widget for Toggle {
         }
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,_b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ToggleHit::Nothing => {
@@ -185,7 +185,7 @@ impl Widget for Toggle {
         }        
     }
 
-    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
+    fn mousemove(&self,_ui: &UI,_window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ToggleHit::Nothing => {
@@ -211,7 +211,7 @@ impl Widget for Toggle {
         }
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
+    fn mousewheel(&self,_ui: &UI,_window: &Rc<UIWindow>,_w: MouseWheel) -> bool {
         false
     }
 }

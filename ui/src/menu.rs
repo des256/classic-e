@@ -186,36 +186,36 @@ impl Widget for Menu {
         }
     }
 
-    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keyrelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,_ui: &UI,_window: &Rc<UIWindow>,_p: Vec2<i32>,_b: MouseButton) -> bool {
         match self.hit.get() {
             MenuHit::Nothing => {
                 false
             },
-            MenuHit::Item(n) => {
+            MenuHit::Item(_n) => {
                 // TODO: update the currently open submenu
                 false
             },
         }
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_p: Vec2<i32>,_b: MouseButton) -> bool {
         match self.hit.get() {
             MenuHit::Nothing => {
                 false
             },
-            MenuHit::Item(n) => {
+            MenuHit::Item(_n) => {
                 false
             },
         }
     }
 
-    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
+    fn mousemove(&self,_ui: &UI,_window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
         self.hit.set(self.find_hit(p));
         match self.hit.get() {
             MenuHit::Nothing => {
@@ -226,10 +226,10 @@ impl Widget for Menu {
                 if let Some(cn) = current_n {
                     if cn != n {
                         match &self.items[n] {
-                            MenuItem::Action(name) => {
+                            MenuItem::Action(_name) => {
                                 *self.current_item.borrow_mut() = Some(n);
                             },
-                            MenuItem::Menu(name,menu) => {
+                            MenuItem::Menu(_name,_menu) => {
                                 // TODO: open submenu
                             },
                             MenuItem::Separator => {
@@ -242,7 +242,7 @@ impl Widget for Menu {
         }
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
+    fn mousewheel(&self,_ui: &UI,_window: &Rc<UIWindow>,_w: MouseWheel) -> bool {
         false
     }
 }

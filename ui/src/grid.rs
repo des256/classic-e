@@ -26,16 +26,16 @@ pub struct ColumnSpec {
 /// Grid of child widgets.
 pub struct Grid {
     r: Cell<Rect<i32>>,
-    rows: RefCell<Vec<RowSpec>>,
-    columns: RefCell<Vec<ColumnSpec>>,
+    _rows: RefCell<Vec<RowSpec>>,
+    _columns: RefCell<Vec<ColumnSpec>>,
 }
 
 impl Grid {
     pub fn new() -> Result<Rc<Grid>,SystemError> {
         Ok(Rc::new(Grid {
             r: Cell::new(rect!(0,0,0,0)),
-            rows: RefCell::new(Vec::new()),
-            columns: RefCell::new(Vec::new()),
+            _rows: RefCell::new(Vec::new()),
+            _columns: RefCell::new(Vec::new()),
         }))
     }
 }
@@ -58,25 +58,25 @@ impl Widget for Grid {
         // TODO: draw grid cells
     }
 
-    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keyrelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,_ui: &UI,_window: &Rc<UIWindow>,_p: Vec2<i32>,_b: MouseButton) -> bool {
         false
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_p: Vec2<i32>,_b: MouseButton) -> bool {
         false
     }
 
-    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
+    fn mousemove(&self,_ui: &UI,_window: &Rc<UIWindow>,_p: Vec2<i32>) -> bool {
         false
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
+    fn mousewheel(&self,_ui: &UI,_window: &Rc<UIWindow>,_w: MouseWheel) -> bool {
         false
     }
 }

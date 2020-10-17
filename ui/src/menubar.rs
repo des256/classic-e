@@ -72,7 +72,7 @@ impl MenuBar {
         for i in 0..self.items.len() {
             let item = &self.items[i];
             match item {
-                MenuBarItem::Menu(name,menu) => {
+                MenuBarItem::Menu(name,_menu) => {
                     let size = style.font.measure(&name);
                     r.s.x = size.x;
                     if r.contains(&p) {
@@ -129,7 +129,7 @@ impl MenuBar {
 
     pub fn clear_current(&self) {
         if let Some(n) = self.current_item.get() {
-            if let MenuBarItem::Menu(name,menu) = &self.items[n] {
+            if let MenuBarItem::Menu(_name,menu) = &self.items[n] {
                 if let Some(popup) = &*menu.popup.borrow() {
                     popup.hide();
                 }
@@ -153,7 +153,7 @@ impl Widget for MenuBar {
         let mut total_size = vec2!(0i32,0i32);
         for item in self.items.iter() {
             match item {
-                MenuBarItem::Menu(name,menu) => {
+                MenuBarItem::Menu(name,_menu) => {
                     let size = style.font.measure(&name);
                     total_size += vec2!(size.x,0);
                     if size.y > total_size.y {
@@ -186,7 +186,7 @@ impl Widget for MenuBar {
             }
             let text_color = style.item_text_color;
             match item {
-                MenuBarItem::Menu(name,menu) => {
+                MenuBarItem::Menu(name,_menu) => {
                     let size = style.font.measure(&name);
                     r.s.x = size.x;
                     self.ui.draw_rectangle(r,color,BlendMode::Replace);
@@ -206,13 +206,13 @@ impl Widget for MenuBar {
         }
     }
 
-    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keyrelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,_ui: &UI,window: &Rc<UIWindow>,_p: Vec2<i32>,_b: MouseButton) -> bool {
         match self.hit.get() {
             MenuBarHit::Nothing => {
                 self.clear_current();
@@ -235,25 +235,25 @@ impl Widget for MenuBar {
         }
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_p: Vec2<i32>,_b: MouseButton) -> bool {
         match self.hit.get() {
             MenuBarHit::Nothing => {
                 false
             },
-            MenuBarHit::Item(n) => {
+            MenuBarHit::Item(_n) => {
                 false
             },
         }
     }
 
-    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
+    fn mousemove(&self,_ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
         self.hit.set(self.find_hit(p));
         match self.hit.get() {
             MenuBarHit::Nothing => {
                 false
             },
             MenuBarHit::Item(n) => {
-                if let Some(cn) = self.current_item.get() {
+                if let Some(_cn) = self.current_item.get() {
                     self.set_current(window,n);
                 }
                 false
@@ -261,7 +261,7 @@ impl Widget for MenuBar {
         }
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
+    fn mousewheel(&self,_ui: &UI,_window: &Rc<UIWindow>,_w: MouseWheel) -> bool {
         false
     }
 }

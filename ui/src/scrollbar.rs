@@ -44,7 +44,7 @@ pub struct ScrollBar {
     r: Cell<Rect<i32>>,
     hit: Cell<ScrollBarHit>,
     capturing: Cell<bool>,
-    enabled: Cell<bool>,
+    _enabled: Cell<bool>,
     full: Cell<f32>,  // parameters: full range
     page: Cell<f32>,  // parameters: page size
     step: Cell<f32>,  // parameters: step size
@@ -71,7 +71,7 @@ impl ScrollBar {
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(ScrollBarHit::Nothing),
             capturing: Cell::new(false),
-            enabled: Cell::new(true),
+            _enabled: Cell::new(true),
             full: Cell::new(full),
             page: Cell::new(page),
             step: Cell::new(step),
@@ -96,7 +96,7 @@ impl ScrollBar {
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(ScrollBarHit::Nothing),
             capturing: Cell::new(false),
-            enabled: Cell::new(true),
+            _enabled: Cell::new(true),
             full: Cell::new(full),
             page: Cell::new(page),
             step: Cell::new(step),
@@ -233,13 +233,13 @@ impl Widget for ScrollBar {
         }
     }
 
-    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keyrelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,_ui: &UI,_window: &Rc<UIWindow>,p: Vec2<i32>,_b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ScrollBarHit::Nothing => {
@@ -309,7 +309,7 @@ impl Widget for ScrollBar {
         }
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,_b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ScrollBarHit::Nothing => {
@@ -371,7 +371,7 @@ impl Widget for ScrollBar {
         }
     }
 
-    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
+    fn mousemove(&self,_ui: &UI,_window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ScrollBarHit::Nothing => {
@@ -439,7 +439,7 @@ impl Widget for ScrollBar {
         }
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
+    fn mousewheel(&self,_ui: &UI,_window: &Rc<UIWindow>,_w: MouseWheel) -> bool {
         false
     }
 }

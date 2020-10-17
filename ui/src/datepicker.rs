@@ -10,7 +10,7 @@ use{
 
 /// Date picker.
 pub struct DatePicker {
-    r: Cell<Rect<i32>>,
+    _r: Cell<Rect<i32>>,
 }
 
 // TBD after other components are finished

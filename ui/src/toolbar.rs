@@ -42,7 +42,7 @@ pub struct ToolBar {
     hit: Cell<ToolBarHit>,
     capturing: Cell<bool>,
     items: Vec<ToolBarItem>,
-    pressed: Cell<Option<usize>>,
+    _pressed: Cell<Option<usize>>,
 }
 
 const TOOLBAR_SEPARATOR_WIDTH: i32 = 10;
@@ -60,7 +60,7 @@ impl ToolBar {
             hit: Cell::new(ToolBarHit::Nothing),
             capturing: Cell::new(false),
             items: items,
-            pressed: Cell::new(None),
+            _pressed: Cell::new(None),
         }))
     }
 
@@ -155,20 +155,20 @@ impl Widget for ToolBar {
         }
     }
 
-    fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8) {
+    fn keyrelease(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {
     }
 
-    fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mousepress(&self,_ui: &UI,_window: &Rc<UIWindow>,_p: Vec2<i32>,_b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ToolBarHit::Nothing => {
                     self.capturing.set(false);
                     false
                 },
-                ToolBarHit::Item(n) => {
+                ToolBarHit::Item(_n) => {
                     true
                 },
             }
@@ -187,7 +187,7 @@ impl Widget for ToolBar {
         }
     }
 
-    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool {
+    fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,_b: MouseButton) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ToolBarHit::Nothing => {
@@ -206,14 +206,14 @@ impl Widget for ToolBar {
                 ToolBarHit::Nothing => {
                     false
                 },
-                ToolBarHit::Item(n) => {
+                ToolBarHit::Item(_n) => {
                     false
                 },
             }
         }
     }
 
-    fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
+    fn mousemove(&self,_ui: &UI,_window: &Rc<UIWindow>,p: Vec2<i32>) -> bool {
         if self.capturing.get() {
             match self.hit.get() {
                 ToolBarHit::Nothing => {
@@ -232,14 +232,14 @@ impl Widget for ToolBar {
                 ToolBarHit::Nothing => {
                     false
                 },
-                ToolBarHit::Item(n) => {
+                ToolBarHit::Item(_n) => {
                     true
                 },
             }
         }
     }
 
-    fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool {
+    fn mousewheel(&self,_ui: &UI,_window: &Rc<UIWindow>,_w: MouseWheel) -> bool {
         false
     }
 }
