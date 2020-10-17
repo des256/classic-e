@@ -52,7 +52,7 @@ pub struct FontProto {
 
 #[doc(hidden)]
 impl FontProto {
-    pub fn new(graphics: &Graphics,filename: &str) -> Result<FontProto,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>,filename: &str) -> Result<FontProto,SystemError> {
         let mut file = match File::open(filename) {
             Ok(file) => file,
             Err(_) => { return Err(SystemError::Generic); },
@@ -101,7 +101,7 @@ impl FontProto {
                 mat.set(vec2!(x,y),pixel::R8 { d: bref[y * (atlas_size_x as usize) + x] });
             }
         }
-        let texture = graphics.create_texture2d_from_mat::<pixel::R8>(mat)?;
+        let texture = Texture2D::new_from_mat(&graphics,mat)?;
         Ok(FontProto {
             _filename: filename.to_string(),
             sets: sets,

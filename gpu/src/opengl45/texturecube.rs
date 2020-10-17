@@ -5,6 +5,7 @@ use crate::*;
 use std::{
     ffi::c_void,
     marker::PhantomData,
+    rc::Rc,
 };
 use gl::types::GLuint;
 
@@ -19,12 +20,13 @@ pub enum CubeFace {
 
 /// Cube texture GPU resource.
 pub struct TextureCube<T: GPUTextureFormat> {
+    _graphics: Rc<Graphics>,
     pub tex: GLuint,
     size: usize,
     phantom: PhantomData<T>,
 }
 
-impl Graphics {
+impl<T: GPUTextureFormat> TextureCube<T> {    
     /// (temporary) Create new cube texture.
     /// 
     /// **Arguments**
@@ -36,7 +38,7 @@ impl Graphics {
     /// 
     /// * `Ok(TextureCube)` - The new cube texture.
     /// * `Err(SystemError)` - The cube texture could not be created.
-    pub fn create_texturecube<T: GPUTextureFormat>(&self,size: usize) -> Result<TextureCube<T>,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>,size: usize) -> Result<TextureCube<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -49,6 +51,7 @@ impl Graphics {
             gl::TexStorage2D(gl::TEXTURE_CUBE_MAP,1,T::gl_internal_format(),size as i32,size as i32);
         };
         Ok(TextureCube {
+            _graphics: Rc::clone(graphics),
             tex: tex,
             size: size,
             phantom: PhantomData,
@@ -71,8 +74,8 @@ impl Graphics {
     /// 
     /// * `Ok(TextureCube)` - The new cube texture.
     /// * `Err(SystemError)` - The cube texture could not be created.
-    pub fn create_texturecube_from_mats<T: GPUTextureFormat>(&self,src_xp: Mat<T>,src_xn: Mat<T>,src_yp: Mat<T>,src_yn: Mat<T>,src_zp: Mat<T>,src_zn: Mat<T>) -> Result<TextureCube<T>,SystemError> {
-        let texture = self.create_texturecube(src_xp.size.x)?;
+    pub fn new_from_mats(graphics: &Rc<Graphics>,src_xp: Mat<T>,src_xn: Mat<T>,src_yp: Mat<T>,src_yn: Mat<T>,src_zp: Mat<T>,src_zn: Mat<T>) -> Result<TextureCube<T>,SystemError> {
+        let texture = TextureCube::new(graphics,src_xp.size.x)?;
         texture.load(CubeFace::PositiveX,Vec2::<usize>::zero(),&src_xp);
         texture.load(CubeFace::NegativeX,Vec2::<usize>::zero(),&src_xn);
         texture.load(CubeFace::PositiveY,Vec2::<usize>::zero(),&src_yp);
@@ -81,9 +84,7 @@ impl Graphics {
         texture.load(CubeFace::NegativeZ,Vec2::<usize>::zero(),&src_zn);
         Ok(texture)
     }
-}
 
-impl<T: GPUTextureFormat> TextureCube<T> {    
     /// (temporary) Load data into up-facing texture.
     /// 
     /// **Arguments**

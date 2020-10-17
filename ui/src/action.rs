@@ -15,10 +15,10 @@ pub struct Action {
 }
 
 impl Action {
-    pub fn new(graphics: &Graphics,name: &str,icon: Mat<pixel::ARGB8>) -> Result<Action,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>,name: &str,icon: Mat<pixel::ARGB8>) -> Result<Action,SystemError> {
         Ok(Action {
             _name: name.to_string(),
-            _icon: graphics.create_texture2d_from_mat(icon)?,
+            _icon: Texture2D::new_from_mat(&graphics,icon)?,
         })
     }
 }

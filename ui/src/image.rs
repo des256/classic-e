@@ -19,11 +19,11 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn new(ui: &Rc<UI>,graphics: &Graphics,image: Mat<pixel::ARGB8>) -> Result<Rc<Image>,SystemError> {
+    pub fn new(ui: &Rc<UI>,graphics: &Rc<Graphics>,image: Mat<pixel::ARGB8>) -> Result<Rc<Image>,SystemError> {
         Ok(Rc::new(Image {
             ui: Rc::clone(&ui),
             r: Cell::new(rect!(0,0,0,0)),
-            image: graphics.create_texture2d_from_mat(image)?,
+            image: Texture2D::new_from_mat(&graphics,image)?,
         }))
     }
 }

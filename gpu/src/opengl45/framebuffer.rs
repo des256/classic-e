@@ -1,17 +1,21 @@
 // E - OpenGL - Framebuffer
 // Desmond Germans, 2020
 
-use crate::*;
-use gl::types::GLuint;
+use {
+    crate::*,
+    std::rc::Rc,
+    gl::types::GLuint,
+};
 
 /// Framebuffer GPU resource.
 pub struct Framebuffer {
+    _graphics: Rc<Graphics>,
     pub(crate) fbo: GLuint,
     pub(crate) tex: GLuint,
     pub size: Vec2<usize>,
 }
 
-impl Graphics {
+impl Framebuffer {
     /// Create new framebuffer for a graphics context.
     /// 
     /// **Arguments**
@@ -23,7 +27,7 @@ impl Graphics {
     /// 
     /// * `Ok(Framebuffer)` - The new framebuffer.
     /// * `Err(SystemError)` - The framebuffer could not be created.
-    pub fn create_framebuffer(&self,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
         let mut fbo: GLuint = 0;
         let mut tex: GLuint = 0;
         unsafe {
@@ -42,6 +46,7 @@ impl Graphics {
             }
         }
         Ok(Framebuffer {
+            _graphics: Rc::clone(&graphics),
             fbo: fbo,
             tex: tex,
             size: size,

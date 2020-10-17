@@ -6,6 +6,7 @@ use std::{
     ffi::c_void,
     marker::PhantomData,
     ptr::null,
+    rc::Rc,
 };
 use gl::types::{
     GLuint,
@@ -13,11 +14,12 @@ use gl::types::{
 
 /// Uniform buffer GPU resource.
 pub struct UniformBuffer<T: GPUUniformFormat> {
+    _graphics: Rc<Graphics>,
     pub(crate) ubo: GLuint,
     phantom: PhantomData<T>,
 }
 
-impl Graphics {
+impl<T: GPUUniformFormat> UniformBuffer<T> {
     /// (temporary) Create new uniform buffer.
     /// 
     /// **Arguments**
@@ -28,7 +30,7 @@ impl Graphics {
     /// 
     /// * `Ok(UniformBuffer)` - The new uniform buffer.
     /// * `Err(SystemError)` - The uniform buffer could not be created.
-    pub fn create_uniformbuffer<T: GPUUniformFormat>(&self) -> Result<UniformBuffer<T>,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>) -> Result<UniformBuffer<T>,SystemError> {
         let mut ubo: GLuint = 0;
         unsafe {
             gl::GenBuffers(1,&mut ubo);
@@ -36,6 +38,7 @@ impl Graphics {
             gl::BufferData(gl::UNIFORM_BUFFER,1,null() as *const c_void,gl::DYNAMIC_DRAW);
         }
         Ok(UniformBuffer {
+            _graphics: Rc::clone(graphics),
             ubo: ubo,
             phantom: PhantomData,
         })
@@ -52,14 +55,12 @@ impl Graphics {
     /// 
     /// * `Ok(UniformBuffer)` - The new uniform buffer.
     /// * `Err(SystemError)` - The uniform buffer could not be created.
-    pub fn create_uniformbuffer_from_vec<T: GPUUniformFormat>(&self,src: Vec<T>) -> Result<UniformBuffer<T>,SystemError> {
-        let uniformbuffer = self.create_uniformbuffer()?;
+    pub fn new_from_vec(graphics: &Rc<Graphics>,src: Vec<T>) -> Result<UniformBuffer<T>,SystemError> {
+        let uniformbuffer = UniformBuffer::new(graphics)?;
         uniformbuffer.load(0,&src);
         Ok(uniformbuffer)
     }
-}
 
-impl<T: GPUUniformFormat> UniformBuffer<T> {
     /// (temporary) Load data into uniform buffer
     /// 
     /// **Arguments**

@@ -71,13 +71,13 @@ fn main() -> Result<(),SystemError> {
     let touch_phone_mat = imageformats::load::<pixel::ARGB8>(&format!("{}/phone_touch.png",ICON_DIR))?;
     let photo_mat = imageformats::load::<pixel::ARGB8>(&format!("{}/photo.png",ICON_DIR))?;
     let toolbar_items = vec![
-        ToolBarItem::Action(graphics.create_texture2d_from_mat(lightning_mat)?),
-        ToolBarItem::Action(graphics.create_texture2d_from_mat(paper_airplane_mat)?),
+        ToolBarItem::Action(Texture2D::new_from_mat(&graphics,lightning_mat)?),
+        ToolBarItem::Action(Texture2D::new_from_mat(&graphics,paper_airplane_mat)?),
         ToolBarItem::Separator,
-        ToolBarItem::Action(graphics.create_texture2d_from_mat(phone_mat)?),
-        ToolBarItem::Action(graphics.create_texture2d_from_mat(touch_phone_mat)?),
+        ToolBarItem::Action(Texture2D::new_from_mat(&graphics,phone_mat)?),
+        ToolBarItem::Action(Texture2D::new_from_mat(&graphics,touch_phone_mat)?),
         ToolBarItem::Separator,
-        ToolBarItem::Action(graphics.create_texture2d_from_mat(photo_mat)?),
+        ToolBarItem::Action(Texture2D::new_from_mat(&graphics,photo_mat)?),
     ];
     let toolbar = ToolBar::new(&ui,toolbar_items)?;
 

@@ -5,17 +5,19 @@ use crate::*;
 use std::{
     ffi::c_void,
     marker::PhantomData,
+    rc::Rc,
 };
 use gl::types::GLuint;
 
 /// 2D texture array GPU resource.
 pub struct Texture2DArray<T: GPUTextureFormat> {  // start with one layer, rebuild later
+    _graphics: Rc<Graphics>,
     pub tex: GLuint,
     size: Vec3<usize>,
     phantom: PhantomData<T>,
 }
 
-impl Graphics {
+impl<T: GPUTextureFormat> Texture2DArray<T> {
     /// (temporary) Create new empty 2D texture array.
     /// 
     /// **Arguments**
@@ -27,7 +29,7 @@ impl Graphics {
     /// 
     /// * `Ok(Texture2DArray)` - The new 2D texture.
     /// * `Err(SystemError)` - The 2D texture array could not be created.
-    pub fn create_texture2darray<T: GPUTextureFormat>(&self,size: Vec3<usize>) -> Result<Texture2DArray<T>,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>,size: Vec3<usize>) -> Result<Texture2DArray<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -39,6 +41,7 @@ impl Graphics {
             gl::TexStorage3D(gl::TEXTURE_2D_ARRAY,1,T::gl_internal_format(),size.x as i32,size.y as i32,size.z as i32);
         };
         Ok(Texture2DArray {
+            _graphics: Rc::clone(graphics),
             tex: tex,
             size: size,
             phantom: PhantomData,
@@ -56,14 +59,12 @@ impl Graphics {
     /// 
     /// * `Ok(Texture2DArray)` - The new 2D texture array.
     /// * `Err(SystemError)` - The 2D texture array could not be created.
-    pub fn create_texture2darray_from_ten<T: GPUTextureFormat>(&self,src: Ten<T>) -> Result<Texture2DArray<T>,SystemError> {
-        let texture = self.create_texture2darray(src.size)?;
+    pub fn new_from_ten(graphics: &Rc<Graphics>,src: Ten<T>) -> Result<Texture2DArray<T>,SystemError> {
+        let texture = Texture2DArray::new(graphics,src.size)?;
         texture.load(Vec3::<usize>::zero(),&src);
         Ok(texture)
     }
-}
 
-impl<T: GPUTextureFormat> Texture2DArray<T> {
     /// (temporary) Load data into 2D texture array.
     /// 
     /// **Arguments**

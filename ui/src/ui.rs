@@ -136,12 +136,12 @@ impl UI {
             }
         "#;
 
-        let flat_shader = graphics.create_shader(vs,None,flat_fs)?;
-        let alpha_shader = graphics.create_shader(vs,None,alpha_fs)?;
-        let color_shader = graphics.create_shader(vs,None,color_fs)?;
+        let flat_shader = Shader::new(&graphics,vs,None,flat_fs)?;
+        let alpha_shader = Shader::new(&graphics,vs,None,alpha_fs)?;
+        let color_shader = Shader::new(&graphics,vs,None,color_fs)?;
 
         // create vertex buffer for one rectangle
-        let rect_vb = graphics.create_vertexbuffer_from_vec::<Vec2<f32>>(vec![
+        let rect_vb = VertexBuffer::<Vec2<f32>>::new_from_vec(&graphics,vec![
             vec2!(0.0,0.0),
             vec2!(1.0,0.0),
             vec2!(1.0,1.0),
@@ -149,7 +149,7 @@ impl UI {
         ]).expect("unable to create vertex buffer");
 
         // create draw uniform buffer
-        let draw_ub = graphics.create_uniformbuffer::<TexRect>()?;
+        let draw_ub = UniformBuffer::<TexRect>::new(&graphics)?;
 
         // font prototypes
         let proto_sans = Rc::new(

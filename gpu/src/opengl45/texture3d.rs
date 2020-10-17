@@ -5,17 +5,19 @@ use crate::*;
 use std::{
     ffi::c_void,
     marker::PhantomData,
+    rc::Rc,
 };
 use gl::types::GLuint;
 
 /// 3D texture GPU resource.
 pub struct Texture3D<T: GPUTextureFormat> {
+    _graphics: Rc<Graphics>,
     pub tex: GLuint,
     size: Vec3<usize>,
     phantom: PhantomData<T>,
 }
 
-impl Graphics {
+impl<T: GPUTextureFormat> Texture3D<T> {    
     /// (temporary) Create new 3D texture.
     /// 
     /// **Arguments**
@@ -27,7 +29,7 @@ impl Graphics {
     /// 
     /// * `Ok(Texture3D)` - The new 3D texture.
     /// * `Err(SystemError)` - The 3D texture could not be created.
-    pub fn create_texture3d<T: GPUTextureFormat>(&self,size: Vec3<usize>) -> Result<Texture3D<T>,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>,size: Vec3<usize>) -> Result<Texture3D<T>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -40,6 +42,7 @@ impl Graphics {
             gl::TexStorage3D(gl::TEXTURE_3D,1,T::gl_internal_format(),size.x as i32,size.y as i32,size.z as i32);
         }
         Ok(Texture3D {
+            _graphics: Rc::clone(graphics),
             tex: tex,
             size: size,
             phantom: PhantomData,
@@ -57,14 +60,12 @@ impl Graphics {
     /// 
     /// * `Ok(Texture3D)` - The new 3D texture.
     /// * `Err(SystemError)` - The 3D texture could not be created.
-    pub fn create_texture3d_from_ten<T: GPUTextureFormat>(&self,src: Ten<T>) -> Result<Texture3D<T>,SystemError> {
-        let texture = self.create_texture3d(src.size)?;
+    pub fn new_from_ten(graphics: &Rc<Graphics>,src: Ten<T>) -> Result<Texture3D<T>,SystemError> {
+        let texture = Texture3D::new(graphics,src.size)?;
         texture.load(Vec3::<usize>::zero(),&src);
         Ok(texture)
     }
-}
 
-impl<T: GPUTextureFormat> Texture3D<T> {    
     /// (temporary) Load data into 3D texture.
     /// 
     /// **Arguments**

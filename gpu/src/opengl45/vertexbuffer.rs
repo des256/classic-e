@@ -6,17 +6,19 @@ use std::{
     ffi::c_void,
     marker::PhantomData,
     ptr::null,
+    rc::Rc,
 };
 use gl::types::GLuint;
 
 /// Vertex buffer GPU resource.
 pub struct VertexBuffer<T: GPUVertexFormat> {
+    _graphics: Rc<Graphics>,
     pub(crate) vao: GLuint,
     pub(crate) vbo: GLuint,
     phantom: PhantomData<T>,
 }
 
-impl Graphics {
+impl<T: GPUVertexFormat> VertexBuffer<T> {
     /// (temporary) Create new vertex buffer.
     /// 
     /// **Arguments**
@@ -27,7 +29,7 @@ impl Graphics {
     /// 
     /// * `Ok(VertexBuffer)` - The new vertex buffer.
     /// * `Err(SystemError)` - The vertex buffer could not be created.
-    pub fn create_vertexbuffer<T: GPUVertexFormat>(&self) -> Result<VertexBuffer<T>,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>) -> Result<VertexBuffer<T>,SystemError> {
         let mut vao: GLuint = 0;
         let mut vbo: GLuint = 0;
         unsafe {
@@ -39,6 +41,7 @@ impl Graphics {
             T::bind();
         }
         Ok(VertexBuffer {
+            _graphics: Rc::clone(graphics),
             vao: vao,
             vbo: vbo,
             phantom: PhantomData,
@@ -56,14 +59,12 @@ impl Graphics {
     /// 
     /// * `Ok(VertexBuffer)` - The new vertex buffer.
     /// * `Err(SystemError)` - The vertex buffer could not be created.
-    pub fn create_vertexbuffer_from_vec<T: GPUVertexFormat>(&self,src: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
-        let vertexbuffer = self.create_vertexbuffer()?;
+    pub fn new_from_vec(graphics: &Rc<Graphics>,src: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
+        let vertexbuffer = VertexBuffer::new(graphics)?;
         vertexbuffer.load(0,&src);
         Ok(vertexbuffer)
     }
-}
 
-impl<T: GPUVertexFormat> VertexBuffer<T> {
     /// (temporary) Load data into vertex buffer
     /// 
     /// **Arguments**

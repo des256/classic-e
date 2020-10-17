@@ -11,6 +11,7 @@ use std::{
         null,
         null_mut,
     },
+    rc::Rc,
 };
 use gl::types::{
     GLint,
@@ -20,10 +21,11 @@ use gl::types::{
 
 /// Shader program GPU resource.
 pub struct Shader {
+    _graphics: Rc<Graphics>,
     pub(crate) sp: GLuint,
 }
 
-impl Graphics {
+impl Shader {
     /// Create new shader program.
     /// 
     /// **Arguments**
@@ -37,7 +39,7 @@ impl Graphics {
     /// 
     /// * `Ok(Shader)` - The created shader program.
     /// * `Err(SystemError)` - The shader progam could not be created.
-    pub fn create_shader(&self,vertex_src: &str,geometry_src: Option<&str>,fragment_src: &str) -> Result<Shader,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>,vertex_src: &str,geometry_src: Option<&str>,fragment_src: &str) -> Result<Shader,SystemError> {
         unsafe {
             let vs = gl::CreateShader(gl::VERTEX_SHADER);
             let vcstr = CString::new(vertex_src.as_bytes()).unwrap();
@@ -122,6 +124,7 @@ impl Graphics {
             gl::DeleteShader(fs);
 
             Ok(Shader {
+                _graphics: Rc::clone(&graphics),
                 sp: sp,
             })
         }
