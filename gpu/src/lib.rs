@@ -6,12 +6,14 @@
 use base::*;
 use platform::*;
 
+/// Texture filtering modes.
 #[derive(Clone,Copy)]
 pub enum TextureFilter {
     Nearest,
     Linear,
 }
 
+/// Texture wrapping modes.
 #[derive(Clone,Copy)]
 pub enum TextureWrap {
     Black,

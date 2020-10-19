@@ -14,25 +14,16 @@ use{
     },
 };
 
-#[doc(hidden)]
 #[derive(Copy,Clone,Debug)]
-pub enum FieldHit {
+enum FieldHit {
     Nothing,
     Character(usize),
-}
-
-/// Text input field style.
-pub struct FieldStyle {
-    pub font: Rc<Font>,
-    pub color: u32,
-    pub text_color: u32,
-    pub disabled_text_color: u32,
 }
 
 /// Text input field.
 pub struct Field {
     ui: Rc<UI>,
-    style: RefCell<FieldStyle>,
+    style: RefCell<style::Field>,
     r: Cell<Rect<i32>>,
     hit: Cell<FieldHit>,
     _capturing: Cell<bool>,
@@ -44,7 +35,7 @@ impl Field {
     pub fn new(ui: &Rc<UI>) -> Result<Rc<Field>,SystemError> {
         Ok(Rc::new(Field {
             ui: Rc::clone(&ui),
-            style: RefCell::new(FieldStyle {
+            style: RefCell::new(style::Field {
                 font: Rc::clone(&ui.font),
                 color: 0x222222,
                 text_color: 0xAAAAAA,
@@ -58,7 +49,7 @@ impl Field {
         }))
     }
 
-    pub fn find_hit(&self,p: Vec2<i32>) -> FieldHit {
+    fn find_hit(&self,p: Vec2<i32>) -> FieldHit {
         if rect!(vec2!(0,0),self.r.get().s).contains(&p) {
             // TODO: find which character is being pointed at
             FieldHit::Character(0)
@@ -91,8 +82,8 @@ impl Widget for Field {
         if self.enabled.get() {
             text_color = style.text_color;
         }
-        self.ui.draw_rectangle(rect!(vec2!(0,0),self.r.get().s),color,BlendMode::Replace);
-        self.ui.draw_text(vec2!(0,0),&self.text.borrow(),text_color,&style.font);
+        self.ui.draw.draw_rectangle(rect!(vec2!(0,0),self.r.get().s),color,BlendMode::Replace);
+        self.ui.draw.draw_text(vec2!(0,0),&self.text.borrow(),text_color,&style.font);
     }
 
     fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {

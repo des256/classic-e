@@ -48,12 +48,22 @@ pub trait Widget {
     /// Draw the widget.
     fn draw(&self);
 
-    /// Handle widget events.
+    /// Handle key press event.
     fn keypress(&self,ui: &UI,window: &Rc<UIWindow>,k: u8);
+    
+    /// Handle key release event.
     fn keyrelease(&self,ui: &UI,window: &Rc<UIWindow>,k: u8);
+
+    /// Handle mouse press event.
     fn mousepress(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool;
+
+    /// Handle mouse release event.
     fn mouserelease(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>,b: MouseButton) -> bool;
+
+    /// Handle mouse move event.
     fn mousemove(&self,ui: &UI,window: &Rc<UIWindow>,p: Vec2<i32>) -> bool;
+
+    /// Handle mouse wheel event.
     fn mousewheel(&self,ui: &UI,window: &Rc<UIWindow>,w: MouseWheel) -> bool;
 }
 
@@ -135,5 +145,10 @@ pub use tooltip::*;
 mod tree;
 pub use tree::*;
 
+mod draw;
+pub use draw::*;
+
 mod ui;
 pub use ui::*;
+
+mod style;

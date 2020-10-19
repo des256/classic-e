@@ -235,6 +235,7 @@ vec3_float!(f32);
 vec3_float!(f64);
 
 #[macro_export]
+/// Create packed 3D vector.
 macro_rules! vec3 {
     ($x:expr,$y:expr,$z:expr) => { Vec3::new($x,$y,$z) };
 }

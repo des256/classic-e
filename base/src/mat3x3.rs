@@ -25,7 +25,7 @@ use std::{
     },
 };
 
-/// 3x3 Packed matrix.
+/// 3x3 packed matrix.
 #[derive(Copy,Clone,Debug)]
 pub struct Mat3x3<T: FloatNumber> {
     pub x: Vec3<T>,

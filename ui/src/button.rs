@@ -15,28 +15,16 @@ use{
     },
 };
 
-#[doc(hidden)]
 #[derive(Copy,Clone,Debug)]
-pub enum ButtonHit {
+enum ButtonHit {
     Nothing,
     Button,
-}
-
-/// Button Style.
-pub struct ButtonStyle {
-    pub font: Rc<Font>,
-    pub text_color: u32,
-    pub disabled_text_color: u32,
-    pub color: u32,
-    pub hover_color: u32,
-    pub disabled_color: u32,
-    pub pressed_color: u32,
 }
 
 /// Button.
 pub struct Button {
     ui: Rc<UI>,
-    style: RefCell<ButtonStyle>,
+    style: RefCell<style::Button>,
     r: Cell<Rect<i32>>,
     hit: Cell<ButtonHit>,
     capturing: Cell<bool>,
@@ -46,10 +34,23 @@ pub struct Button {
 }
 
 impl Button {
+    /// Create new button widget.
+    ///
+    /// A button is a rectangle with a text, image or action reference that can be
+    /// clicked.
+    ///
+    /// **Arguments**
+    ///
+    /// * `ui` - UI context.
+    /// * `name` - Title of the button.
+    ///
+    /// **Returns**
+    ///
+    /// New button widget.
     pub fn new(ui: &Rc<UI>,name: &str) -> Result<Rc<Button>,SystemError> {
         Ok(Rc::new(Button {
             ui: Rc::clone(&ui),
-            style: RefCell::new(ButtonStyle {
+            style: RefCell::new(style::Button {
                 font: Rc::clone(&ui.font),
                 text_color: 0xAAAAAA,
                 disabled_text_color: 0x666666,
@@ -67,7 +68,7 @@ impl Button {
         }))
     }
 
-    pub fn find_hit(&self,p: Vec2<i32>) -> ButtonHit {
+    fn find_hit(&self,p: Vec2<i32>) -> ButtonHit {
         if rect!(vec2!(0,0),self.r.get().s).contains(&p) {
             ButtonHit::Button
         }
@@ -115,8 +116,8 @@ impl Widget for Button {
             style.disabled_text_color
         };
         let r = self.r.get();
-        self.ui.draw_rectangle(r,color,BlendMode::Replace);
-        self.ui.draw_text(r.o,&self.name,text_color,&style.font);
+        self.ui.draw.draw_rectangle(r,color,BlendMode::Replace);
+        self.ui.draw.draw_text(r.o,&self.name,text_color,&style.font);
     }
 
     fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {

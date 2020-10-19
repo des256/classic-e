@@ -14,27 +14,16 @@ use{
     },
 };
 
-#[doc(hidden)]
 #[derive(Copy,Clone,Debug)]
-pub enum ToggleHit {
+enum ToggleHit {
     Nothing,
     Toggle,
-}
-
-/// On/off toggle style.
-pub struct ToggleStyle {
-    pub color: u32,
-    pub empty_color: u32,
-    pub full_color: u32,
-    pub tab_color: u32,
-    pub tab_hover_color: u32,
-    pub disabled_color: u32,
 }
 
 /// On/off toggle.
 pub struct Toggle {
     ui: Rc<UI>,
-    style: RefCell<ToggleStyle>,
+    style: RefCell<style::Toggle>,
     r: Cell<Rect<i32>>,
     hit: Cell<ToggleHit>,
     capturing: Cell<bool>,
@@ -50,7 +39,7 @@ impl Toggle {
     pub fn new<C: Fn(bool) + 'static>(ui: &Rc<UI>,closure: C) -> Result<Rc<Toggle>,SystemError> {
         Ok(Rc::new(Toggle {
             ui: Rc::clone(&ui),
-            style: RefCell::new(ToggleStyle {
+            style: RefCell::new(style::Toggle {
                 color: 0x444444,
                 empty_color: 0x222222,
                 full_color: 0xCC6633,
@@ -67,7 +56,7 @@ impl Toggle {
         }))
     }
 
-    pub fn find_hit(&self,p: Vec2<i32>) -> ToggleHit {
+    fn find_hit(&self,p: Vec2<i32>) -> ToggleHit {
         if rect!(vec2!(0,0),self.r.get().s).contains(&p) {
             ToggleHit::Toggle
         }
@@ -120,8 +109,8 @@ impl Widget for Toggle {
             right_color = style.disabled_color;
             left_color = style.disabled_color;
         };
-        self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(TOGGLE_SIZE,TOGGLE_SIZE)),left_color,BlendMode::Replace);
-        self.ui.draw_rectangle(rect!(vec2!(TOGGLE_SIZE,0),vec2!(TOGGLE_SIZE,TOGGLE_SIZE)),right_color,BlendMode::Replace);
+        self.ui.draw.draw_rectangle(rect!(vec2!(0,0),vec2!(TOGGLE_SIZE,TOGGLE_SIZE)),left_color,BlendMode::Replace);
+        self.ui.draw.draw_rectangle(rect!(vec2!(TOGGLE_SIZE,0),vec2!(TOGGLE_SIZE,TOGGLE_SIZE)),right_color,BlendMode::Replace);
     }
 
     fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {

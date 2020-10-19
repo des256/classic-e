@@ -15,23 +15,11 @@ use {
     },
 };
 
-#[doc(hidden)]
 #[derive(Copy,Clone,Debug)]
-pub enum BookHit {
+enum BookHit {
     Nothing,
     Tab(usize),
     Page,
-}
-
-/// Book style.
-pub struct BookStyle {
-    pub font: Rc<Font>,
-    pub text_color: u32,
-    pub disabled_text_color: u32,
-    pub color: u32,
-    pub hover_color: u32,
-    pub current_color: u32,
-    pub background_color: u32,
 }
 
 /// Book page.
@@ -44,7 +32,7 @@ pub struct BookPage {
 /// Book.
 pub struct Book {
     ui: Rc<UI>,
-    style: RefCell<BookStyle>,
+    style: RefCell<style::Book>,
     r: Cell<Rect<i32>>,
     hit: Cell<BookHit>,
     capturing: Cell<bool>,
@@ -53,10 +41,23 @@ pub struct Book {
 }
 
 impl Book {
+    /// Create new book widget.
+    ///
+    /// A book is an area with tabs at the top. The currently selected tab dictates
+    /// the widgets in the page area under the tabs.
+    ///
+    /// **Arguments**
+    ///
+    /// * `ui` - UI context.
+    /// * `pages` - Book pages.
+    ///
+    /// **Returns**
+    ///
+    /// New book widget.
     pub fn new(ui: &Rc<UI>,pages: Vec<BookPage>) -> Result<Rc<Book>,SystemError> {
         Ok(Rc::new(Book {
             ui: Rc::clone(&ui),
-            style: RefCell::new(BookStyle {
+            style: RefCell::new(style::Book {
                 font: Rc::clone(&ui.font),
                 text_color: 0xAAAAAA,
                 disabled_text_color: 0x888888,
@@ -73,7 +74,7 @@ impl Book {
         }))
     }
 
-    pub fn find_hit(&self,p: Vec2<i32>) -> BookHit {
+    fn find_hit(&self,p: Vec2<i32>) -> BookHit {
         let style = self.style.borrow();
         let mut r = rect!(0i32,0i32,0i32,0i32);
         for i in 0..self.pages.len() {
@@ -93,6 +94,11 @@ impl Book {
         BookHit::Nothing
     }
 
+    /// Set current page.
+    ///
+    /// **Arguments**
+    ///
+    /// `page` - New current page.
     pub fn set_page(&self,page: usize) {
         self.page.set(Some(page));
     }
@@ -162,17 +168,17 @@ impl Widget for Book {
             if item.enabled.get() {
                 text_color = style.text_color;
             }
-            self.ui.draw_rectangle(r,color,BlendMode::Replace);
-            self.ui.draw_text(r.o,&item.name,text_color,&style.font);
+            self.ui.draw.draw_rectangle(r,color,BlendMode::Replace);
+            self.ui.draw.draw_text(r.o,&item.name,text_color,&style.font);
             r.o.x += size.x;
         }
         r.o = vec2!(0,r.o.y + style.font.measure("E").y);
         r.s = self.r.get().s - vec2!(0,r.o.y);
         if let Some(n) = self.page.get() {
             let offset = r.o;
-            self.ui.delta_offset(offset);
+            self.ui.draw.delta_offset(offset);
             self.pages[n].child.draw();
-            self.ui.delta_offset(-offset);
+            self.ui.draw.delta_offset(-offset);
         }
     }
 

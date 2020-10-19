@@ -25,7 +25,7 @@ use std::{
     },
 };
 
-/// 3x3 Aligned matrix.
+/// 3x3 aligned matrix.
 #[derive(Copy,Clone,Debug)]
 pub struct Mat3x3A<T: FloatNumber> {
     pub x: Vec3A<T>,

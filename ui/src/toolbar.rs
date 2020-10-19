@@ -14,18 +14,10 @@ use{
     },
 };
 
-#[doc(hidden)]
 #[derive(Copy,Clone,Debug)]
-pub enum ToolBarHit {
+enum ToolBarHit {
     Nothing,
     Item(usize),
-}
-
-/// Tool bar style.
-pub struct ToolBarStyle {
-    pub item_text_color: u32,
-    pub item_color: u32,
-    pub item_hover_color: u32,
 }
 
 /// Tool bar item.
@@ -37,7 +29,7 @@ pub enum ToolBarItem {
 /// Tool bar.
 pub struct ToolBar {
     ui: Rc<UI>,
-    style: RefCell<ToolBarStyle>,
+    style: RefCell<style::ToolBar>,
     r: Cell<Rect<i32>>,
     hit: Cell<ToolBarHit>,
     capturing: Cell<bool>,
@@ -51,7 +43,7 @@ impl ToolBar {
     pub fn new(ui: &Rc<UI>,items: Vec<ToolBarItem>) -> Result<Rc<ToolBar>,SystemError> {
         Ok(Rc::new(ToolBar {
             ui: Rc::clone(&ui),
-            style: RefCell::new(ToolBarStyle {
+            style: RefCell::new(style::ToolBar {
                 item_text_color: 0xAAAAAA,
                 item_color: 0x444444,
                 item_hover_color: 0x224488,
@@ -64,7 +56,7 @@ impl ToolBar {
         }))
     }
 
-    pub fn find_hit(&self,p: Vec2<i32>) -> ToolBarHit {
+    fn find_hit(&self,p: Vec2<i32>) -> ToolBarHit {
         let mut r = rect!(0i32,0i32,0i32,0i32);
         for i in 0..self.items.len() {
             let item = &self.items[i];
@@ -138,20 +130,20 @@ impl Widget for ToolBar {
                     let size = texture.r.s;
                     let size = vec2!(size.x as i32,size.y as i32);
                     r.s.x = size.x;
-                    self.ui.draw_rectangle(r,color,BlendMode::Replace);
-                    self.ui.draw_texture(r.o,texture,BlendMode::Over);
+                    self.ui.draw.draw_rectangle(r,color,BlendMode::Replace);
+                    self.ui.draw.draw_texture(r.o,texture,BlendMode::Over);
                     r.o.x += size.x;
                 },
                 ToolBarItem::Separator => {
                     r.s.x = TOOLBAR_SEPARATOR_WIDTH;
-                    self.ui.draw_rectangle(r,style.item_color,BlendMode::Replace);
+                    self.ui.draw.draw_rectangle(r,style.item_color,BlendMode::Replace);
                     r.o.x += TOOLBAR_SEPARATOR_WIDTH;
                 },
             }
         }
         r.s.x = self.r.get().s.x - r.o.x;
         if r.s.x > 0 {
-            self.ui.draw_rectangle(r,style.item_color,BlendMode::Replace);
+            self.ui.draw.draw_rectangle(r,style.item_color,BlendMode::Replace);
         }
     }
 

@@ -14,16 +14,10 @@ use{
     },
 };
 
-#[doc(hidden)]
 #[derive(Copy,Clone,Debug)]
-pub enum ListHit {
+enum ListHit {
     Nothing,
-    Item(usize),
-}
-
-/// List style.
-pub struct ListStyle {
-    pub font: Rc<Font>,
+    _Item(usize),
 }
 
 /// List item.
@@ -34,7 +28,7 @@ pub struct ListItem {
 /// List.
 pub struct List {
     _ui: Rc<UI>,
-    style: RefCell<ListStyle>,
+    style: RefCell<style::List>,
     r: Cell<Rect<i32>>,
     _hit: Cell<ListHit>,
     _capturing: Cell<bool>,
@@ -48,7 +42,7 @@ impl List {
     pub fn new(ui: &Rc<UI>) -> Result<Rc<List>,SystemError> {
         Ok(Rc::new(List {
             _ui: Rc::clone(&ui),
-            style: RefCell::new(ListStyle {
+            style: RefCell::new(style::List {
                 font: Rc::clone(&ui.font),
             }),
             r: Cell::new(rect!(0,0,0,0)),
@@ -58,7 +52,7 @@ impl List {
         }))
     }
 
-    pub fn find_hit(&self,_p: Vec2<i32>) -> ListHit {
+    fn _find_hit(&self,_p: Vec2<i32>) -> ListHit {
         ListHit::Nothing  // Should be Item(i) once we know how Scroller works
     }
 }

@@ -200,6 +200,7 @@ vec2_float!(f32);
 vec2_float!(f64);
 
 #[macro_export]
+/// Create 2D vector.
 macro_rules! vec2 {
     ($x:expr,$y:expr) => { Vec2::new($x,$y) };
 }

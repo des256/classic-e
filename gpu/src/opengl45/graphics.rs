@@ -38,7 +38,7 @@ pub struct Graphics {
     pub(crate) index_type: Cell<GLenum>,
 }
 
-#[doc(hidden)]
+/// Helper trait for Graphics::bind_texture (for various texture types).
 pub trait GPUBindTexture {
     fn do_bind(&self,graphics: &Graphics,stage: usize);
 }
@@ -97,12 +97,12 @@ impl<T: GPUTextureFormat> GPUBindTexture for Texture2DArray<T> {
     }
 }
 
-#[doc(hidden)]
-pub trait BindTarget {
+/// Helper trait for Graphics::bind_target (for Texture2D and Framebuffer).
+pub trait GPUBindTarget {
     fn do_bind(&self,graphics: &Graphics);
 }
 
-impl BindTarget for Framebuffer {
+impl GPUBindTarget for Framebuffer {
     fn do_bind(&self,graphics: &Graphics) {
         unsafe {
 #[cfg(target_os="linux")]
@@ -116,7 +116,7 @@ impl BindTarget for Framebuffer {
     }
 }
 
-impl BindTarget for Rc<Window> {
+impl GPUBindTarget for Rc<Window> {
 #[allow(unused_variables)]
     fn do_bind(&self,graphics: &Graphics) {
         unsafe {
@@ -173,7 +173,7 @@ impl Graphics {
     /// **Arguments**
     /// 
     /// * `target` - Framebuffer or window to draw to.
-    pub fn bind_target<T: BindTarget>(&self,target: &T) {
+    pub fn bind_target<T: GPUBindTarget>(&self,target: &T) {
         target.do_bind(&self);
     }
 
@@ -341,7 +341,7 @@ impl Graphics {
     /// **Arguments**
     /// 
     /// * `indexbuffer` - Indexbuffer to bind.
-    pub fn bind_indexbuffer<T: GLIndex>(&self,indexbuffer: &IndexBuffer<T>) {
+    pub fn bind_indexbuffer<T: GPUIndexFormat>(&self,indexbuffer: &IndexBuffer<T>) {
         self.index_type.set(T::gl_type());
         unsafe { gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER,indexbuffer.ibo) };
     }

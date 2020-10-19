@@ -46,9 +46,9 @@ impl Widget for Scroller {
     }
 
     fn draw(&self) {
-        self.ui.delta_offset(-self.offset.get());
+        self.ui.draw.delta_offset(-self.offset.get());
         self.child.draw();
-        self.ui.delta_offset(self.offset.get());
+        self.ui.draw.delta_offset(self.offset.get());
     }
 
     fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {

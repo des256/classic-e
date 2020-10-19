@@ -15,27 +15,19 @@ use{
     },
 };
 
-#[doc(hidden)]
 #[derive(Copy,Clone,Debug)]
-pub enum SplitterHit {
+enum SplitterHit {
     Nothing,
     TopLeft,
     Separator,
     BottomRight,
 }
 
-/// Horizontal or vertical splitter style.
-pub struct SplitterStyle {
-    pub color: u32,
-    pub hover_color: u32,
-    pub disabled_color: u32,
-}
-
 /// Horizontal or vertical splitter.
 pub struct Splitter {
     ui: Rc<UI>,
     orientation: Orientation,
-    style: RefCell<SplitterStyle>,
+    style: RefCell<style::Splitter>,
     r: Cell<Rect<i32>>,
     hit: Cell<SplitterHit>,
     capturing: Cell<bool>,
@@ -52,7 +44,7 @@ impl Splitter {
         Ok(Rc::new(Splitter {
             ui: Rc::clone(&ui),
             orientation: Orientation::Horizontal,
-            style: RefCell::new(SplitterStyle {
+            style: RefCell::new(style::Splitter {
                 color: 0x444444,
                 hover_color: 0x224488,
                 disabled_color: 0x333333,   
@@ -73,7 +65,7 @@ impl Splitter {
         Ok(Rc::new(Splitter {
             ui: Rc::clone(&ui),
             orientation: Orientation::Vertical,
-            style: RefCell::new(SplitterStyle {
+            style: RefCell::new(style::Splitter {
                 color: 0x444444,
                 hover_color: 0x224488,   
                 disabled_color: 0x333333, 
@@ -90,7 +82,7 @@ impl Splitter {
         }))
     }
 
-    pub fn find_hit(&self,p: Vec2<i32>) -> SplitterHit {
+    fn find_hit(&self,p: Vec2<i32>) -> SplitterHit {
         if !rect!(vec2!(0,0),self.r.get().s).contains(&p) {
             return SplitterHit::Nothing
         }
@@ -218,22 +210,22 @@ impl Widget for Splitter {
             style.disabled_color
         };
         let offset = self.topleft.rect().o;
-        self.ui.delta_offset(offset);
+        self.ui.draw.delta_offset(offset);
         self.topleft.draw();
-        self.ui.delta_offset(-offset);
+        self.ui.draw.delta_offset(-offset);
         let pos = self.pos.get();
         match self.orientation {
             Orientation::Horizontal => {
-                self.ui.draw_rectangle(rect!(pos,0,SPLITTER_SEPARATOR_SIZE,self.r.get().s.y),color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(pos,0,SPLITTER_SEPARATOR_SIZE,self.r.get().s.y),color,BlendMode::Replace);
             },
             Orientation::Vertical => {
-                self.ui.draw_rectangle(rect!(0,pos,self.r.get().s.x,SPLITTER_SEPARATOR_SIZE),color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(0,pos,self.r.get().s.x,SPLITTER_SEPARATOR_SIZE),color,BlendMode::Replace);
             },
         }
         let offset = self.bottomright.rect().o;
-        self.ui.delta_offset(offset);
+        self.ui.draw.delta_offset(offset);
         self.bottomright.draw();
-        self.ui.delta_offset(-offset);
+        self.ui.draw.delta_offset(-offset);
     }
 
     fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {

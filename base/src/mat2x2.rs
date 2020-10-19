@@ -25,7 +25,7 @@ use std::{
     },
 };
 
-/// 2x2 Matrix.
+/// 2x2 matrix.
 #[derive(Copy,Clone,Debug)]
 pub struct Mat2x2<T: FloatNumber> {
     pub x: Vec2<T>,

@@ -43,7 +43,7 @@ impl Widget for Image {
     }
 
     fn draw(&self) {
-        self.ui.draw_texture(vec2!(0,0),&self.image,BlendMode::Replace);
+        self.ui.draw.draw_texture(vec2!(0,0),&self.image,BlendMode::Replace);
     }
 
     fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {

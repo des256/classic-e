@@ -8,6 +8,7 @@ use gl::types::{
     GLvoid,
 };
 
+/// Format trait for shader uniform access.
 pub trait GPUUniformFormat: Clone + Copy {
     fn len() -> usize;
     fn set(location: i32,value: Self);
@@ -108,6 +109,7 @@ impl GPUUniformFormat for Quat<f32> {
     fn set(location: i32,value: Self) { unsafe { gl::Uniform4f(location,value.r,value.i,value.j,value.k) }; }
 }
 
+/// Format trait for vertex buffer specification.
 pub trait GPUVertexFormat {
     fn len() -> usize;
     fn bind();
@@ -208,7 +210,7 @@ impl GPUVertexFormat for Quat<f32> {
     fn bind() { unsafe { gl::EnableVertexAttribArray(0); gl::VertexAttribPointer(0,4,gl::FLOAT,gl::FALSE,0,0 as *const GLvoid); } }
 }
 
-#[doc(hidden)]
+/// Format trait for texture specification.
 pub trait GPUTextureFormat: Clone + Copy + Zero {
     fn gl_internal_format() -> GLuint;
     fn gl_format() -> GLuint;

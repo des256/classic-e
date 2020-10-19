@@ -15,9 +15,9 @@ fn main() -> Result<(),SystemError> {
     let ui = UI::new(&system,&graphics,FONT_DIR)?;
     let text = Text::new(&ui,"Hello, World!")?;
     let window = UIWindow::new_frame(&ui,rect!(50,50,640,350),"Text Test",text as Rc<dyn Widget>)?;
-    window.window.show();
+    window.show();
     ui.run();
-    window.window.hide();
+    window.hide();
     drop(window);
     Ok(())
 }

@@ -12,17 +12,10 @@ use std::{
     rc::Rc,
 };
 
-/// Text style.
-pub struct TextStyle {
-    pub font: Rc<Font>,
-    pub color: u32,
-    pub text_color: u32,
-}
-
 /// Text.
 pub struct Text {
     ui: Rc<UI>,
-    style: RefCell<TextStyle>,
+    style: RefCell<style::Text>,
     r: Cell<Rect<i32>>,
     text: String,
 }
@@ -31,7 +24,7 @@ impl Text {
     pub fn new(ui: &Rc<UI>,text: &str) -> Result<Rc<Text>,SystemError> {
         Ok(Rc::new(Text {
             ui: Rc::clone(&ui),
-            style: RefCell::new(TextStyle {
+            style: RefCell::new(style::Text {
                 font: Rc::clone(&ui.font),
                 color: 0x444444,
                 text_color: 0xAAAAAA,
@@ -58,8 +51,8 @@ impl Widget for Text {
 
     fn draw(&self) {
         let style = self.style.borrow();
-        self.ui.draw_rectangle(rect!(vec2!(0,0),self.r.get().s),style.color,BlendMode::Replace);
-        self.ui.draw_text(vec2!(0,0),&self.text,style.text_color,&style.font);
+        self.ui.draw.draw_rectangle(rect!(vec2!(0,0),self.r.get().s),style.color,BlendMode::Replace);
+        self.ui.draw.draw_text(vec2!(0,0),&self.text,style.text_color,&style.font);
     }
 
     fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {

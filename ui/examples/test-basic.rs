@@ -159,11 +159,9 @@ fn main() -> Result<(),SystemError> {
     let stack = Stack::new_vertical(&ui,stack_children)?;
 
     let window = UIWindow::new_frame(&ui,rect!(50,50,640,350),"Text Test",stack as Rc<dyn Widget>)?;
-    window.window.show();
-    
+    window.show();
     ui.run();
-
+    window.hide();
     drop(window);
-
     Ok(())
 }

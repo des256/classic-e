@@ -55,7 +55,6 @@ impl<T: FloatNumber> Quat<T> {
     }
 }
 
-// Quat == Quat
 impl<T: FloatNumber> PartialEq for Quat<T> {
     fn eq(&self,other: &Self) -> bool {
         (self.r == other.r) &&
@@ -97,7 +96,6 @@ impl<T: FloatNumber> Display for Quat<T> {
     }
 }
 
-// Quat + Quat
 impl<T: FloatNumber> Add<Quat<T>> for Quat<T> {
     type Output = Self;
     fn add(self,other: Self) -> Self {
@@ -110,7 +108,6 @@ impl<T: FloatNumber> Add<Quat<T>> for Quat<T> {
     }
 }
 
-// Quat += Quat
 impl<T: FloatNumber> AddAssign<Quat<T>> for Quat<T> {
     fn add_assign(&mut self,other: Self) {
         self.r += other.r;
@@ -120,7 +117,6 @@ impl<T: FloatNumber> AddAssign<Quat<T>> for Quat<T> {
     }
 }
 
-// Quat - Quat
 impl<T: FloatNumber> Sub<Quat<T>> for Quat<T> {
     type Output = Self;
     fn sub(self,other: Self) -> Self {
@@ -133,7 +129,6 @@ impl<T: FloatNumber> Sub<Quat<T>> for Quat<T> {
     }
 }
 
-// Quat -= Quat
 impl<T: FloatNumber> SubAssign<Quat<T>> for Quat<T> {
     fn sub_assign(&mut self,other: Self) {
         self.r -= other.r;
@@ -143,7 +138,6 @@ impl<T: FloatNumber> SubAssign<Quat<T>> for Quat<T> {
     }
 }
 
-// s * Quat
 macro_rules! scalar_quat_mul {
     ($t:ty) => {
         impl Mul<Quat<$t>> for $t {
@@ -163,7 +157,6 @@ macro_rules! scalar_quat_mul {
 scalar_quat_mul!(f32);
 scalar_quat_mul!(f64);
 
-// Quat * s
 impl<T: FloatNumber> Mul<T> for Quat<T> {
     type Output = Self;
     fn mul(self,other: T) -> Self {
@@ -178,7 +171,6 @@ impl<T: FloatNumber> Mul<T> for Quat<T> {
 
 // TODO: Quat * Quat
 
-// Quat *= s
 impl<T: FloatNumber> MulAssign<T> for Quat<T> {
     fn mul_assign(&mut self,other: T) {
         self.r *= other;
@@ -190,7 +182,6 @@ impl<T: FloatNumber> MulAssign<T> for Quat<T> {
 
 // TODO: Quat *= Quat
 
-// Quat / s
 impl<T: FloatNumber> Div<T> for Quat<T> {
     type Output = Self;
     fn div(self,other: T) -> Self {
@@ -205,7 +196,6 @@ impl<T: FloatNumber> Div<T> for Quat<T> {
 
 // TODO: Quat / Quat
 
-// Quat /= s
 impl<T: FloatNumber> DivAssign<T> for Quat<T> {
     fn div_assign(&mut self,other: T) {
         self.r /= other;
@@ -217,7 +207,6 @@ impl<T: FloatNumber> DivAssign<T> for Quat<T> {
 
 // TODO: Quat /= Quat
 
-// -Quat
 impl<T: FloatNumber> Neg for Quat<T> {
     type Output = Quat<T>;
     fn neg(self) -> Quat<T> {
@@ -231,6 +220,7 @@ impl<T: FloatNumber> Neg for Quat<T> {
 }
 
 #[macro_export]
+/// Create quaternion.
 macro_rules! quat {
     ($r:expr,$i:expr,$j:expr,$k:expr) => { Quat::new($r,$i,$j,$k) };
 }

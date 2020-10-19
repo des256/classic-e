@@ -25,7 +25,7 @@
     - arrow (IDC_ARROW, XC_arrow)
     - vertical arrow (IDC_UPARROW, XC_center_ptr)
     - hourglass (IDC_WAIT, XC_watch)
-    - crosshairs (IDC_CROSS, XC_crosshair)
+    - crosshair (IDC_CROSS, XC_crosshair)
     - finger (IDC_HAND, XC_hand1)
     - open hand (?, ?)
     - grabbing hand (?, ?)
@@ -53,6 +53,7 @@
 - potentially improve the graphics commands, update OpenGL API towards Vulkan?
 - put constant dimensions in widget styles instead
 - Stack = 1D Grid; merge the two
+- find something better for new_
 
 ## STILL TODO
 

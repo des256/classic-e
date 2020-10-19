@@ -59,8 +59,11 @@ pub const KEY_RIGHT: u8 = 114;
 /// Window.
 pub struct Window {
     system: Rc<System>,
+    #[doc(hidden)]
     pub id: u64,
+    #[doc(hidden)]
     pub r: Cell<Rect<i32>>,
+    #[doc(hidden)]
     pub handler: RefCell<Option<Box<dyn Fn(Event)>>>,
 }
 
@@ -135,7 +138,7 @@ impl Window {
     ///
     /// **Returns**
     ///
-    /// New frame base window.
+    /// New frame window.
     pub fn new_frame(system: &Rc<System>,r: Rect<i32>,title: &str) -> Result<Rc<Window>,SystemError> {
         let window = Window::new(system,r,false)?;
         let protocol_set = [system.wm_delete_window];
@@ -173,7 +176,7 @@ impl Window {
     ///
     /// **Returns**
     ///
-    /// New popup base window.
+    /// New popup window.
     pub fn new_popup(system: &Rc<System>,r: Rect<i32>) -> Result<Rc<Window>,SystemError> {
         let window = Window::new(system,r,true)?;
         /*let net_type = [system.wm_net_type_utility];
@@ -220,7 +223,7 @@ impl Window {
         Ok(window)
     }
 
-    pub fn handle_event(&self,event: Event) {
+    pub(crate) fn handle_event(&self,event: Event) {
         if let Event::Configure(r) = &event {
             // When resizing, X seems to return a rectangle with the initial
             // origin as specified during window creation. But when moving, X
@@ -262,8 +265,7 @@ impl Window {
         //XSync(self.system.connection.get_raw_dpy(),False);
     }
 
-    pub fn configure(&self,r: &Rect<i32>) {
-
+    pub fn set_rect(&self,r: &Rect<i32>) {
         let values = [
             (CONFIG_WINDOW_X as u16,r.o.x as u32),
             (CONFIG_WINDOW_Y as u16,r.o.y as u32),

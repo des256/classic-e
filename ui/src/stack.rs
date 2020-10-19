@@ -14,23 +14,17 @@ use{
     },
 };
 
-#[doc(hidden)]
 #[derive(Copy,Clone,Debug)]
-pub enum StackHit {
+enum StackHit {
     Nothing,
     Child(usize),
-}
-
-/// Horizontal or vertical stack style.
-pub struct StackStyle {
-
 }
 
 /// Horizontal or vertical stack of child widgets.
 pub struct Stack {
     ui: Rc<UI>,
     orientation: Orientation,
-    _style: RefCell<StackStyle>,
+    _style: RefCell<style::Stack>,
     r: Cell<Rect<i32>>,
     hit: Cell<StackHit>,
     capturing: Cell<bool>,
@@ -42,7 +36,7 @@ impl Stack {
         Ok(Rc::new(Stack {
             ui: Rc::clone(&ui),
             orientation: Orientation::Horizontal,
-            _style: RefCell::new(StackStyle { }),
+            _style: RefCell::new(style::Stack { }),
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(StackHit::Nothing),
             capturing: Cell::new(false),
@@ -54,7 +48,7 @@ impl Stack {
         Ok(Rc::new(Stack {
             ui: Rc::clone(&ui),
             orientation: Orientation::Vertical,
-            _style: RefCell::new(StackStyle { }),
+            _style: RefCell::new(style::Stack { }),
             r: Cell::new(rect!(0,0,0,0)),
             hit: Cell::new(StackHit::Nothing),
             capturing: Cell::new(false),
@@ -62,7 +56,7 @@ impl Stack {
         }))
     }
 
-    pub fn find_hit(&self,p: Vec2<i32>) -> StackHit {
+    fn find_hit(&self,p: Vec2<i32>) -> StackHit {
         for i in 0..self.children.len() {
             let child = &self.children[i];
             if child.rect().contains(&p) {
@@ -130,9 +124,9 @@ impl Widget for Stack {
     fn draw(&self) {
         for child in self.children.iter() {
             let offset = child.rect().o;
-            self.ui.delta_offset(offset);
+            self.ui.draw.delta_offset(offset);
             child.draw();
-            self.ui.delta_offset(-offset);
+            self.ui.draw.delta_offset(-offset);
         }
     }
 

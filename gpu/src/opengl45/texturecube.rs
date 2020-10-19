@@ -9,6 +9,7 @@ use std::{
 };
 use gl::types::GLuint;
 
+/// Cube texture faces.
 pub enum CubeFace {
     PositiveX,
     NegativeX,

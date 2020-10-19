@@ -82,6 +82,7 @@ impl<T: Number> Display for Cuboid<T> {
 }
 
 #[macro_export]
+/// Create cuboid.
 macro_rules! cuboid {
     ($ox:expr,$oy:expr,$oz:expr,$sx:expr,$sy:expr,$sz:expr) => { Cuboid::new($ox,$oy,$oz,$sx,$sy,$sz) };
     ($o:expr,$s:expr) => { Cuboid::new_os($o,$s) };

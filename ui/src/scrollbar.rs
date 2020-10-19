@@ -15,7 +15,6 @@ use{
     },
 };
 
-#[doc(hidden)]
 #[derive(Copy,Clone,Debug)]
 pub enum ScrollBarHit {
     Nothing,
@@ -26,21 +25,11 @@ pub enum ScrollBarHit {
     StepMore,
 }
 
-/// Horizontal or vertical scroll bar style.
-pub struct ScrollBarStyle {
-    pub step_color: u32,
-    pub step_hover_color: u32,
-    pub page_color: u32,
-    pub page_hover_color: u32,
-    pub tab_color: u32,
-    pub tab_hover_color: u32,
-}
-
 /// Horizontal or vertical scroll bar.
 pub struct ScrollBar {
     ui: Rc<UI>,
     orientation: Orientation,
-    style: RefCell<ScrollBarStyle>,
+    style: RefCell<style::ScrollBar>,
     r: Cell<Rect<i32>>,
     hit: Cell<ScrollBarHit>,
     capturing: Cell<bool>,
@@ -60,7 +49,7 @@ impl ScrollBar {
         Ok(Rc::new(ScrollBar {
             ui: Rc::clone(&ui),
             orientation: Orientation::Horizontal,
-            style: RefCell::new(ScrollBarStyle {
+            style: RefCell::new(style::ScrollBar {
                 step_color: 0x888888,
                 step_hover_color: 0x224488,
                 page_color: 0x777777,
@@ -85,7 +74,7 @@ impl ScrollBar {
         Ok(Rc::new(ScrollBar {
             ui: Rc::clone(&ui),
             orientation: Orientation::Vertical,
-            style: RefCell::new(ScrollBarStyle {
+            style: RefCell::new(style::ScrollBar {
                 step_color: 0x888888,
                 step_hover_color: 0x224488,
                 page_color: 0x777777,
@@ -106,7 +95,7 @@ impl ScrollBar {
         }))
     }
 
-    pub fn find_hit(&self,p: Vec2<i32>) -> ScrollBarHit {
+    fn find_hit(&self,p: Vec2<i32>) -> ScrollBarHit {
         if rect!(vec2!(0,0),self.r.get().s).contains(&p) {
             match self.orientation {
                 Orientation::Horizontal => {
@@ -215,20 +204,20 @@ impl Widget for ScrollBar {
             Orientation::Horizontal => {
                 let size = (self.page.get() * ((self.r.get().s.x - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
                 let pos = (self.value.get() * ((self.r.get().s.x - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32;
-                self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepless_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(SCROLLBAR_SIZE,0),vec2!(pos,SCROLLBAR_SIZE)),pageless_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(SCROLLBAR_SIZE + pos,0),vec2!(size,SCROLLBAR_SIZE)),tab_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(SCROLLBAR_SIZE + pos + size,0),vec2!(self.r.get().s.x - 2 * SCROLLBAR_SIZE - pos - size,SCROLLBAR_SIZE)),pagemore_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(self.r.get().s.x - SCROLLBAR_SIZE,0),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepmore_color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(vec2!(0,0),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepless_color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(vec2!(SCROLLBAR_SIZE,0),vec2!(pos,SCROLLBAR_SIZE)),pageless_color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(vec2!(SCROLLBAR_SIZE + pos,0),vec2!(size,SCROLLBAR_SIZE)),tab_color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(vec2!(SCROLLBAR_SIZE + pos + size,0),vec2!(self.r.get().s.x - 2 * SCROLLBAR_SIZE - pos - size,SCROLLBAR_SIZE)),pagemore_color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(vec2!(self.r.get().s.x - SCROLLBAR_SIZE,0),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepmore_color,BlendMode::Replace);
             },
             Orientation::Vertical => {
                 let size = (self.page.get() * ((self.r.get().s.y - 2 * SCROLLBAR_SIZE) as f32) / self.full.get()) as i32;
                 let pos = (self.value.get() * ((self.r.get().s.y - 2 * SCROLLBAR_SIZE - size) as f32) / self.full.get()) as i32;
-                self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepless_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(0,SCROLLBAR_SIZE),vec2!(SCROLLBAR_SIZE,pos)),pageless_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(0,SCROLLBAR_SIZE + pos),vec2!(SCROLLBAR_SIZE,size)),tab_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(0,SCROLLBAR_SIZE + pos + size),vec2!(SCROLLBAR_SIZE,self.r.get().s.y - 2 * SCROLLBAR_SIZE - pos - size)),pagemore_color,BlendMode::Replace);
-                self.ui.draw_rectangle(rect!(vec2!(0,self.r.get().s.y - SCROLLBAR_SIZE),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepmore_color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(vec2!(0,0),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepless_color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(vec2!(0,SCROLLBAR_SIZE),vec2!(SCROLLBAR_SIZE,pos)),pageless_color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(vec2!(0,SCROLLBAR_SIZE + pos),vec2!(SCROLLBAR_SIZE,size)),tab_color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(vec2!(0,SCROLLBAR_SIZE + pos + size),vec2!(SCROLLBAR_SIZE,self.r.get().s.y - 2 * SCROLLBAR_SIZE - pos - size)),pagemore_color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(vec2!(0,self.r.get().s.y - SCROLLBAR_SIZE),vec2!(SCROLLBAR_SIZE,SCROLLBAR_SIZE)),stepmore_color,BlendMode::Replace);
             },
         }
     }

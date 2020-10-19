@@ -53,9 +53,9 @@ fn main() -> Result<(),SystemError> {
     let stack = Stack::new_vertical(&ui,main_contents)?;
 
     let window = UIWindow::new_frame(&ui,rect!(50,50,200,100),"Window Test",stack as Rc<dyn Widget>)?;
-    window.window.show();
+    window.show();
     ui.run();
-    window.window.hide();
+    window.hide();
     drop(window);
     Ok(())
 }

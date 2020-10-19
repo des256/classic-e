@@ -14,22 +14,10 @@ use{
     },
 };
 
-#[doc(hidden)]
 #[derive(Copy,Clone,Debug)]
-pub enum MenuHit {
+enum MenuHit {
     Nothing,
     Item(usize),
-}
-
-/// Menu style.
-pub struct MenuStyle {
-    pub font: Rc<Font>,
-    pub item_text_color: u32,
-    pub item_disabled_text_color: u32,
-    pub item_color: u32,
-    pub item_hover_color: u32,
-    pub item_disabled_color: u32,
-    pub item_current_color: u32,
 }
 
 /// Menu item.
@@ -42,7 +30,7 @@ pub enum MenuItem {
 /// Menu.
 pub struct Menu {
     ui: Rc<UI>,
-    style: RefCell<MenuStyle>,
+    style: RefCell<style::Menu>,
     r: Cell<Rect<i32>>,
     hit: Cell<MenuHit>,
     items: Vec<MenuItem>,
@@ -56,7 +44,7 @@ impl Menu {
     pub fn new(ui: &Rc<UI>,items: Vec<MenuItem>) -> Result<Rc<Menu>,SystemError> {
         let menu = Rc::new(Menu {
             ui: Rc::clone(&ui),
-            style: RefCell::new(MenuStyle {
+            style: RefCell::new(style::Menu {
                 font: Rc::clone(&ui.font),
                 item_text_color: 0xAAAAAA,
                 item_disabled_text_color: 0x666666,
@@ -78,7 +66,7 @@ impl Menu {
         // NOTE: in order to close all leaks, first do *menu.popup.borrow_mut() = None
     }
 
-    pub fn find_hit(&self,p: Vec2<i32>) -> MenuHit {
+    fn find_hit(&self,p: Vec2<i32>) -> MenuHit {
         let style = self.style.borrow();
         let mut r = rect!(0i32,0i32,self.r.get().s.x,0i32);
         for i in 0..self.items.len() {
@@ -166,20 +154,20 @@ impl Widget for Menu {
                 MenuItem::Action(name) => {
                     let size = style.font.measure(&name);
                     r.s.y = size.y;
-                    self.ui.draw_rectangle(r,color,BlendMode::Replace);
-                    self.ui.draw_text(r.o,&name,text_color,&style.font);
+                    self.ui.draw.draw_rectangle(r,color,BlendMode::Replace);
+                    self.ui.draw.draw_text(r.o,&name,text_color,&style.font);
                     r.o.y += size.y;
                 },
                 MenuItem::Menu(name,_) => {
                     let size = style.font.measure(&name);
                     r.s.y = size.y;
-                    self.ui.draw_rectangle(r,color,BlendMode::Replace);
-                    self.ui.draw_text(vec2!(0,0),&name,text_color,&style.font);
+                    self.ui.draw.draw_rectangle(r,color,BlendMode::Replace);
+                    self.ui.draw.draw_text(vec2!(0,0),&name,text_color,&style.font);
                     r.o.y += size.y;
                 },
                 MenuItem::Separator => {
                     r.s.y = MENU_SEPARATOR_HEIGHT;
-                    self.ui.draw_rectangle(r,style.item_color,BlendMode::Replace);
+                    self.ui.draw.draw_rectangle(r,style.item_color,BlendMode::Replace);
                     r.o.y += MENU_SEPARATOR_HEIGHT;
                 },
             }

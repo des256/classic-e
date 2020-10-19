@@ -9,6 +9,7 @@ use std::{
 };
 use gl::types::GLuint;
 
+#[doc(hidden)]
 pub struct CoreTexture1D<T: GPUTextureFormat> {
     _graphics: Rc<Graphics>,
     pub tex: GLuint,

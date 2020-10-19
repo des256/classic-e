@@ -197,7 +197,4 @@ pub use multivec3::*;
 mod multivec4;
 pub use multivec4::*;
 
-mod matrix;
-pub use matrix::*;
-
 pub mod pixel;

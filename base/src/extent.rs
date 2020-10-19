@@ -60,6 +60,7 @@ impl<T: Number> Display for Extent<T> {
 }
 
 #[macro_export]
+/// Create extent.
 macro_rules! extent {
     ($o:expr,$s:expr) => { Extent::new($o,$s) };
 }

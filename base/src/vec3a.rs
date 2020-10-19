@@ -220,6 +220,7 @@ vec3a_float!(f32);
 vec3a_float!(f64);
 
 #[macro_export]
+/// Create aligned 3D vector.
 macro_rules! vec3a {
     ($x:expr,$y:expr,$z:expr) => { Vec3A::new($x,$y,$z) };
 }

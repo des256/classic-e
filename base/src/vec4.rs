@@ -232,6 +232,7 @@ vec4_float!(f32);
 vec4_float!(f64);
 
 #[macro_export]
+/// Create 4D vector.
 macro_rules! vec4 {
     ($x:expr,$y:expr,$z:expr,$w:expr) => { Vec4::new($x,$y,$z,$w) };
 }

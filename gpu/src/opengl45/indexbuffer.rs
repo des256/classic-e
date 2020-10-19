@@ -13,30 +13,30 @@ use gl::types::{
     GLenum,
 };
 
-#[doc(hidden)]
-pub trait GLIndex {
+/// Format trait for index buffers.
+pub trait GPUIndexFormat {
     fn len() -> isize;
     fn gl_type() -> GLenum;
 }
 
-impl GLIndex for u16 {
+impl GPUIndexFormat for u16 {
     fn len() -> isize { 2 }
     fn gl_type() -> GLenum { gl::UNSIGNED_SHORT }
 }
 
-impl GLIndex for u32 {
+impl GPUIndexFormat for u32 {
     fn len() -> isize { 4 }
     fn gl_type() -> GLenum { gl::UNSIGNED_INT }
 }
 
 /// Index buffer GPU resource.
-pub struct IndexBuffer<T: GLIndex> {
+pub struct IndexBuffer<T: GPUIndexFormat> {
     _graphics: Rc<Graphics>,
     pub(crate) ibo: GLuint,
     phantom: PhantomData<T>,
 }
 
-impl<T: GLIndex> IndexBuffer<T> {
+impl<T: GPUIndexFormat> IndexBuffer<T> {
     /// (temporary) Create new index buffer.
     /// 
     /// **Arguments**
@@ -91,7 +91,7 @@ impl<T: GLIndex> IndexBuffer<T> {
     }
 }
 
-impl<T: GLIndex> Drop for IndexBuffer<T> {
+impl<T: GPUIndexFormat> Drop for IndexBuffer<T> {
     fn drop(&mut self) {
         unsafe {
             gl::DeleteBuffers(1,&self.ibo);

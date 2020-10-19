@@ -14,30 +14,19 @@ use{
     },
 };
 
-#[doc(hidden)]
 #[derive(Copy,Clone,Debug)]
-pub enum SliderHit {
+enum SliderHit {
     Nothing,
     PageLess,
     Tab,
     PageMore,
 }
 
-/// Horizontal or vertical slider style.
-pub struct SliderStyle {
-    pub color: u32,
-    pub empty_color: u32,
-    pub full_color: u32,
-    pub tab_color: u32,
-    pub tab_hover_color: u32,
-    pub disabled_color: u32,
-}
-
 /// Horizontal or vertical slider.
 pub struct Slider {
     ui: Rc<UI>,
     orientation: Orientation,
-    style: RefCell<SliderStyle>,
+    style: RefCell<style::Slider>,
     r: Cell<Rect<i32>>,
     hit: Cell<SliderHit>,
     capturing: Cell<bool>,
@@ -56,7 +45,7 @@ impl Slider {
         Ok(Rc::new(Slider {
             ui: Rc::clone(&ui),
             orientation: Orientation::Horizontal,
-            style: RefCell::new(SliderStyle {
+            style: RefCell::new(style::Slider {
                 color: 0x444444,
                 empty_color: 0x222222,
                 full_color: 0xCC6633,
@@ -79,7 +68,7 @@ impl Slider {
         Ok(Rc::new(Slider {
             ui: Rc::clone(&ui),
             orientation: Orientation::Vertical,
-            style: RefCell::new(SliderStyle {
+            style: RefCell::new(style::Slider {
                 color: 0x444444,
                 empty_color: 0x222222,
                 full_color: 0xCC6633,
@@ -98,7 +87,7 @@ impl Slider {
         }))
     }
 
-    pub fn find_hit(&self,p: Vec2<i32>) -> SliderHit {
+    fn find_hit(&self,p: Vec2<i32>) -> SliderHit {
         if rect!(vec2!(0,0),self.r.get().s).contains(&p) {
             match self.orientation {
                 Orientation::Horizontal => {
@@ -183,42 +172,42 @@ impl Widget for Slider {
             Orientation::Horizontal => {
                 let pos = (self.value.get() * ((self.r.get().s.x - SLIDER_SIZE) as f32) / self.full.get()) as i32;
                 if pos > 0 {
-                    self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(ridge,SLIDER_SIZE)),style.color,BlendMode::Replace);
+                    self.ui.draw.draw_rectangle(rect!(vec2!(0,0),vec2!(ridge,SLIDER_SIZE)),style.color,BlendMode::Replace);
                     if pos > ridge {
-                        self.ui.draw_rectangle(rect!(vec2!(ridge,0),vec2!(pos - ridge,ridge)),style.color,BlendMode::Replace);
-                        self.ui.draw_rectangle(rect!(vec2!(ridge,ridge),vec2!(pos - ridge,SLIDER_GUTTER_SIZE)),style.full_color,BlendMode::Replace);
-                        self.ui.draw_rectangle(rect!(vec2!(ridge,ridge + SLIDER_GUTTER_SIZE),vec2!(pos - ridge,ridge)),style.color,BlendMode::Replace);
+                        self.ui.draw.draw_rectangle(rect!(vec2!(ridge,0),vec2!(pos - ridge,ridge)),style.color,BlendMode::Replace);
+                        self.ui.draw.draw_rectangle(rect!(vec2!(ridge,ridge),vec2!(pos - ridge,SLIDER_GUTTER_SIZE)),style.full_color,BlendMode::Replace);
+                        self.ui.draw.draw_rectangle(rect!(vec2!(ridge,ridge + SLIDER_GUTTER_SIZE),vec2!(pos - ridge,ridge)),style.color,BlendMode::Replace);
                     }
                 }
-                self.ui.draw_rectangle(rect!(vec2!(pos,0),vec2!(SLIDER_SIZE,SLIDER_SIZE)),tab_color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(vec2!(pos,0),vec2!(SLIDER_SIZE,SLIDER_SIZE)),tab_color,BlendMode::Replace);
                 if pos < self.r.get().s.x - SLIDER_SIZE {
                     if pos < self.r.get().s.x - SLIDER_SIZE - ridge {
-                        self.ui.draw_rectangle(rect!(vec2!(pos + SLIDER_SIZE,0),vec2!(self.r.get().s.x - ridge - pos - SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
-                        self.ui.draw_rectangle(rect!(vec2!(pos + SLIDER_SIZE,ridge),vec2!(self.r.get().s.x - ridge - pos - SLIDER_SIZE,SLIDER_GUTTER_SIZE)),style.empty_color,BlendMode::Replace);
-                        self.ui.draw_rectangle(rect!(vec2!(pos + SLIDER_SIZE,ridge + SLIDER_GUTTER_SIZE),vec2!(self.r.get().s.x - ridge - pos - SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
+                        self.ui.draw.draw_rectangle(rect!(vec2!(pos + SLIDER_SIZE,0),vec2!(self.r.get().s.x - ridge - pos - SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
+                        self.ui.draw.draw_rectangle(rect!(vec2!(pos + SLIDER_SIZE,ridge),vec2!(self.r.get().s.x - ridge - pos - SLIDER_SIZE,SLIDER_GUTTER_SIZE)),style.empty_color,BlendMode::Replace);
+                        self.ui.draw.draw_rectangle(rect!(vec2!(pos + SLIDER_SIZE,ridge + SLIDER_GUTTER_SIZE),vec2!(self.r.get().s.x - ridge - pos - SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
                     }
-                    self.ui.draw_rectangle(rect!(vec2!(self.r.get().s.x - ridge,0),vec2!(ridge,SLIDER_SIZE)),style.color,BlendMode::Replace);
+                    self.ui.draw.draw_rectangle(rect!(vec2!(self.r.get().s.x - ridge,0),vec2!(ridge,SLIDER_SIZE)),style.color,BlendMode::Replace);
                 }
             },
             Orientation::Vertical => {
                 // invert position
                 let pos = ((self.full.get() - self.value.get()) * ((self.r.get().s.y - SLIDER_SIZE) as f32) / self.full.get()) as i32;
                 if pos > 0 {
-                    self.ui.draw_rectangle(rect!(vec2!(0,0),vec2!(SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
+                    self.ui.draw.draw_rectangle(rect!(vec2!(0,0),vec2!(SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
                     if pos > ridge {
-                        self.ui.draw_rectangle(rect!(vec2!(0,ridge),vec2!(ridge,pos - ridge)),style.color,BlendMode::Replace);
-                        self.ui.draw_rectangle(rect!(vec2!(ridge,ridge),vec2!(SLIDER_GUTTER_SIZE,pos - ridge)),style.empty_color,BlendMode::Replace);
-                        self.ui.draw_rectangle(rect!(vec2!(ridge + SLIDER_GUTTER_SIZE,ridge),vec2!(ridge,pos - ridge)),style.color,BlendMode::Replace);
+                        self.ui.draw.draw_rectangle(rect!(vec2!(0,ridge),vec2!(ridge,pos - ridge)),style.color,BlendMode::Replace);
+                        self.ui.draw.draw_rectangle(rect!(vec2!(ridge,ridge),vec2!(SLIDER_GUTTER_SIZE,pos - ridge)),style.empty_color,BlendMode::Replace);
+                        self.ui.draw.draw_rectangle(rect!(vec2!(ridge + SLIDER_GUTTER_SIZE,ridge),vec2!(ridge,pos - ridge)),style.color,BlendMode::Replace);
                     }
                 }
-                self.ui.draw_rectangle(rect!(vec2!(0,pos),vec2!(SLIDER_SIZE,SLIDER_SIZE)),tab_color,BlendMode::Replace);
+                self.ui.draw.draw_rectangle(rect!(vec2!(0,pos),vec2!(SLIDER_SIZE,SLIDER_SIZE)),tab_color,BlendMode::Replace);
                 if pos < self.r.get().s.y - SLIDER_SIZE {
                     if pos < self.r.get().s.y - SLIDER_SIZE - ridge {
-                        self.ui.draw_rectangle(rect!(vec2!(0,pos + SLIDER_SIZE),vec2!(ridge,self.r.get().s.y - ridge - pos - SLIDER_SIZE)),style.color,BlendMode::Replace);
-                        self.ui.draw_rectangle(rect!(vec2!(ridge,pos + SLIDER_SIZE),vec2!(SLIDER_GUTTER_SIZE,self.r.get().s.y - ridge - pos - SLIDER_SIZE)),style.full_color,BlendMode::Replace);
-                        self.ui.draw_rectangle(rect!(vec2!(ridge + SLIDER_GUTTER_SIZE,pos + SLIDER_SIZE),vec2!(ridge,self.r.get().s.y - ridge - pos - SLIDER_SIZE)),style.color,BlendMode::Replace);
+                        self.ui.draw.draw_rectangle(rect!(vec2!(0,pos + SLIDER_SIZE),vec2!(ridge,self.r.get().s.y - ridge - pos - SLIDER_SIZE)),style.color,BlendMode::Replace);
+                        self.ui.draw.draw_rectangle(rect!(vec2!(ridge,pos + SLIDER_SIZE),vec2!(SLIDER_GUTTER_SIZE,self.r.get().s.y - ridge - pos - SLIDER_SIZE)),style.full_color,BlendMode::Replace);
+                        self.ui.draw.draw_rectangle(rect!(vec2!(ridge + SLIDER_GUTTER_SIZE,pos + SLIDER_SIZE),vec2!(ridge,self.r.get().s.y - ridge - pos - SLIDER_SIZE)),style.color,BlendMode::Replace);
                     }
-                    self.ui.draw_rectangle(rect!(vec2!(0,self.r.get().s.y - ridge),vec2!(SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
+                    self.ui.draw.draw_rectangle(rect!(vec2!(0,self.r.get().s.y - ridge),vec2!(SLIDER_SIZE,ridge)),style.color,BlendMode::Replace);
                 }
             },
         }

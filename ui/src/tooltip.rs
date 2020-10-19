@@ -13,16 +13,10 @@ use std::{
     rc::Rc,
 };
 
-/// Tool tip style.
-pub struct ToolTipStyle {
-    pub font: Rc<Font>,
-    pub text_color: u32,
-}
-
 /// Tool tip.
 pub struct ToolTip {
     ui: Rc<UI>,
-    style: RefCell<ToolTipStyle>,
+    style: RefCell<style::ToolTip>,
     p: Cell<Vec2<i32>>,
     text: String,
 }
@@ -31,7 +25,7 @@ impl ToolTip {
     pub fn new(ui: &Rc<UI>,text: &str) -> Result<Rc<ToolTip>,SystemError> {
         Ok(Rc::new(ToolTip {
             ui: Rc::clone(&ui),
-            style: RefCell::new(ToolTipStyle {
+            style: RefCell::new(style::ToolTip {
                 font: Rc::clone(&ui.font),
                 text_color: 0xAAAAAA,
             }),
@@ -57,7 +51,7 @@ impl Widget for ToolTip {
 
     fn draw(&self) {
         let style = self.style.borrow();
-        self.ui.draw_text(vec2!(0,0),&self.text,style.text_color,&style.font);
+        self.ui.draw.draw_text(vec2!(0,0),&self.text,style.text_color,&style.font);
     }
 
     fn keypress(&self,_ui: &UI,_window: &Rc<UIWindow>,_k: u8) {

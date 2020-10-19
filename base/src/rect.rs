@@ -78,6 +78,7 @@ impl<T: Number> Display for Rect<T> {
 }
 
 #[macro_export]
+/// Create rectangle.
 macro_rules! rect {
     ($ox:expr,$oy:expr,$sx:expr,$sy:expr) => { Rect::new($ox,$oy,$sx,$sy) };
     ($o:expr,$s:expr) => { Rect::new_os($o,$s) };

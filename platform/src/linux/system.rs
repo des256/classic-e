@@ -155,8 +155,11 @@ fn load_function(name: &str) -> *mut c_void {
 
 /// Main system context.
 pub struct System {
+    #[doc(hidden)]
     pub connection: Connection,
+    #[doc(hidden)]
     pub hidden_window: XID,
+    #[doc(hidden)]
     pub context: GLXContext,
     pub(crate) wm_delete_window: u32,
     pub(crate) rootwindow: XID,
@@ -165,16 +168,17 @@ pub struct System {
     pub(crate) wm_protocols: u32,
     pub(crate) colormap: XID,
     pub(crate) wm_motif_hints: u32,
-    pub(crate) _wm_transient_for: u32,
-    pub(crate) _wm_net_type: u32,
-    pub(crate) _wm_net_type_utility: u32,
-    pub(crate) _wm_net_type_dropdown_menu: u32,
+    _wm_transient_for: u32,
+    _wm_net_type: u32,
+    _wm_net_type_utility: u32,
+    _wm_net_type_dropdown_menu: u32,
     pub(crate) wm_net_state: u32,
     pub(crate) wm_net_state_above: u32,
     pub(crate) e_window_pointer: u32,
     epfd: c_int,
+    #[doc(hidden)]
     pub glx_swap_interval: GlXSwapIntervalEXT,    
-    pub cursors: Vec<Cursor>,
+    cursors: Vec<Cursor>,
 }
 
 impl System {

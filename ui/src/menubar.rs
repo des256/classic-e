@@ -14,20 +14,10 @@ use{
     },
 };
 
-#[doc(hidden)]
 #[derive(Copy,Clone,Debug)]
-pub enum MenuBarHit {
+enum MenuBarHit {
     Nothing,
     Item(usize),
-}
-
-/// Menu bar style.
-pub struct MenuBarStyle {
-    pub font: Rc<Font>,
-    pub item_text_color: u32,
-    pub item_color: u32,
-    pub item_hover_color: u32,
-    pub item_current_color: u32,
 }
 
 /// Menu bar item.
@@ -39,7 +29,7 @@ pub enum MenuBarItem {
 /// Menu bar.
 pub struct MenuBar {
     ui: Rc<UI>,
-    style: RefCell<MenuBarStyle>,
+    style: RefCell<style::MenuBar>,
     r: Cell<Rect<i32>>,
     hit: Cell<MenuBarHit>,
     items: Vec<MenuBarItem>,
@@ -52,7 +42,7 @@ impl MenuBar {
     pub fn new(ui: &Rc<UI>,items: Vec<MenuBarItem>) -> Result<Rc<MenuBar>,SystemError> {
         Ok(Rc::new(MenuBar {
             ui: Rc::clone(&ui),
-            style: RefCell::new(MenuBarStyle {
+            style: RefCell::new(style::MenuBar {
                 font: Rc::clone(&ui.font),
                 item_text_color: 0xAAAAAA,
                 item_color: 0x444444,
@@ -66,7 +56,7 @@ impl MenuBar {
         }))
     }
 
-    pub fn find_hit(&self,p: Vec2<i32>) -> MenuBarHit {
+    fn find_hit(&self,p: Vec2<i32>) -> MenuBarHit {
         let style = self.style.borrow();
         let mut r = rect!(0i32,0i32,0i32,self.r.get().s.y);
         for i in 0..self.items.len() {
@@ -101,18 +91,18 @@ impl MenuBar {
                         if let Some(n) = self.current_item.get() {
                             if n != new_n {
                                 self.clear_current();
-                                let gr = rect!(window.window.r.get().o + self.ui.offset.get() + r.o + vec2!(0,r.s.y),menu.calc_min_size());
+                                let gr = rect!(window.window.r.get().o + self.ui.draw.offset.get() + r.o + vec2!(0,r.s.y),menu.calc_min_size());
                                 if let Some(popup) = &*menu.popup.borrow() {
-                                    popup.configure(gr);
+                                    popup.set_rect(gr);
                                     popup.show();    
                                 }
                                 self.current_item.set(Some(new_n));
                             }
                         }
                         else {
-                            let gr = rect!(window.window.r.get().o + self.ui.offset.get() + r.o + vec2!(0,r.s.y),menu.calc_min_size());
+                            let gr = rect!(window.window.r.get().o + self.ui.draw.offset.get() + r.o + vec2!(0,r.s.y),menu.calc_min_size());
                             if let Some(popup) = &*menu.popup.borrow() {
-                                popup.configure(gr);
+                                popup.set_rect(gr);
                                 popup.show();    
                             }
                             self.current_item.set(Some(new_n));
@@ -189,20 +179,20 @@ impl Widget for MenuBar {
                 MenuBarItem::Menu(name,_menu) => {
                     let size = style.font.measure(&name);
                     r.s.x = size.x;
-                    self.ui.draw_rectangle(r,color,BlendMode::Replace);
-                    self.ui.draw_text(r.o,&name,text_color,&style.font);
+                    self.ui.draw.draw_rectangle(r,color,BlendMode::Replace);
+                    self.ui.draw.draw_text(r.o,&name,text_color,&style.font);
                     r.o.x += size.x;
                 },
                 MenuBarItem::Separator => {
                     r.s.x = MENUBAR_SEPARATOR_WIDTH;
-                    self.ui.draw_rectangle(r,style.item_color,BlendMode::Replace);
+                    self.ui.draw.draw_rectangle(r,style.item_color,BlendMode::Replace);
                     r.o.x += MENUBAR_SEPARATOR_WIDTH;
                 },
             }
         }
         r.s.x = self.r.get().s.x - r.o.x;
         if r.s.x > 0 {
-            self.ui.draw_rectangle(r,style.item_color,BlendMode::Replace);
+            self.ui.draw.draw_rectangle(r,style.item_color,BlendMode::Replace);
         }
     }
 

@@ -25,7 +25,7 @@ use std::{
     },
 };
 
-/// 4x4 Matrix.
+/// 4x4 matrix.
 #[derive(Copy,Clone,Debug)]
 pub struct Mat4x4<T: FloatNumber> {
     pub x: Vec4<T>,

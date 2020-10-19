@@ -14,15 +14,9 @@ use{
     },
 };
 
-#[doc(hidden)]
 #[derive(Copy,Clone,Debug)]
 pub enum TreeHit {
     Nothing
-}
-
-/// Tree style.
-pub struct TreeStyle {
-    pub font: Rc<Font>,
 }
 
 /// Tree item.
@@ -33,7 +27,7 @@ pub struct TreeItem {
 /// Tree.
 pub struct Tree {
     _ui: Rc<UI>,
-    style: RefCell<TreeStyle>,
+    style: RefCell<style::Tree>,
     r: Cell<Rect<i32>>,
     _hit: Cell<TreeHit>,
     _items: Vec<TreeItem>,
@@ -46,7 +40,7 @@ impl Tree {
     pub fn new(ui: &Rc<UI>) -> Result<Rc<Tree>,SystemError> {
         Ok(Rc::new(Tree {
             _ui: Rc::clone(&ui),
-            style: RefCell::new(TreeStyle {
+            style: RefCell::new(style::Tree {
                 font: Rc::clone(&ui.font),
             }),
             r: Cell::new(rect!(0,0,0,0)),
@@ -55,7 +49,7 @@ impl Tree {
         }))
     }
 
-    pub fn find_hit(&self,_p: Vec2<i32>) -> TreeHit {
+    fn _find_hit(&self,_p: Vec2<i32>) -> TreeHit {
         TreeHit::Nothing  // Should be Item(i) once we know how Scroller works
     }
 }
