@@ -25,9 +25,9 @@ impl Framebuffer {
     /// 
     /// **Returns**
     /// 
-    /// * `Ok(Framebuffer)` - The new framebuffer.
+    /// * `Ok(Rc<Framebuffer>)` - The new framebuffer.
     /// * `Err(SystemError)` - The framebuffer could not be created.
-    pub fn new(graphics: &Rc<Graphics>,size: Vec2<usize>) -> Result<Framebuffer,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>,size: Vec2<usize>) -> Result<Rc<Framebuffer>,SystemError> {
         let mut fbo: GLuint = 0;
         let mut tex: GLuint = 0;
         unsafe {
@@ -45,12 +45,12 @@ impl Framebuffer {
                 return Err(SystemError::Generic);
             }
         }
-        Ok(Framebuffer {
+        Ok(Rc::new(Framebuffer {
             _graphics: Rc::clone(&graphics),
             fbo: fbo,
             tex: tex,
             size: size,
-        })
+        }))
     }
 }
 

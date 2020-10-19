@@ -47,7 +47,7 @@ fn get_i32(buffer: &[u8]) -> i32 {
 pub struct FontProto {
     pub(crate) _filename: String,
     pub(crate) sets: Vec<CharacterSet>,
-    pub(crate) texture: Texture2D<pixel::R8>,
+    pub(crate) texture: Rc<Texture2D<pixel::R8>>,
 }
 
 #[doc(hidden)]

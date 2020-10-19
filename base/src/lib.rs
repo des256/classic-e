@@ -155,8 +155,14 @@ pub use complex::*;
 mod quat;
 pub use quat::*;
 
+mod extent;
+pub use extent::*;
+
 mod rect;
 pub use rect::*;
+
+mod cuboid;
+pub use cuboid::*;
 
 mod vec2;
 pub use vec2::*;

@@ -2,10 +2,41 @@
 
 - Stacks and Grids don't have enough expressivity yet
 - get icons from same texture resource, derive smaller textures from same texture resource in gpu part
-- when scrollbars get too small, they need to auto-disable
-- scrollbar tabs should have a minimum size
+    - SubTexture1D
+    - SubTexture2D
+    - SubTexture3D
+- ScrollBar:
+    - when scrollbars get too small, they need to auto-disable
+    - scrollbar tabs should have a minimum size
 - add various types of padding to all widgets
+    - Book
+    - Button
+    - Field
+    - Grid
+    - Menu
+    - MenuBar
+    - Progress
+    - Slider
+    - Stack
+    - Toggle
+    - ToolBar
 - add different mouse cursors updated by mousemove
+    - first tier: global function in UI to set cursor, according to a growing enum
+    - arrow (IDC_ARROW, XC_arrow)
+    - vertical arrow (IDC_UPARROW, XC_center_ptr)
+    - hourglass (IDC_WAIT, XC_watch)
+    - crosshairs (IDC_CROSS, XC_crosshair)
+    - finger (IDC_HAND, XC_hand1)
+    - open hand (?, ?)
+    - grabbing hand (?, ?)
+    - magnifying glass (?, ?)
+    - caret (IDC_IBEAM)
+    - slashed circle (IDC_NO, ?)
+    - scale arrows cross (IDC_SIZEALL, XC_fleur)
+    - scale arrows UL <-> DR (IDC_SIZENESW, ?)
+    - scale arrows UR <-> DL (IDC_SIZENWSE, ?)
+    - scale arrows L <-> R (IDC_SIZEWE, XC_sb_h_double_arrow)
+    - scale arrows U <-> D (IDC_SIZENS, XC_sb_v_double_arrow)
 - there are various instances where some default text is measured to estimate the size of a widget, this might not be appropriate
 - taking Cell for everything might not be entirely necessary, play around with mutability
 - use struct enums instead of tuple enums
@@ -21,6 +52,7 @@
 - explore web/WebGL, WASM interface; popup menus by divs over the canvas?
 - potentially improve the graphics commands, update OpenGL API towards Vulkan?
 - put constant dimensions in widget styles instead
+- Stack = 1D Grid; merge the two
 
 ## STILL TODO
 

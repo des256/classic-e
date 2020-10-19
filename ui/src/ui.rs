@@ -23,11 +23,11 @@ pub struct UIWindow {
 pub struct UI {
     pub system: Rc<System>,
     pub graphics: Rc<Graphics>,
-    pub flat_shader: Shader,  // the shaders
-    pub alpha_shader: Shader,
-    pub color_shader: Shader,
-    pub rect_vb: VertexBuffer<Vec2<f32>>,  // vertexbuffer containing fixed unit rectangle
-    pub draw_ub: UniformBuffer<TexRect>,  // uniform buffer with actual rectangle specfications
+    pub flat_shader: Rc<Shader>,  // the shaders
+    pub alpha_shader: Rc<Shader>,
+    pub color_shader: Rc<Shader>,
+    pub rect_vb: Rc<VertexBuffer<Vec2<f32>>>,  // vertexbuffer containing fixed unit rectangle
+    pub draw_ub: Rc<UniformBuffer<TexRect>>,  // uniform buffer with actual rectangle specfications
     pub two_over_window_size: Cell<Vec2<f32>>,  // 2/w,2/h of the current window
     pub offset: Cell<Vec2<i32>>,  // drawing offset (TBD)
     pub proto_sans: Rc<FontProto>,
@@ -272,8 +272,8 @@ impl UI {
             r: rect!(
                 (p.x + ofs.x) as f32,
                 (p.y + ofs.y) as f32,
-                texture.size.x as f32,
-                texture.size.y as f32
+                texture.r.s.x as f32,
+                texture.r.s.y as f32
             ),
             t: rect!(0.0,0.0,1.0,1.0),
         }]);
@@ -308,10 +308,10 @@ impl UI {
                                     ((font.ratio * (ch.r.s.y as f32)) as i32) as f32
                                 ),
                                 t: rect!(
-                                    (ch.r.o.x as f32) / (font.proto.texture.size.x as f32),
-                                    (ch.r.o.y as f32) / (font.proto.texture.size.y as f32),
-                                    (ch.r.s.x as f32) / (font.proto.texture.size.x as f32),
-                                    (ch.r.s.y as f32) / (font.proto.texture.size.y as f32)
+                                    (ch.r.o.x as f32) / (font.proto.texture.r.s.x as f32),
+                                    (ch.r.o.y as f32) / (font.proto.texture.r.s.y as f32),
+                                    (ch.r.s.x as f32) / (font.proto.texture.r.s.x as f32),
+                                    (ch.r.s.y as f32) / (font.proto.texture.r.s.y as f32)
                                 ),
                             });
                             /*buffer.push(TexRect {
@@ -341,7 +341,7 @@ impl UI {
         self.graphics.bind_shader(&self.alpha_shader);
         self.graphics.bind_vertexbuffer(&self.rect_vb);
         self.graphics.bind_uniformbuffer(1,"rect_block",&self.draw_ub);
-        self.graphics.bind_texture(0,&font.proto.texture);
+        self.graphics.bind_texture(0,&*font.proto.texture);
         self.graphics.set_uniform("alpha_texture",0);
         let tows = self.two_over_window_size.get();
         self.graphics.set_uniform("tows",tows);

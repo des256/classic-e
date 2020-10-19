@@ -15,7 +15,7 @@ use{
 pub struct Image {
     ui: Rc<UI>,
     r: Cell<Rect<i32>>,
-    image: Texture2D<pixel::ARGB8>,
+    image: Rc<Texture2D<pixel::ARGB8>>,
 }
 
 impl Image {
@@ -38,7 +38,7 @@ impl Widget for Image {
     }
 
     fn calc_min_size(&self) -> Vec2<i32> {
-        let size = self.image.size;
+        let size = self.image.r.s;
         vec2!(size.x as i32,size.y as i32)
     }
 

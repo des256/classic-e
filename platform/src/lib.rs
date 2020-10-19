@@ -42,6 +42,25 @@ impl fmt::Display for MouseWheel {
     }
 }
 
+/// Mouse cursor.
+pub enum MouseCursor {
+    Arrow,
+    VArrow,
+    Hourglass,
+    Crosshair,
+    Finger,
+    OpenHand,
+    GrabbingHand,
+    MagnifyingGlass,
+    Caret,
+    SlashedCircle,
+    SizeNSEW,
+    SizeNESW,
+    SizeNWSE,
+    SizeWE,
+    SizeNS,
+}
+
 /// User interaction event.
 #[derive(Copy,Clone,Debug)]
 pub enum Event {

@@ -38,7 +38,7 @@ impl<T: GPUTextureFormat> TextureCube<T> {
     /// 
     /// * `Ok(TextureCube)` - The new cube texture.
     /// * `Err(SystemError)` - The cube texture could not be created.
-    pub fn new(graphics: &Rc<Graphics>,size: usize) -> Result<TextureCube<T>,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>,size: usize) -> Result<Rc<TextureCube<T>>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -50,12 +50,12 @@ impl<T: GPUTextureFormat> TextureCube<T> {
             gl::TexParameteri(gl::TEXTURE_CUBE_MAP,gl::TEXTURE_MAG_FILTER,gl::LINEAR as i32);
             gl::TexStorage2D(gl::TEXTURE_CUBE_MAP,1,T::gl_internal_format(),size as i32,size as i32);
         };
-        Ok(TextureCube {
+        Ok(Rc::new(TextureCube {
             _graphics: Rc::clone(graphics),
             tex: tex,
             size: size,
             phantom: PhantomData,
-        })
+        }))
     }
 
     /// (temporary) Create new cube texture from 6 Mats.
@@ -74,7 +74,7 @@ impl<T: GPUTextureFormat> TextureCube<T> {
     /// 
     /// * `Ok(TextureCube)` - The new cube texture.
     /// * `Err(SystemError)` - The cube texture could not be created.
-    pub fn new_from_mats(graphics: &Rc<Graphics>,src_xp: Mat<T>,src_xn: Mat<T>,src_yp: Mat<T>,src_yn: Mat<T>,src_zp: Mat<T>,src_zn: Mat<T>) -> Result<TextureCube<T>,SystemError> {
+    pub fn new_from_mats(graphics: &Rc<Graphics>,src_xp: Mat<T>,src_xn: Mat<T>,src_yp: Mat<T>,src_yn: Mat<T>,src_zp: Mat<T>,src_zn: Mat<T>) -> Result<Rc<TextureCube<T>>,SystemError> {
         let texture = TextureCube::new(graphics,src_xp.size.x)?;
         texture.load(CubeFace::PositiveX,Vec2::<usize>::zero(),&src_xp);
         texture.load(CubeFace::NegativeX,Vec2::<usize>::zero(),&src_xn);

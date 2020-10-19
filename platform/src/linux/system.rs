@@ -111,6 +111,9 @@ use {
             ungrab_pointer,
             ATOM_ANY,
             get_property,
+            Cursor,
+            change_window_attributes,
+            CW_CURSOR,
         },
         cast_event,
     },
@@ -170,7 +173,8 @@ pub struct System {
     pub(crate) wm_net_state_above: u32,
     pub(crate) e_window_pointer: u32,
     epfd: c_int,
-    pub glx_swap_interval: GlXSwapIntervalEXT,
+    pub glx_swap_interval: GlXSwapIntervalEXT,    
+    pub cursors: Vec<Cursor>,
 }
 
 impl System {
@@ -402,6 +406,7 @@ impl System {
             e_window_pointer: e_window_pointer,
             epfd: epfd,
             glx_swap_interval: glx_swap_interval,
+            cursors: Vec::new(),
         }))
     }
 
@@ -545,6 +550,16 @@ impl System {
     pub fn release_mouse(&self) {
         println!("XUngrabPointer");
         ungrab_pointer(&self.connection,TIME_CURRENT_TIME);
+    }
+
+    /// Set current mouse cursor shape.
+    ///
+    /// **Arguments**
+    /// * `id` - Unique ID of the window.
+    /// * `n` - Mouse cursor shape.
+    pub fn set_mousecursor(&self,id: u64,n: usize) {
+        let values = [(CW_CURSOR,self.cursors[n])];
+        change_window_attributes(&self.connection,id as u32,&values);
     }
 }
 

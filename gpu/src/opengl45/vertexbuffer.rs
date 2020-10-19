@@ -29,7 +29,7 @@ impl<T: GPUVertexFormat> VertexBuffer<T> {
     /// 
     /// * `Ok(VertexBuffer)` - The new vertex buffer.
     /// * `Err(SystemError)` - The vertex buffer could not be created.
-    pub fn new(graphics: &Rc<Graphics>) -> Result<VertexBuffer<T>,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>) -> Result<Rc<VertexBuffer<T>>,SystemError> {
         let mut vao: GLuint = 0;
         let mut vbo: GLuint = 0;
         unsafe {
@@ -40,12 +40,12 @@ impl<T: GPUVertexFormat> VertexBuffer<T> {
             gl::BufferData(gl::ARRAY_BUFFER,1,null() as *const c_void,gl::STATIC_DRAW);
             T::bind();
         }
-        Ok(VertexBuffer {
+        Ok(Rc::new(VertexBuffer {
             _graphics: Rc::clone(graphics),
             vao: vao,
             vbo: vbo,
             phantom: PhantomData,
-        })
+        }))
     }
 
     /// (temporary) Create new vertex buffer from Vec.
@@ -59,7 +59,7 @@ impl<T: GPUVertexFormat> VertexBuffer<T> {
     /// 
     /// * `Ok(VertexBuffer)` - The new vertex buffer.
     /// * `Err(SystemError)` - The vertex buffer could not be created.
-    pub fn new_from_vec(graphics: &Rc<Graphics>,src: Vec<T>) -> Result<VertexBuffer<T>,SystemError> {
+    pub fn new_from_vec(graphics: &Rc<Graphics>,src: Vec<T>) -> Result<Rc<VertexBuffer<T>>,SystemError> {
         let vertexbuffer = VertexBuffer::new(graphics)?;
         vertexbuffer.load(0,&src);
         Ok(vertexbuffer)

@@ -56,7 +56,7 @@ impl<T: GPUTextureFormat> GPUBindTexture for Texture1D<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
-            gl::BindTexture(gl::TEXTURE_1D,self.tex);
+            gl::BindTexture(gl::TEXTURE_1D,self.core.tex);
         }
     }
 }
@@ -65,7 +65,7 @@ impl<T: GPUTextureFormat> GPUBindTexture for Texture2D<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
-            gl::BindTexture(gl::TEXTURE_2D,self.tex);
+            gl::BindTexture(gl::TEXTURE_2D,self.core.tex);
         }
     }
 }
@@ -74,7 +74,7 @@ impl<T: GPUTextureFormat> GPUBindTexture for Texture3D<T> {
     fn do_bind(&self,_graphics: &Graphics,stage: usize) {
         unsafe {
             gl::ActiveTexture(gl::TEXTURE0 + stage as u32);
-            gl::BindTexture(gl::TEXTURE_3D,self.tex);
+            gl::BindTexture(gl::TEXTURE_3D,self.core.tex);
         }
     }
 }

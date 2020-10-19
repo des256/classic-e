@@ -11,7 +11,7 @@ use {
 /// Action.
 pub struct Action {
     _name: String,
-    _icon: Texture2D<pixel::ARGB8>,
+    _icon: Rc<Texture2D<pixel::ARGB8>>,
 }
 
 impl Action {

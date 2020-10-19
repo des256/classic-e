@@ -39,7 +39,7 @@ impl Shader {
     /// 
     /// * `Ok(Shader)` - The created shader program.
     /// * `Err(SystemError)` - The shader progam could not be created.
-    pub fn new(graphics: &Rc<Graphics>,vertex_src: &str,geometry_src: Option<&str>,fragment_src: &str) -> Result<Shader,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>,vertex_src: &str,geometry_src: Option<&str>,fragment_src: &str) -> Result<Rc<Shader>,SystemError> {
         unsafe {
             let vs = gl::CreateShader(gl::VERTEX_SHADER);
             let vcstr = CString::new(vertex_src.as_bytes()).unwrap();
@@ -123,10 +123,10 @@ impl Shader {
             }
             gl::DeleteShader(fs);
 
-            Ok(Shader {
+            Ok(Rc::new(Shader {
                 _graphics: Rc::clone(&graphics),
                 sp: sp,
-            })
+            }))
         }
     }
 }

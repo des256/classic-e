@@ -30,18 +30,18 @@ impl<T: GPUUniformFormat> UniformBuffer<T> {
     /// 
     /// * `Ok(UniformBuffer)` - The new uniform buffer.
     /// * `Err(SystemError)` - The uniform buffer could not be created.
-    pub fn new(graphics: &Rc<Graphics>) -> Result<UniformBuffer<T>,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>) -> Result<Rc<UniformBuffer<T>>,SystemError> {
         let mut ubo: GLuint = 0;
         unsafe {
             gl::GenBuffers(1,&mut ubo);
             gl::BindBuffer(gl::UNIFORM_BUFFER,ubo);
             gl::BufferData(gl::UNIFORM_BUFFER,1,null() as *const c_void,gl::DYNAMIC_DRAW);
         }
-        Ok(UniformBuffer {
+        Ok(Rc::new(UniformBuffer {
             _graphics: Rc::clone(graphics),
             ubo: ubo,
             phantom: PhantomData,
-        })
+        }))
     }
 
     /// (temporary) Create new uniform buffer from Vec.
@@ -55,7 +55,7 @@ impl<T: GPUUniformFormat> UniformBuffer<T> {
     /// 
     /// * `Ok(UniformBuffer)` - The new uniform buffer.
     /// * `Err(SystemError)` - The uniform buffer could not be created.
-    pub fn new_from_vec(graphics: &Rc<Graphics>,src: Vec<T>) -> Result<UniformBuffer<T>,SystemError> {
+    pub fn new_from_vec(graphics: &Rc<Graphics>,src: Vec<T>) -> Result<Rc<UniformBuffer<T>>,SystemError> {
         let uniformbuffer = UniformBuffer::new(graphics)?;
         uniformbuffer.load(0,&src);
         Ok(uniformbuffer)

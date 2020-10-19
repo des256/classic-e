@@ -47,18 +47,18 @@ impl<T: GLIndex> IndexBuffer<T> {
     /// 
     /// * `Ok(IndexBuffer)` - The new index buffer.
     /// * `Err(SystemError)` - The index buffer could not be created.
-    pub fn new(graphics: &Rc<Graphics>) -> Result<IndexBuffer<T>,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>) -> Result<Rc<IndexBuffer<T>>,SystemError> {
         let mut ibo: GLuint = 0;
         unsafe {
             gl::GenBuffers(1,&mut ibo);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER,ibo);
             gl::BufferData(gl::ELEMENT_ARRAY_BUFFER,0,null() as *const c_void,gl::DYNAMIC_DRAW);
         }
-        Ok(IndexBuffer {
+        Ok(Rc::new(IndexBuffer {
             _graphics: Rc::clone(&graphics),
             ibo: ibo,
             phantom: PhantomData,
-        })
+        }))
     }
 
     /// (temporary) Create new index buffer from vec.
@@ -72,14 +72,12 @@ impl<T: GLIndex> IndexBuffer<T> {
     /// 
     /// * `Ok(IndexBuffer)` - The new index buffer.
     /// * `Err(SystemError)` - The index buffer could not be created.
-    pub fn new_from_vec(graphics: &Rc<Graphics>,indices: &Vec<T>) -> Result<IndexBuffer<T>,SystemError> {
+    pub fn new_from_vec(graphics: &Rc<Graphics>,indices: &Vec<T>) -> Result<Rc<IndexBuffer<T>>,SystemError> {
         let indexbuffer = IndexBuffer::<T>::new(graphics)?;
         indexbuffer.load(indices);
         Ok(indexbuffer)
     }
-}
 
-impl<T: GLIndex> IndexBuffer<T> {
     /// (temporary) Load all or part of the indices from vec.
     /// 
     /// **Arguments**

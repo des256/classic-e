@@ -29,7 +29,7 @@ impl<T: GPUTextureFormat> Texture2DArray<T> {
     /// 
     /// * `Ok(Texture2DArray)` - The new 2D texture.
     /// * `Err(SystemError)` - The 2D texture array could not be created.
-    pub fn new(graphics: &Rc<Graphics>,size: Vec3<usize>) -> Result<Texture2DArray<T>,SystemError> {
+    pub fn new(graphics: &Rc<Graphics>,size: Vec3<usize>) -> Result<Rc<Texture2DArray<T>>,SystemError> {
         let mut tex: GLuint = 0;
         unsafe {
             gl::GenTextures(1,&mut tex);
@@ -40,12 +40,12 @@ impl<T: GPUTextureFormat> Texture2DArray<T> {
             gl::TexParameteri(gl::TEXTURE_2D_ARRAY,gl::TEXTURE_MAG_FILTER,gl::LINEAR as i32);
             gl::TexStorage3D(gl::TEXTURE_2D_ARRAY,1,T::gl_internal_format(),size.x as i32,size.y as i32,size.z as i32);
         };
-        Ok(Texture2DArray {
+        Ok(Rc::new(Texture2DArray {
             _graphics: Rc::clone(graphics),
             tex: tex,
             size: size,
             phantom: PhantomData,
-        })
+        }))
     }
 
     /// (temporary) Create new 2D texture array from Ten.
@@ -59,7 +59,7 @@ impl<T: GPUTextureFormat> Texture2DArray<T> {
     /// 
     /// * `Ok(Texture2DArray)` - The new 2D texture array.
     /// * `Err(SystemError)` - The 2D texture array could not be created.
-    pub fn new_from_ten(graphics: &Rc<Graphics>,src: Ten<T>) -> Result<Texture2DArray<T>,SystemError> {
+    pub fn new_from_ten(graphics: &Rc<Graphics>,src: Ten<T>) -> Result<Rc<Texture2DArray<T>>,SystemError> {
         let texture = Texture2DArray::new(graphics,src.size)?;
         texture.load(Vec3::<usize>::zero(),&src);
         Ok(texture)
