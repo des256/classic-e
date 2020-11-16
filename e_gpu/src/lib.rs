@@ -3,8 +3,8 @@
 
 //! GPU access.
 
-use base::*;
-use platform::*;
+use e_base::*;
+use e_platform::*;
 
 /// Texture filtering modes.
 #[derive(Clone,Copy)]

@@ -1,9 +1,9 @@
 [package]
-name = "base"
+name = "e_base"
 version = "0.1.0"
 authors = ["Desmond Germans <desmond@germansmedia.nl>"]
 edition = "2018"
 
 [lib]
-name = "base"
+name = "e_base"
 crate-type = ["rlib"]

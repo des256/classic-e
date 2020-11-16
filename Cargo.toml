@@ -1,11 +1,11 @@
 [workspace]
 
 members = [
-    "base",
-    "platform",
-    "gpu",
-    "imageformats",
-    "ui",
+    "e_base",
+    "e_platform",
+    "e_gpu",
+    "e_image",
+    "e_ui",
 ]
 
 # compile as fast as possible, and make everything clear
@@ -13,9 +13,9 @@ members = [
 opt-level = 0
 debug = true
 lto = true
-codegen-units = 14
+codegen-units = 28
 
-# improve the performance of the resulting code as much as possible:
+# improve the performance of the resulting code as much as possible
 [profile.release]
 opt-level = 3
 debug = false

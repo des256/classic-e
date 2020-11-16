@@ -1,7 +1,7 @@
 // E - platform
 // Desmond Germans, 2020
 
-use base::*;
+use e_base::*;
 use std::fmt;
 
 /// Mouse button.

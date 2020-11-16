@@ -23,8 +23,8 @@ pub struct UIWindow {
 /// UI context.
 pub struct UI {
     system: Rc<System>,
-    graphics: Rc<Graphics>,
-    pub(crate) draw: Rc<Draw>,
+    pub graphics: Rc<Graphics>,
+    pub draw: Rc<Draw>,
     _proto_sans: Rc<FontProto>,
     _proto_serif: Rc<FontProto>,
     _proto_mono: Rc<FontProto>,
@@ -214,31 +214,31 @@ impl UIWindow {
         self.window.hide();
     }
 
-    fn dispatch_platform_event(window: &Rc<UIWindow>,platform_event: platform::Event) {
+    fn dispatch_platform_event(window: &Rc<UIWindow>,platform_event: e_platform::Event) {
         let mut new_capturing = false;
         match platform_event {
-            platform::Event::KeyPress(k) => {
+            e_platform::Event::KeyPress(k) => {
                 window.widget.keypress(&window.ui,window,k);
             },
-            platform::Event::KeyRelease(k) => {
+            e_platform::Event::KeyRelease(k) => {
                 window.widget.keyrelease(&window.ui,window,k);
             },
-            platform::Event::MousePress(p,b) => {
+            e_platform::Event::MousePress(p,b) => {
                 new_capturing = window.widget.mousepress(&window.ui,&window,p,b);
             },
-            platform::Event::MouseRelease(p,b) => {
+            e_platform::Event::MouseRelease(p,b) => {
                 new_capturing = window.widget.mouserelease(&window.ui,&window,p,b);
             },
-            platform::Event::MouseWheel(w) => {
+            e_platform::Event::MouseWheel(w) => {
                 new_capturing = window.widget.mousewheel(&window.ui,&window,w);
             },
-            platform::Event::MouseMove(p) => {
+            e_platform::Event::MouseMove(p) => {
                 new_capturing = window.widget.mousemove(&window.ui,&window,p);
             },
-            platform::Event::Configure(r) => {
+            e_platform::Event::Configure(r) => {
                 window.widget.set_rect(r);
             },
-            platform::Event::Render => {
+            e_platform::Event::Render => {
 #[cfg(target_os="linux")]
                 {
                     // In X11, window resizing is done in the main loop, so just
@@ -254,7 +254,7 @@ impl UIWindow {
                     window.draw_widget();
                 }
             },
-            platform::Event::Close => {
+            e_platform::Event::Close => {
                 // TODO
             },
         }

@@ -3,7 +3,7 @@
 
 //! Image formats.
 
-use base::*;
+use e_base::*;
 
 use std::{
     fs::File,

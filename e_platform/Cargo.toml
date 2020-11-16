@@ -1,15 +1,15 @@
 [package]
-name = "platform"
+name = "e_platform"
 version = "0.1.0"
 authors = ["Desmond Germans <desmond@germansmedia.nl>"]
 edition = "2018"
 
 [lib]
-name = "platform"
+name = "e_platform"
 crate-type = ["rlib"]
 
 [dependencies]
-base = { version = "*", path = "../base" }
+e_base = { version = "*", path = "../e_base" }
 libc = "*"
 
 [target.'cfg(unix)'.dependencies]

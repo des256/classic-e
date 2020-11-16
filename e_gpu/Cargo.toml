@@ -1,17 +1,17 @@
 [package]
-name = "gpu"
+name = "e_gpu"
 version = "0.1.0"
 authors = ["Desmond Germans <desmond@germansmedia.nl>"]
 edition = "2018"
 
 [lib]
-name = "gpu"
+name = "e_gpu"
 crate-type = ["rlib"]
 
 [dependencies]
 libc = "*"
-base = { version = "*", path = "../base" }
-platform = { version = "*", path = "../platform" }
+e_base = { version = "*", path = "../e_base" }
+e_platform = { version = "*", path = "../e_platform" }
 
 [target.'cfg(unix)'.dependencies]
 x11 = { version = "2.18.1", features = ["xlib","glx"] }

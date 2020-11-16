@@ -1,10 +1,10 @@
 // E - Text test
 // Desmond Germans, 2020
 
-use base::*;
-use platform::*;
-use gpu::*;
-use ui::*;
+use e_base::*;
+use e_platform::*;
+use e_gpu::*;
+use e_ui::*;
 use std::{
     rc::Rc,
     cell::Cell,

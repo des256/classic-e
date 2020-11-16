@@ -3,9 +3,9 @@
 
 //! UI Widgets.
 
-use base::*;
-use platform::*;
-use gpu::*;
+use e_base::*;
+use e_platform::*;
+use e_gpu::*;
 use std::rc::Rc;
 
 pub const FONT_TEXTURE_SIZE: u32 = 1024;

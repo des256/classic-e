@@ -29,6 +29,16 @@ pub struct BookPage {
     pub enabled: Cell<bool>,
 }
 
+impl BookPage {
+    pub fn new(name: String,child: Rc<dyn Widget>) -> BookPage {
+        BookPage {
+            name: name,
+            child: child,
+            enabled: Cell::new(true),
+        }
+    }
+}
+
 /// Book.
 pub struct Book {
     ui: Rc<UI>,

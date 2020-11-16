@@ -1,10 +1,6 @@
 # DEV NOTES
 
 - Stacks and Grids don't have enough expressivity yet
-- get icons from same texture resource, derive smaller textures from same texture resource in gpu part
-    - SubTexture1D
-    - SubTexture2D
-    - SubTexture3D
 - ScrollBar:
     - when scrollbars get too small, they need to auto-disable
     - scrollbar tabs should have a minimum size
@@ -45,7 +41,6 @@
 - basic examples
 - simplify the mouse/capturing code
 - timers
-- separate UI resources from draw context
 - design how buttons and menus trigger actions, action trait or closure
 - Win32 implementation
 - explore Cocoa/Metal

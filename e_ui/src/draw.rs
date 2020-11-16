@@ -15,10 +15,10 @@ pub struct Draw {
     flat_shader: Rc<Shader>,  // the shaders
     alpha_shader: Rc<Shader>,
     color_shader: Rc<Shader>,
-    rect_vb: Rc<VertexBuffer<Vec2<f32>>>,  // vertexbuffer containing fixed unit rectangle
-    draw_ub: Rc<UniformBuffer<TexRect>>,  // uniform buffer with actual rectangle specfications
-    two_over_window_size: Cell<Vec2<f32>>,  // 2/w,2/h of the current window
-    pub(crate) offset: Cell<Vec2<i32>>,  // drawing offset (TBD)
+    pub rect_vb: Rc<VertexBuffer<Vec2<f32>>>,  // vertexbuffer containing fixed unit rectangle
+    pub draw_ub: Rc<UniformBuffer<TexRect>>,  // uniform buffer with actual rectangle specfications
+    pub two_over_window_size: Cell<Vec2<f32>>,  // 2/w,2/h of the current window
+    pub offset: Cell<Vec2<i32>>,  // drawing offset (TBD)
 }
 
 impl Draw {
