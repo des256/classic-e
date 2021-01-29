@@ -2,10 +2,9 @@
 
 members = [
     "e_base",
-    "e_platform",
+    "e_system",
     "e_gpu",
     "e_image",
-    "e_ui",
 ]
 
 # compile as fast as possible, and make everything clear
