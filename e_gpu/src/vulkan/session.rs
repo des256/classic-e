@@ -23,7 +23,7 @@ impl Session {
         if index >= gpu.physical_devices.len() as usize {
             return None;
         }
-        let physical_device = gpu.physical_devices[index];
+        let physical_device = &gpu.physical_devices[index];
 
         let mut queue_create_infos = Vec::<VkDeviceQueueCreateInfo>::new();
         for queue in queues {
@@ -112,7 +112,7 @@ impl Session {
             pEnabledFeatures: &physical_device_features,
         };
         let mut device = MaybeUninit::uninit();
-        match unsafe { vkCreateDevice(physical_device,&create_info,null_mut(),device.as_mut_ptr()) } {
+        match unsafe { vkCreateDevice(physical_device.physical_device,&create_info,null_mut(),device.as_mut_ptr()) } {
             VkResult_VK_SUCCESS => { },
             _ => { return None; },
         }

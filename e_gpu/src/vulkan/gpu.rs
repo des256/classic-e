@@ -11,12 +11,6 @@ use {
     vulkan_sys::*,
 };
 
-pub struct GPU {
-    pub(crate) system: Rc<System>,
-    pub(crate) instance: VkInstance,
-    pub(crate) physical_devices: Vec<VkPhysicalDevice>,
-}
-
 pub struct QueueFamily {
     pub graphics: bool,
     pub compute: bool,
@@ -24,6 +18,20 @@ pub struct QueueFamily {
     pub max_queues: usize,
     // timestamp valid bits
     // minimum image transfer granularity
+}
+
+pub struct PhysicalDevice {
+    pub name: String,
+    pub queue_families: Vec<QueueFamily>,
+
+    pub(crate) physical_device: VkPhysicalDevice,
+}
+
+pub struct GPU {
+    pub system: Rc<System>,
+    pub physical_devices: Vec<PhysicalDevice>,
+
+    pub(crate) instance: VkInstance,
 }
 
 impl GPU {
@@ -65,63 +73,57 @@ impl GPU {
         }
         let mut devices = vec![null_mut() as VkPhysicalDevice; device_count as usize];
         unsafe { vkEnumeratePhysicalDevices(instance,&mut device_count,devices.as_mut_ptr()) };
-        
-        Ok(Rc::new(GPU {
-            system: Rc::clone(system),
-            instance: instance,
-            physical_devices: devices,
-        }))
-    }
+        let mut physical_devices = Vec::<PhysicalDevice>::new();
+        for device in &devices {
 
-    pub fn enumerate_devices(&self) -> Vec<String> {
-
-        // collect physical device names
-        let mut device_names: Vec<String> = Vec::new();
-        for device in &self.physical_devices {
+            // get properties
             let mut properties = MaybeUninit::uninit();
             unsafe { vkGetPhysicalDeviceProperties(*device,properties.as_mut_ptr()) };
             let properties = unsafe { properties.assume_init() };
+
+            // extract name
             let slice: &[u8] = unsafe { &*(&properties.deviceName as *const [i8] as *const [u8]) };
             let name = std::str::from_utf8(slice).unwrap();
-            device_names.push(name.to_string());
-        }
-        device_names
-    }
 
-    pub fn enumerate_queue_families(&self,index: usize) -> Vec<QueueFamily> {
-
-        if index >= self.physical_devices.len() as usize {
-            return Vec::new();
+            // find queue families
+            let mut queue_families = Vec::<QueueFamily>::new();
+            let mut queue_family_count = 0u32;
+            unsafe { vkGetPhysicalDeviceQueueFamilyProperties(*device,&mut queue_family_count,null_mut()) };
+            if queue_family_count > 0 {
+                let mut families = vec![VkQueueFamilyProperties {
+                    queueFlags: 0,
+                    queueCount: 0,
+                    timestampValidBits: 0,
+                    minImageTransferGranularity: VkExtent3D {
+                        width: 0,
+                        height: 0,
+                        depth: 0,
+                    },
+                }; queue_family_count as usize];
+                unsafe { vkGetPhysicalDeviceQueueFamilyProperties(*device,&mut queue_family_count,families.as_mut_ptr()) };
+                let mut queue_families: Vec<QueueFamily> = Vec::new();
+                for family in families {
+                    queue_families.push(QueueFamily {
+                        graphics: (family.queueFlags & VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT) != 0,
+                        compute: (family.queueFlags & VkQueueFlagBits_VK_QUEUE_COMPUTE_BIT) != 0,
+                        transfer: (family.queueFlags & VkQueueFlagBits_VK_QUEUE_TRANSFER_BIT) != 0,
+                        max_queues: family.queueCount as usize,
+                    });
+                }
+            }
+    
+            physical_devices.push(PhysicalDevice {
+                physical_device: *device,
+                name: name.to_string(),
+                queue_families: queue_families,
+            })
         }
-        let physical_device = self.physical_devices[index];
-
-        // find queue families
-        let mut queue_family_count = 0u32;
-        unsafe { vkGetPhysicalDeviceQueueFamilyProperties(physical_device,&mut queue_family_count,null_mut()) };
-        if queue_family_count == 0 {
-            return Vec::new();
-        }
-        let mut families = vec![VkQueueFamilyProperties {
-            queueFlags: 0,
-            queueCount: 0,
-            timestampValidBits: 0,
-            minImageTransferGranularity: VkExtent3D {
-                width: 0,
-                height: 0,
-                depth: 0,
-            },
-        }; queue_family_count as usize];
-        unsafe { vkGetPhysicalDeviceQueueFamilyProperties(physical_device,&mut queue_family_count,families.as_mut_ptr()) };
-        let mut queue_families: Vec<QueueFamily> = Vec::new();
-        for family in families {
-            queue_families.push(QueueFamily {
-                graphics: (family.queueFlags & VkQueueFlagBits_VK_QUEUE_GRAPHICS_BIT) != 0,
-                compute: (family.queueFlags & VkQueueFlagBits_VK_QUEUE_COMPUTE_BIT) != 0,
-                transfer: (family.queueFlags & VkQueueFlagBits_VK_QUEUE_TRANSFER_BIT) != 0,
-                max_queues: family.queueCount as usize,
-            });
-        }
-        queue_families
+   
+        Ok(Rc::new(GPU {
+            system: Rc::clone(system),
+            instance: instance,
+            physical_devices: physical_devices,
+        }))
     }
 }
 
