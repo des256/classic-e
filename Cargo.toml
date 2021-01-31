@@ -1,22 +1,61 @@
-[workspace]
+[package]
+name = "e"
+version = "0.1.0"
+authors = ["Desmond Germans <desmond@germansmedia.nl>"]
+edition = "2018"
 
-members = [
-    "e_base",
-    "e_system",
-    "e_gpu",
-    "e_image",
-]
-
-# compile as fast as possible, and make everything clear
 [profile.dev]
 opt-level = 0
 debug = true
 lto = true
 codegen-units = 28
 
-# improve the performance of the resulting code as much as possible
 [profile.release]
 opt-level = 3
 debug = false
 lto = "fat"
 codegen-units = 1
+
+[lib]
+name = "e"
+crate-type = ["rlib"]
+
+[build-dependencies]
+bindgen = "*"
+
+[features]
+
+# This is the configuration authority:
+default = ["system_linux","gpu_vulkan","debug_output"]
+
+# For each feature, pass down the same feature to sys-sys to include the right
+# C libraries.
+system_linux = ["sys-sys/system_linux"]
+system_windows = ["sys-sys/system_windows"]
+system_macos = ["sys-sys/system_macos"]
+system_ios = ["sys-sys/system_ios"]
+system_android = ["sys-sys/system_android"]
+system_web = ["sys-sys/system_web"]
+
+gpu_directx12 = ["sys-sys/gpu_directx12"]
+gpu_gles20 = ["sys-sys/gpu_gles20"]
+gpu_opengl45 = ["sys-sys/gpu_opengl45"]
+gpu_metal = ["sys-sys/gpu_metal"]
+gpu_vulkan = ["sys-sys/gpu_vulkan"]
+gpu_webgl = ["sys-sys/gpu_webgl"]
+gpu_webgpu = ["sys-sys/gpu_webgpu"]
+
+debug_output = []
+
+[dependencies]
+libc = "*"
+sys-sys = { version = "*", path = "sys-sys" }
+
+#xcb-sys = { version = "*", path = "bindgen/xcb-sys", optional = true }
+#x11 = { version = "2.18.1", features = ["xlib","glx"] }
+#xcb = { version = "0.8", features = ["xlib_xcb","dri2"] }
+#gl = { version = "0.14.0" }
+
+#winapi = { version = "*", features = ["winuser","libloaderapi"], optional = true }
+
+#vulkan-sys = { version = "*", path = "bindgen/vulkan-sys", optional = true }

@@ -1,0 +1,25 @@
+[package]
+name = "sys-sys"
+version = "0.1.0"
+authors = ["Desmond Germans <desmond@germansmedia.nl>"]
+edition = "2018"
+
+[features]
+
+# These are the same as in the main Cargo.toml and are used to link with the
+# right C libraries for this configuration. See build.rs.
+
+system_linux = []
+system_windows = []
+system_macos = []
+system_ios = []
+system_android = []
+system_web = []
+
+gpu_directx12 = []
+gpu_gles20 = []
+gpu_opengl45 = []
+gpu_metal = []
+gpu_vulkan = []
+gpu_webgl = []
+gpu_webgpu = []
