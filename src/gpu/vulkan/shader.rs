@@ -18,7 +18,7 @@ pub struct Shader {
 
 impl Shader {
 
-    pub fn new(session: &Rc<Session>,code: &str) -> Option<Rc<Shader>> {
+    pub fn new(session: &Rc<Session>,code: &[u8]) -> Option<Rc<Shader>> {
 
         let create_info = VkShaderModuleCreateInfo {
             sType: VkStructureType_VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,

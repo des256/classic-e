@@ -14,6 +14,7 @@ use {
 pub struct Session {
     pub gpu: Rc<GPU>,
     pub(crate) vk_device: VkDevice,
+    pub(crate)vk_command_pools: Vec<VkCommandPool>,
 }
 
 impl Session {
@@ -21,18 +22,21 @@ impl Session {
     pub fn new(gpu: &Rc<GPU>,queues: Vec<(usize,usize)>) -> Option<Rc<Session>> {
 
         let mut queue_create_infos = Vec::<VkDeviceQueueCreateInfo>::new();
-        for queue in queues {
+        let mut prioritiesies = Vec::<Vec<f32>>::new();
+        for queue in &queues {
             let mut priorities = Vec::<f32>::new();
-            for _i in 0..queue.1 {
+            for _ in 0..queue.1 {
                 priorities.push(1.0);
             }
+            let size = prioritiesies.len();
+            prioritiesies.push(priorities);
             queue_create_infos.push(VkDeviceQueueCreateInfo {
                 sType: VkStructureType_VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 pNext: null_mut(),
                 flags: 0,
                 queueFamilyIndex: queue.0 as u32,
                 queueCount: queue.1 as u32,
-                pQueuePriorities: priorities.as_mut_ptr(),
+                pQueuePriorities: prioritiesies[size].as_mut_ptr(),
             });
         }
 
@@ -120,15 +124,42 @@ impl Session {
         }
         let vk_device = unsafe { vk_device.assume_init() };
 
+        let mut vk_command_pools = Vec::<VkCommandPool>::new();
+        for queue in &queues {
+            for i in 0..queue.1 {
+                let create_info = VkCommandPoolCreateInfo {
+                    sType: VkStructureType_VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+                    pNext: null_mut(),
+                    flags: 0,
+                    queueFamilyIndex: queue.0 as u32,
+                };
+        
+                let mut vk_command_pool = MaybeUninit::uninit();
+                match unsafe { vkCreateCommandPool(vk_device,&create_info,null_mut(),vk_command_pool.as_mut_ptr()) } {
+                    VkResult_VK_SUCCESS => { },
+                    code => {
+#[cfg(feature="debug_output")]
+                        println!("Unable to create Vulkan command pool (error {})",code);
+                        return None;
+                    },
+                }
+                vk_command_pools.push(unsafe { vk_command_pool.assume_init() });
+            }
+        }
+
         Some(Rc::new(Session {
             gpu: Rc::clone(gpu),
             vk_device: vk_device,
+            vk_command_pools: vk_command_pools,
         }))
     }
 }
 
 impl Drop for Session {
     fn drop(&mut self) {
+        for vk_command_pool in &self.vk_command_pools {
+            unsafe { vkDestroyCommandPool(self.vk_device,*vk_command_pool,null_mut()) };
+        }
         unsafe { vkDestroyDevice(self.vk_device,null_mut()) };
     }
 }

@@ -123,16 +123,20 @@ impl System {
             let extension_names = [
                 VK_KHR_SURFACE_EXTENSION_NAME.as_ptr(),
                 VK_KHR_XCB_SURFACE_EXTENSION_NAME.as_ptr(),
+                VK_EXT_DEBUG_REPORT_EXTENSION_NAME.as_ptr(),
+            ];
+            let layer_names = [
+                b"VK_LAYER_KHRONOS_validation\0",
             ];
             let create_info = VkInstanceCreateInfo {
                 sType: VkStructureType_VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
                 pApplicationInfo: &app_info,
                 enabledExtensionCount: extension_names.len() as u32,
                 ppEnabledExtensionNames: extension_names.as_ptr() as *const *const i8,
-                enabledLayerCount: 0,
+                enabledLayerCount: layer_names.len() as u32,
                 flags: 0,
                 pNext: null_mut(),
-                ppEnabledLayerNames: null_mut(),
+                ppEnabledLayerNames: layer_names.as_ptr() as *const *const i8,
             };
             let mut instance = MaybeUninit::uninit();
             match unsafe { vkCreateInstance(&create_info,null_mut(),instance.as_mut_ptr()) } {

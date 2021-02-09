@@ -12,16 +12,17 @@ use {
 };
 
 pub struct GraphicsPipeline {
-    session: Rc<Session>,
-    vk_pipeline_layout: VkPipelineLayout,
-    vk_render_pass: VkRenderPass,
-    vk_graphics_pipeline: VkPipeline,
+    pub session: Rc<Session>,
+    pub(crate) vk_pipeline_layout: VkPipelineLayout,
+    pub(crate) vk_render_pass: VkRenderPass,
+    pub(crate) vk_graphics_pipeline: VkPipeline,
 }
 
 impl GraphicsPipeline {
 
     pub fn new(session: &Rc<Session>,vertex_shader: &Rc<Shader>,fragment_shader: &Rc<Shader>) -> Option<Rc<GraphicsPipeline>> {
 
+        println!("    creating pipeline layout");
         let create_info = VkPipelineLayoutCreateInfo {
             sType: VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             pNext: null_mut(),
@@ -42,6 +43,7 @@ impl GraphicsPipeline {
         }
         let vk_pipeline_layout = unsafe { vk_pipeline_layout.assume_init() };
 
+        println!("    creating render pass");
         let attachment = VkAttachmentDescription {
             flags: 0,
             format: VkFormat_VK_FORMAT_B8G8R8A8_SRGB,
@@ -92,13 +94,14 @@ impl GraphicsPipeline {
         }
         let vk_render_pass = unsafe { vk_render_pass.assume_init() };
 
+        println!("    creating pipeline");
         let vertex_stage = VkPipelineShaderStageCreateInfo {
             sType: VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
             pNext: null_mut(),
             flags: 0,
             stage: VkShaderStageFlagBits_VK_SHADER_STAGE_VERTEX_BIT,
             module: vertex_shader.vk_shader_module,
-            pName: b"main".as_ptr() as *const i8,
+            pName: b"main\0".as_ptr() as *const i8,
             pSpecializationInfo: null_mut(),
         };
 
@@ -108,7 +111,7 @@ impl GraphicsPipeline {
             flags: 0,
             stage: VkShaderStageFlagBits_VK_SHADER_STAGE_FRAGMENT_BIT,
             module: fragment_shader.vk_shader_module,
-            pName: b"main".as_ptr() as *const i8,
+            pName: b"main\0".as_ptr() as *const i8,
             pSpecializationInfo: null_mut(),
         };
 
@@ -135,7 +138,7 @@ impl GraphicsPipeline {
             sType: VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
             pNext: null_mut(),
             flags: 0,
-            topology: VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+            topology: VkPrimitiveTopology_VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
             primitiveRestartEnable: VK_FALSE,
         };
 
@@ -180,7 +183,7 @@ impl GraphicsPipeline {
             sType: VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
             pNext: null_mut(),
             flags: 0,
-            depthClampEnable: VK_TRUE,
+            depthClampEnable: VK_FALSE,
             rasterizerDiscardEnable: VK_FALSE,
             polygonMode: VkPolygonMode_VK_POLYGON_MODE_FILL,
             cullMode: VkCullModeFlagBits_VK_CULL_MODE_FRONT_BIT,
@@ -204,35 +207,18 @@ impl GraphicsPipeline {
             alphaToOneEnable: VK_FALSE,
         };
 
-        let depth_stencil_state = VkPipelineDepthStencilStateCreateInfo {
-            sType: VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-            pNext: null_mut(),
-            flags: 0,
-            depthTestEnable: VK_FALSE,
-            depthWriteEnable: VK_FALSE,
-            depthCompareOp: VkCompareOp_VK_COMPARE_OP_NEVER,
-            depthBoundsTestEnable: VK_FALSE,
-            stencilTestEnable: VK_FALSE,
-            front: VkStencilOpState {
-                failOp: VkStencilOp_VK_STENCIL_OP_KEEP,
-                passOp: VkStencilOp_VK_STENCIL_OP_KEEP,
-                depthFailOp: VkStencilOp_VK_STENCIL_OP_KEEP,
-                compareOp: VkCompareOp_VK_COMPARE_OP_NEVER,
-                compareMask: 0,
-                writeMask: 0,
-                reference: 0,
-            },
-            back: VkStencilOpState {
-                failOp: VkStencilOp_VK_STENCIL_OP_KEEP,
-                passOp: VkStencilOp_VK_STENCIL_OP_KEEP,
-                depthFailOp: VkStencilOp_VK_STENCIL_OP_KEEP,
-                compareOp: VkCompareOp_VK_COMPARE_OP_NEVER,
-                compareMask: 0,
-                writeMask: 0,
-                reference: 0,
-            },
-            minDepthBounds: 0.0,
-            maxDepthBounds: 1.0,
+        let color_blend_attachment_state = VkPipelineColorBlendAttachmentState {
+            blendEnable: VK_FALSE,
+            srcColorBlendFactor: VkBlendFactor_VK_BLEND_FACTOR_ONE,
+            dstColorBlendFactor: VkBlendFactor_VK_BLEND_FACTOR_ZERO,
+            colorBlendOp: VkBlendOp_VK_BLEND_OP_ADD,
+            srcAlphaBlendFactor: VkBlendFactor_VK_BLEND_FACTOR_ONE,
+            dstAlphaBlendFactor: VkBlendFactor_VK_BLEND_FACTOR_ZERO,
+            alphaBlendOp: VkBlendOp_VK_BLEND_OP_ADD,
+            colorWriteMask: VkColorComponentFlagBits_VK_COLOR_COMPONENT_R_BIT |
+                VkColorComponentFlagBits_VK_COLOR_COMPONENT_G_BIT |
+                VkColorComponentFlagBits_VK_COLOR_COMPONENT_B_BIT |
+                VkColorComponentFlagBits_VK_COLOR_COMPONENT_A_BIT,
         };
 
         let color_blend_state = VkPipelineColorBlendStateCreateInfo {
@@ -241,17 +227,9 @@ impl GraphicsPipeline {
             flags: 0,
             logicOpEnable: VK_FALSE,
             logicOp: VkLogicOp_VK_LOGIC_OP_SET,
-            attachmentCount: 0,
-            pAttachments: null_mut(),
+            attachmentCount: 1,
+            pAttachments: &color_blend_attachment_state,
             blendConstants: [0.0,0.0,0.0,0.0],
-        };
-
-        let dynamic_state = VkPipelineDynamicStateCreateInfo {
-            sType: VkStructureType_VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-            pNext: null_mut(),
-            flags: 0,
-            dynamicStateCount: 0,
-            pDynamicStates: null_mut(),
         };
 
         let create_info = VkGraphicsPipelineCreateInfo {
@@ -266,16 +244,15 @@ impl GraphicsPipeline {
             pViewportState: &viewport_state,
             pRasterizationState: &rasterization_state,
             pMultisampleState: &multisample_state,
-            pDepthStencilState: &depth_stencil_state,
+            pDepthStencilState: null_mut(),
             pColorBlendState: &color_blend_state,
-            pDynamicState: &dynamic_state,
+            pDynamicState: null_mut(),
             layout: vk_pipeline_layout,
             renderPass: vk_render_pass,
             subpass: 0,
             basePipelineHandle: null_mut(),
             basePipelineIndex: -1,
         };
-
         let mut vk_graphics_pipeline = MaybeUninit::uninit();
         match unsafe { vkCreateGraphicsPipelines(session.vk_device,null_mut(),1,&create_info,null_mut(),vk_graphics_pipeline.as_mut_ptr()) } {
             VkResult_VK_SUCCESS => { },
@@ -289,6 +266,7 @@ impl GraphicsPipeline {
         }
         let vk_graphics_pipeline = unsafe { vk_graphics_pipeline.assume_init() };
 
+        println!("    done.");
         Some(Rc::new(GraphicsPipeline {
             session: Rc::clone(session),
             vk_pipeline_layout: vk_pipeline_layout,

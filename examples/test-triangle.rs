@@ -2,6 +2,11 @@
 // Desmond Germans, 2020
 
 use e::*;
+use std::{
+    io,
+    io::prelude::*,
+    fs::File,
+};
 
 fn main() {
 
@@ -69,8 +74,23 @@ fn main() {
     println!("Obtaining that queue from the session.");
     let queue = Queue::obtain(&session,0,0).expect("Unable to obtain queue.");
 
-    println!("Creating swap chain for the session and surface.");
-    let swapchain = SwapChain::new(&session,&surface);
+    println!("Loading vertex shader.");
+    let mut f = File::open("test-triangle-vert.spv").expect("Unable to open vertex shader.");
+    let mut b = Vec::<u8>::new();
+    f.read_to_end(&mut b).expect("Unable to read vertex shader.");
+    let vertex_shader = Shader::new(&session,&b).expect("Unable to create vertex shader.");
+
+    println!("Loading fragment shader.");
+    let mut f = File::open("test-triangle-frag.spv").expect("Unable to open fragment shader.");
+    let mut b = Vec::<u8>::new();
+    f.read_to_end(&mut b).expect("Unable to read fragment shader.");
+    let fragment_shader = Shader::new(&session,&b).expect("Unable to create fragment shader.");
+
+    println!("Creating graphics pipeline.");
+    let graphics_pipeline = GraphicsPipeline::new(&session,&vertex_shader,&fragment_shader).expect("Unable to create graphics pipeline.");
+
+    println!("Creating swap chain for the session, pipeline and surface.");
+    let swapchain = SwapChain::new(&session,&graphics_pipeline,&surface,0).expect("Unable to create swap chain.");
 
     println!("Ok.");
 }
