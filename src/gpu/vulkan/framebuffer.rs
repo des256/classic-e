@@ -13,21 +13,21 @@ use {
 
 pub struct Framebuffer {
     pub imageview: Rc<ImageView>,
-    pub graphics_pipeline: Rc<GraphicsPipeline>,
     pub size: Vec2<usize>,
+    pub render_pass: Rc<RenderPass>,
 #[doc(hidden)]
     pub(crate) vk_framebuffer: VkFramebuffer,
 }
 
 impl ImageView {
 
-    pub fn create_framebuffer(self: &Rc<Self>,size: Vec2<usize>,graphics_pipeline: &Rc<GraphicsPipeline>) -> Option<Rc<Framebuffer>> {
+    pub fn create_framebuffer(self: &Rc<Self>,size: Vec2<usize>,render_pass: &Rc<RenderPass>) -> Option<Rc<Framebuffer>> {
 
         let info = VkFramebufferCreateInfo {
             sType: VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
             pNext: null_mut(),
             flags: 0,
-            renderPass: graphics_pipeline.vk_render_pass,
+            renderPass: render_pass.vk_render_pass,
             attachmentCount: 1,
             pAttachments: &self.vk_imageview,
             width: size.x as u32,
@@ -45,8 +45,8 @@ impl ImageView {
         }
         Some(Rc::new(Framebuffer {
             imageview: Rc::clone(self),
-            graphics_pipeline: Rc::clone(graphics_pipeline),
             size: size,
+            render_pass: Rc::clone(render_pass),
             vk_framebuffer: unsafe { vk_framebuffer.assume_init() },
         }))
     }

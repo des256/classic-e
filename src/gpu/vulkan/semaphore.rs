@@ -16,15 +16,17 @@ pub struct Semaphore {
     pub(crate) vk_semaphore: VkSemaphore,
 }
 
-impl Semaphore {
-    pub fn new(session: &Rc<Session>) -> Option<Semaphore> {
+impl Session {
+
+    pub fn create_semaphore(self: &Rc<Self>) -> Option<Rc<Semaphore>> {
+
         let info = VkSemaphoreCreateInfo {
             sType: VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
             pNext: null_mut(),
             flags: 0,
         };
         let mut vk_semaphore = MaybeUninit::uninit();
-        match unsafe { vkCreateSemaphore(session.vk_device,&info,null_mut(),vk_semaphore.as_mut_ptr()) } {
+        match unsafe { vkCreateSemaphore(self.vk_device,&info,null_mut(),vk_semaphore.as_mut_ptr()) } {
             VK_SUCCESS => { },
             code => {
 #[cfg(feature="debug_output")]
@@ -32,11 +34,10 @@ impl Semaphore {
                 return None;
             },
         }
-        let vk_semaphore = unsafe { vk_semaphore.assume_init() };
-        Some(Semaphore {
-            session: Rc::clone(session),
-            vk_semaphore: vk_semaphore,
-        })
+        Some(Rc::new(Semaphore {
+            session: Rc::clone(self),
+            vk_semaphore: unsafe { vk_semaphore.assume_init() },
+        }))
     }
 }
 

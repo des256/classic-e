@@ -78,7 +78,7 @@ impl CommandBuffer {
         true
     }
 
-    pub fn begin_render_pass(&self,graphics_pipeline: &GraphicsPipeline,framebuffer: &Framebuffer) {
+    pub fn begin_render_pass(&self,render_pass: &RenderPass,framebuffer: &Framebuffer) {
         let clear_color = VkClearValue {
             color: VkClearColorValue {
                 float32: [0.0,0.0,0.0,1.0]
@@ -87,7 +87,7 @@ impl CommandBuffer {
         let info = VkRenderPassBeginInfo {
             sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             pNext: null_mut(),
-            renderPass: graphics_pipeline.vk_render_pass,
+            renderPass: render_pass.vk_render_pass,
             framebuffer: framebuffer.vk_framebuffer,
             renderArea: VkRect2D { offset: VkOffset2D { x: 0,y: 0 },extent: VkExtent2D { width: framebuffer.size.x as u32,height: framebuffer.size.y as u32 } },
             clearValueCount: 1,
