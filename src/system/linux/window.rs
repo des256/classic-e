@@ -8,6 +8,8 @@ use {
         rc::Rc,
         cell::Cell,
         cell::RefCell,
+        ptr::null_mut,
+        mem::MaybeUninit,
     },
     sys_sys::*,
 };
@@ -19,82 +21,100 @@ pub const KEY_RIGHT: u8 = 114;
 
 /// Window.
 pub struct Window {
-    pub system: Rc<System>,
-    #[doc(hidden)]
-    pub window: xcb_window_t,
-    #[doc(hidden)]
+    pub screen: Rc<Screen>,
     pub r: Cell<Rect<i32>>,
-    #[doc(hidden)]
     pub handler: RefCell<Option<Box<dyn Fn(Event)>>>,
+#[doc(hidden)]
+    pub(crate) xcb_window: xcb_window_t,
+#[cfg(feature="gpu_vulkan")]
+    pub(crate) vk_surface: VkSurfaceKHR,
 }
 
-impl Window {
+impl Screen {
 
-    fn new(system: &Rc<System>,r: Rect<i32>,absolute: bool) -> Option<Rc<Window>> {
+    fn create_window(self: &Rc<Self>,r: Rect<i32>,_absolute: bool) -> Option<Rc<Window>> {
 
-        let xcb_window = unsafe { xcb_generate_id(system.connection) };
-        let values = xcb_create_window_value_list_t {
-            background_pixmap: 0,
-            background_pixel: 0,
-            border_pixmap: 0,
-            border_pixel: 0,
-            bit_gravity: 0,
-            win_gravity: 0,
-            backing_store: 0,
-            backing_planes: 0,
-            backing_pixel: 0,
-            override_redirect: if absolute { 1 } else { 0 },
-            save_under: 0,
-            event_mask: xcb_event_mask_t_XCB_EVENT_MASK_EXPOSURE
-                | xcb_event_mask_t_XCB_EVENT_MASK_KEY_PRESS
-                | xcb_event_mask_t_XCB_EVENT_MASK_KEY_RELEASE
-                | xcb_event_mask_t_XCB_EVENT_MASK_BUTTON_PRESS
-                | xcb_event_mask_t_XCB_EVENT_MASK_BUTTON_RELEASE
-                | xcb_event_mask_t_XCB_EVENT_MASK_POINTER_MOTION
-                | xcb_event_mask_t_XCB_EVENT_MASK_STRUCTURE_NOTIFY,
-            do_not_propogate_mask: 0,
-            colormap: unsafe { *system.screen }.default_colormap as u32,
-            cursor: 0,
-        };
-        unsafe { xcb_create_window(
-            system.connection,
-            (*system.screen).root_depth as u8,
-            xcb_window as u32,
-            //if let Some(id) = parent { id as u32 } else { system.rootwindow as u32 },
-            (*system.screen).root as u32,
-            r.o.x as i16,r.o.y as i16,r.s.x as u16,r.s.y as u16,
-            0,
-            xcb_window_class_t_XCB_WINDOW_CLASS_INPUT_OUTPUT as u16,
-            (*system.screen).root_visual as u32,
-            xcb_cw_t_XCB_CW_EVENT_MASK | xcb_cw_t_XCB_CW_COLORMAP | xcb_cw_t_XCB_CW_OVERRIDE_REDIRECT,
-            &values as *const xcb_create_window_value_list_t as *const std::os::raw::c_void
-        ) };
+        let xcb_window = unsafe { xcb_generate_id(self.system.xcb_connection) };
+        let values = [XCB_EVENT_MASK_EXPOSURE
+            | XCB_EVENT_MASK_KEY_PRESS
+            | XCB_EVENT_MASK_KEY_RELEASE
+            | XCB_EVENT_MASK_BUTTON_PRESS
+            | XCB_EVENT_MASK_BUTTON_RELEASE
+            | XCB_EVENT_MASK_POINTER_MOTION
+            | XCB_EVENT_MASK_STRUCTURE_NOTIFY,
+            unsafe { *self.xcb_screen }.default_colormap,
+        ];
         unsafe {
-            xcb_map_window(system.connection,xcb_window as u32);
-            xcb_flush(system.connection);
+            xcb_create_window(
+                self.system.xcb_connection,
+                (*self.xcb_screen).root_depth as u8,
+                xcb_window as u32,
+                //if let Some(id) = parent { id as u32 } else { system.rootwindow as u32 },
+                (*self.xcb_screen).root as u32,
+                r.o.x as i16,
+                r.o.y as i16,
+                r.s.x as u16,
+                r.s.y as u16,
+                0,
+                XCB_WINDOW_CLASS_INPUT_OUTPUT as u16,
+                (*self.xcb_screen).root_visual as u32,
+                XCB_CW_EVENT_MASK | XCB_CW_COLORMAP,
+                &values as *const u32 as *const std::os::raw::c_void
+            );
+            xcb_map_window(self.system.xcb_connection,xcb_window as u32);
+            xcb_flush(self.system.xcb_connection);
         }
+
+#[cfg(feature="gpu_vulkan")]
+        let vk_surface = {
+            let info = VkXcbSurfaceCreateInfoKHR {
+                sType: VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
+                pNext: null_mut(),
+                flags: 0,
+                connection: self.system.xcb_connection as *mut xcb_connection_t,
+                window: xcb_window,
+            };
+            let mut vk_surface = MaybeUninit::uninit();
+            match unsafe { vkCreateXcbSurfaceKHR(self.system.vk_instance,&info,null_mut(),vk_surface.as_mut_ptr()) } {
+                VK_SUCCESS => { },
+                code => {
+#[cfg(feature="debug_output")]
+                    println!("Unable to create Vulkan XCB surface (error {})",code);
+                    unsafe {
+                        xcb_unmap_window(self.system.xcb_connection,xcb_window as u32);
+                        xcb_destroy_window(self.system.xcb_connection,xcb_window as u32);    
+                    }
+                    return None;
+                },
+            }
+            let vk_surface = unsafe { vk_surface.assume_init() };
+
+            let mut support: VkBool32 = 0;
+            unsafe { vkGetPhysicalDeviceSurfaceSupportKHR(self.gpu.vk_physical_device,self.present_queue_id,vk_surface,&mut support) };
+            if support == 0 {
+#[cfg(feature="debug_output")]
+                println!("Window not compatible with GPU.");
+                unsafe {
+                    vkDestroySurfaceKHR(self.system.vk_instance,vk_surface,null_mut());
+                    xcb_unmap_window(self.system.xcb_connection,xcb_window as u32);
+                    xcb_destroy_window(self.system.xcb_connection,xcb_window as u32);    
+                }
+                return None;
+            }
+
+            vk_surface
+        };
+
         let window = Rc::new(Window {
-            system: Rc::clone(system),
-            window: xcb_window,
+            screen: Rc::clone(self),
             r: Cell::new(r),
             handler: RefCell::new(None),
+            xcb_window: xcb_window,
+#[cfg(feature="gpu_vulkan")]
+            vk_surface: vk_surface,
         });
-        let encoded_pointer = Rc::as_ptr(&window) as u64;
-        let encoded_pointer_dwords = [
-            (encoded_pointer & 0x00000000FFFFFFFF) as u32,
-            (encoded_pointer >> 32) as u32,
-        ];
-        let encoded_pointer_void = encoded_pointer_dwords.as_ptr() as *const std::os::raw::c_void;
-        unsafe { xcb_change_property(
-            system.connection,
-            xcb_prop_mode_t_XCB_PROP_MODE_REPLACE as u8,
-            xcb_window,
-            system.e_window_pointer,
-            xcb_atom_enum_t_XCB_ATOM_PRIMARY,
-            32,
-            2,
-            encoded_pointer_void
-        ) };
+        self.system.xcb_window_pointers.borrow_mut().insert(xcb_window,Rc::as_ptr(&window));
+
         Some(window)
     }
 
@@ -111,31 +131,31 @@ impl Window {
     /// **Returns**
     ///
     /// New frame window.
-    pub fn new_frame(system: &Rc<System>,r: Rect<i32>,title: &str) -> Option<Rc<Window>> {
-        let window = Window::new(system,r,false)?;
-        let protocol_set = [system.wm_delete_window];
+    pub fn create_frame(self: &Rc<Self>,r: Rect<i32>,title: &str) -> Option<Rc<Window>> {
+        let window = self.create_window(r,false)?;
+        let protocol_set = [self.system.xcb_atoms.wm_delete_window];
         let protocol_set_void = protocol_set.as_ptr() as *const std::os::raw::c_void;
         unsafe { xcb_change_property(
-            system.connection,
-            xcb_prop_mode_t_XCB_PROP_MODE_REPLACE as u8,
-            window.window as u32,
-            system.wm_protocols,
-            xcb_atom_enum_t_XCB_ATOM_ATOM,
+            self.system.xcb_connection,
+            XCB_PROP_MODE_REPLACE as u8,
+            window.xcb_window as u32,
+            self.system.xcb_atoms.wm_protocols,
+            XCB_ATOM_ATOM,
             32,
             1,
             protocol_set_void
         ) };
         unsafe { xcb_change_property(
-            system.connection,
-            xcb_prop_mode_t_XCB_PROP_MODE_REPLACE as u8,
-            window.window as u32,
-            xcb_atom_enum_t_XCB_ATOM_WM_NAME,
-            xcb_atom_enum_t_XCB_ATOM_STRING,
+            self.system.xcb_connection,
+            XCB_PROP_MODE_REPLACE as u8,
+            window.xcb_window as u32,
+            XCB_ATOM_WM_NAME,
+            XCB_ATOM_STRING,
             8,
             title.len() as u32,
             title.as_bytes().as_ptr() as *const std::os::raw::c_void
         ) };
-        unsafe { xcb_flush(system.connection) };
+        unsafe { xcb_flush(self.system.xcb_connection) };
         Some(window)
     }
 
@@ -152,34 +172,36 @@ impl Window {
     /// **Returns**
     ///
     /// New popup window.
-    pub fn new_popup(system: &Rc<System>,r: Rect<i32>) -> Option<Rc<Window>> {
-        let window = Window::new(system,r,true)?;
-        let net_state = [system.wm_net_state_above];
+    pub fn create_popup(self: &Rc<Self>,r: Rect<i32>) -> Option<Rc<Window>> {
+        let window = self.create_window(r,true)?;
+        let net_state = [self.system.xcb_atoms.wm_net_state_above];
         unsafe { xcb_change_property(
-            system.connection,
-            xcb_prop_mode_t_XCB_PROP_MODE_REPLACE as u8,
-            window.window as u32,
-            system.wm_net_state,
-            xcb_atom_enum_t_XCB_ATOM_ATOM,
+            self.system.xcb_connection,
+            XCB_PROP_MODE_REPLACE as u8,
+            window.xcb_window as u32,
+            self.system.xcb_atoms.wm_net_state,
+            XCB_ATOM_ATOM,
             32,
             1,
             net_state.as_ptr() as *const std::os::raw::c_void
         ) };
         let hints = [2u32,0,0,0,0];
         unsafe { xcb_change_property(
-            system.connection,
-            xcb_prop_mode_t_XCB_PROP_MODE_REPLACE as u8,
-            window.window as u32,
-            system.wm_motif_hints,
-            xcb_atom_enum_t_XCB_ATOM_ATOM,
+            self.system.xcb_connection,
+            XCB_PROP_MODE_REPLACE as u8,
+            window.xcb_window as u32,
+            self.system.xcb_atoms.wm_motif_hints,
+            XCB_ATOM_ATOM,
             32,
             5,
             hints.as_ptr() as *const std::os::raw::c_void
         ) };
-        unsafe { xcb_flush(system.connection) };
+        unsafe { xcb_flush(self.system.xcb_connection) };
         Some(window)
     }
+}
 
+impl Window {
     pub(crate) fn handle_event(&self,event: Event) {
         if let Event::Configure(r) = &event {
             // When resizing, X seems to return a rectangle with the initial
@@ -211,16 +233,16 @@ impl Window {
     pub fn show(&self) {
         //println!("show {}",self.id);
         unsafe {
-            xcb_map_window(self.system.connection,self.window as u32);
-            xcb_flush(self.system.connection);
+            xcb_map_window(self.screen.system.xcb_connection,self.xcb_window as u32);
+            xcb_flush(self.screen.system.xcb_connection);
         }
     }
 
     pub fn hide(&self) {
         //println!("hide {}",self.id);
         unsafe {
-            xcb_unmap_window(self.system.connection,self.window as u32);
-            xcb_flush(self.system.connection);
+            xcb_unmap_window(self.screen.system.xcb_connection,self.xcb_window as u32);
+            xcb_flush(self.screen.system.xcb_connection);
         }
     }
 
@@ -235,12 +257,12 @@ impl Window {
             stack_mode: 0,
         };
         unsafe { xcb_configure_window(
-            self.system.connection,
-            self.window as u32,
-            xcb_config_window_t_XCB_CONFIG_WINDOW_X as u16 |
-                xcb_config_window_t_XCB_CONFIG_WINDOW_Y as u16 |
-                xcb_config_window_t_XCB_CONFIG_WINDOW_WIDTH as u16 |
-                xcb_config_window_t_XCB_CONFIG_WINDOW_HEIGHT as u16,
+            self.screen.system.xcb_connection,
+            self.xcb_window as u32,
+            XCB_CONFIG_WINDOW_X as u16 |
+                XCB_CONFIG_WINDOW_Y as u16 |
+                XCB_CONFIG_WINDOW_WIDTH as u16 |
+                XCB_CONFIG_WINDOW_HEIGHT as u16,
             &values as *const xcb_configure_window_value_list_t as *const std::os::raw::c_void
         ) };
     }
@@ -249,8 +271,11 @@ impl Window {
 impl Drop for Window {
     fn drop(&mut self) {
         unsafe {
-            xcb_unmap_window(self.system.connection,self.window as u32);
-            xcb_destroy_window(self.system.connection,self.window as u32);
+            self.screen.system.xcb_window_pointers.borrow_mut().remove(&self.xcb_window);
+#[cfg(feature="gpu_vulkan")]
+            vkDestroySurfaceKHR(self.screen.system.vk_instance,self.vk_surface,null_mut());
+            xcb_unmap_window(self.screen.system.xcb_connection,self.xcb_window as u32);
+            xcb_destroy_window(self.screen.system.xcb_connection,self.xcb_window as u32);
         }
     }
 }

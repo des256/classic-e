@@ -16,12 +16,12 @@ pub struct Shader {
     pub(crate) vk_shader_module: VkShaderModule,
 }
 
-impl Shader {
+impl Session {
 
-    pub fn new(session: &Rc<Session>,code: &[u8]) -> Option<Rc<Shader>> {
+    pub fn create_shader(self: &Rc<Self>,code: &[u8]) -> Option<Rc<Shader>> {
 
         let create_info = VkShaderModuleCreateInfo {
-            sType: VkStructureType_VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            sType: VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
             pNext: null_mut(),
             flags: 0,
             codeSize: code.len() as u64,
@@ -29,8 +29,8 @@ impl Shader {
         };
 
         let mut vk_shader_module = MaybeUninit::uninit();
-        match unsafe { vkCreateShaderModule(session.vk_device,&create_info,null_mut(),vk_shader_module.as_mut_ptr()) } {
-            VkResult_VK_SUCCESS => { },
+        match unsafe { vkCreateShaderModule(self.vk_device,&create_info,null_mut(),vk_shader_module.as_mut_ptr()) } {
+            VK_SUCCESS => { },
             code => {
 #[cfg(feature="debug_output")]
                 println!("Unable to create Vulkan shader module (error {})",code);
@@ -40,7 +40,7 @@ impl Shader {
         let vk_shader_module = unsafe { vk_shader_module.assume_init() };
 
         Some(Rc::new(Shader {
-            session: Rc::clone(session),
+            session: Rc::clone(self),
             vk_shader_module: vk_shader_module,
         }))
     }

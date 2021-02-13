@@ -13,28 +13,50 @@ use {
 
 pub struct CommandBuffer {
     pub session: Rc<Session>,
-    pub queue_index: usize,
+#[doc(hidden)]
+    pub(crate) vk_command_pool: VkCommandPool,
     pub(crate) vk_command_buffer: VkCommandBuffer,
 }
 
-impl CommandBuffer {
-    pub(crate) fn new(session: &Rc<Session>,queue_index: usize,vk_command_buffer: VkCommandBuffer) -> Option<CommandBuffer> {
-        Some(CommandBuffer {
-            session: Rc::clone(session),
-            queue_index: queue_index,
-            vk_command_buffer: vk_command_buffer,
-        })
+impl Session {
+
+    pub fn create_commandbuffer(self: &Rc<Self>,queue_family: QueueFamilyID) -> Option<Rc<CommandBuffer>> {
+
+        let info = VkCommandBufferAllocateInfo {
+            sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            pNext: null_mut(),
+            commandPool: self.vk_command_pools[queue_family as usize],
+            level: VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            commandBufferCount: 1,
+        };
+        let mut vk_command_buffer = MaybeUninit::uninit();
+        match unsafe { vkAllocateCommandBuffers(self.vk_device,&info,vk_command_buffer.as_mut_ptr()) } {
+            VK_SUCCESS => { },
+            code => {
+#[cfg(feature="debug_output")]
+                println!("Unable to create Vulkan command buffer (error {})",code);
+                return None;
+            }
+        }
+        Some(Rc::new(CommandBuffer {
+            session: Rc::clone(self),
+            vk_command_pool: self.vk_command_pools[queue_family as usize],
+            vk_command_buffer: unsafe { vk_command_buffer.assume_init() },
+        }))
     }
+}
+
+impl CommandBuffer {
 
     pub fn begin(&self) -> bool {
         let info = VkCommandBufferBeginInfo {
-            sType: VkStructureType_VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            sType: VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             pNext: null_mut(),
             flags: 0,
             pInheritanceInfo: null_mut(),
         };
         match unsafe { vkBeginCommandBuffer(self.vk_command_buffer,&info) } {
-            VkResult_VK_SUCCESS => { },
+            VK_SUCCESS => { },
             code => {
 #[cfg(feature="debug_output")]
                 println!("Unable to begin Vulkan command buffer (error {})",code);
@@ -46,7 +68,7 @@ impl CommandBuffer {
 
     pub fn end(&self) -> bool {
         match unsafe { vkEndCommandBuffer(self.vk_command_buffer) } {
-            VkResult_VK_SUCCESS => { },
+            VK_SUCCESS => { },
             code => {
 #[cfg(feature="debug_output")]
                 println!("Unable to end Vulkan command buffer (error {})",code);
@@ -56,22 +78,22 @@ impl CommandBuffer {
         true
     }
 
-    pub fn begin_render_pass(&self,render_pass: usize,swap_chain: &SwapChain,framebuffer_index: usize) {
+    pub fn begin_render_pass(&self,graphics_pipeline: &GraphicsPipeline,framebuffer: &Framebuffer) {
         let clear_color = VkClearValue {
             color: VkClearColorValue {
                 float32: [0.0,0.0,0.0,1.0]
             }
         };
         let info = VkRenderPassBeginInfo {
-            sType: VkStructureType_VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            sType: VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             pNext: null_mut(),
-            renderPass: swap_chain.graphics_pipeline.vk_render_pass,
-            framebuffer: swap_chain.vk_framebuffers[framebuffer_index],
-            renderArea: VkRect2D { offset: VkOffset2D { x: 0,y: 0 },extent: VkExtent2D { width: swap_chain.extent.x as u32,height: swap_chain.extent.y as u32 } },
+            renderPass: graphics_pipeline.vk_render_pass,
+            framebuffer: framebuffer.vk_framebuffer,
+            renderArea: VkRect2D { offset: VkOffset2D { x: 0,y: 0 },extent: VkExtent2D { width: framebuffer.size.x as u32,height: framebuffer.size.y as u32 } },
             clearValueCount: 1,
             pClearValues: &clear_color,
         };
-        unsafe { vkCmdBeginRenderPass(self.vk_command_buffer,&info,VkSubpassContents_VK_SUBPASS_CONTENTS_INLINE) }
+        unsafe { vkCmdBeginRenderPass(self.vk_command_buffer,&info,VK_SUBPASS_CONTENTS_INLINE) }
     }
 
     pub fn end_render_pass(&self) {
@@ -79,7 +101,7 @@ impl CommandBuffer {
     }
 
     pub fn bind_pipeline(&self,pipeline: &GraphicsPipeline) {
-        unsafe { vkCmdBindPipeline(self.vk_command_buffer,VkPipelineBindPoint_VK_PIPELINE_BIND_POINT_GRAPHICS,pipeline.vk_graphics_pipeline) };
+        unsafe { vkCmdBindPipeline(self.vk_command_buffer,VK_PIPELINE_BIND_POINT_GRAPHICS,pipeline.vk_graphics_pipeline) };
     }
 
     pub fn draw(&self,vertex_count: usize,instance_count: usize,first_vertex: usize, first_instance: usize) {
@@ -89,6 +111,6 @@ impl CommandBuffer {
 
 impl Drop for CommandBuffer {
     fn drop(&mut self) {
-        unsafe { vkFreeCommandBuffers(self.session.vk_device,self.session.vk_command_pools[self.queue_index],1,&self.vk_command_buffer) };
+        unsafe { vkFreeCommandBuffers(self.session.vk_device,self.vk_command_pool,1,&self.vk_command_buffer) };
     }
 }

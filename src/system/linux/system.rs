@@ -13,6 +13,8 @@ use {
         ptr::null_mut,
         mem::MaybeUninit,
         rc::Rc,
+        cell::RefCell,
+        collections::HashMap,
     },
     sys_sys::*,
     libc::{
@@ -25,26 +27,31 @@ use {
     },
 };
 
+pub(crate) struct XCBAtoms {
+    pub wm_protocols: u32,
+    pub wm_delete_window: u32,
+    pub wm_motif_hints: u32,
+    pub wm_transient_for: u32,
+    pub wm_net_type: u32,
+    pub wm_net_type_utility: u32,
+    pub wm_net_type_dropdown_menu: u32,
+    pub wm_net_state: u32,
+    pub wm_net_state_above: u32,
+}
+
 /// Main system context.
 pub struct System {
-    #[doc(hidden)]
-    pub connection: *mut xcb_connection_t,
-    pub screen: *const xcb_screen_t,
-    pub(crate) wm_protocols: u32,
-    pub(crate) wm_delete_window: u32,
-    pub(crate) wm_motif_hints: u32,
-    _wm_transient_for: u32,
-    _wm_net_type: u32,
-    _wm_net_type_utility: u32,
-    _wm_net_type_dropdown_menu: u32,
-    pub(crate) wm_net_state: u32,
-    pub(crate) wm_net_state_above: u32,
-    pub(crate) e_window_pointer: u32,
+#[doc(hidden)]
+    pub xcb_connection: *mut xcb_connection_t,
+#[doc(hidden)]
     epfd: c_int,
+#[doc(hidden)]
+    pub(crate) xcb_window_pointers: RefCell<HashMap<xcb_window_t,*const Window>>,
+#[doc(hidden)]
+    pub(crate) xcb_atoms: XCBAtoms,
 #[cfg(feature="gpu_vulkan")]
+#[doc(hidden)]
     pub(crate) vk_instance: VkInstance,
-    #[cfg(feature="gpu_vulkan")]
-    pub(crate) vk_physical_devices: Vec<VkPhysicalDevice>,
 }
 
 fn xcb_intern_atom_(connection: *mut xcb_connection_t,name: &str) -> xcb_intern_atom_cookie_t {
@@ -52,58 +59,52 @@ fn xcb_intern_atom_(connection: *mut xcb_connection_t,name: &str) -> xcb_intern_
     unsafe { xcb_intern_atom(connection,false as u8,name.len() as u16,i8_name.as_ptr()) }
 }
 
+fn xcb_obtain_atoms(xcb_connection: *mut xcb_connection_t) -> XCBAtoms {
+
+    let protocols_cookie = xcb_intern_atom_(xcb_connection,"WM_PROTOCOLS");
+    let delete_window_cookie = xcb_intern_atom_(xcb_connection,"WM_DELETE_WINDOW");
+    let motif_hints_cookie = xcb_intern_atom_(xcb_connection,"_MOTIF_WM_HINTS");
+    let transient_for_cookie = xcb_intern_atom_(xcb_connection,"WM_TRANSIENT_FOR");
+    let net_type_cookie = xcb_intern_atom_(xcb_connection,"_NET_WM_TYPE");
+    let net_type_utility_cookie = xcb_intern_atom_(xcb_connection,"_NET_WM_TYPE_UTILITY");
+    let net_type_dropdown_menu_cookie = xcb_intern_atom_(xcb_connection,"_NET_WM_TYPE_DROPDOWN_MENU");
+    let net_state_cookie = xcb_intern_atom_(xcb_connection,"_NET_WM_STATE");
+    let net_state_above_cookie = xcb_intern_atom_(xcb_connection,"_NET_WM_STATE_ABOVE");
+
+    let wm_protocols = unsafe { (*xcb_intern_atom_reply(xcb_connection,protocols_cookie,null_mut())).atom };
+    let wm_delete_window = unsafe { (*xcb_intern_atom_reply(xcb_connection,delete_window_cookie,null_mut())).atom };
+    let wm_motif_hints = unsafe { (*xcb_intern_atom_reply(xcb_connection,motif_hints_cookie,null_mut())).atom };
+    let wm_transient_for = unsafe { (*xcb_intern_atom_reply(xcb_connection,transient_for_cookie,null_mut())).atom };
+    let wm_net_type = unsafe { (*xcb_intern_atom_reply(xcb_connection,net_type_cookie,null_mut())).atom };
+    let wm_net_type_utility = unsafe { (*xcb_intern_atom_reply(xcb_connection,net_type_utility_cookie,null_mut())).atom };
+    let wm_net_type_dropdown_menu = unsafe { (*xcb_intern_atom_reply(xcb_connection,net_type_dropdown_menu_cookie,null_mut())).atom };
+    let wm_net_state = unsafe { (*xcb_intern_atom_reply(xcb_connection,net_state_cookie,null_mut())).atom };
+    let wm_net_state_above = unsafe { (*xcb_intern_atom_reply(xcb_connection,net_state_above_cookie,null_mut())).atom };
+
+    XCBAtoms {
+        wm_protocols: wm_protocols,
+        wm_delete_window: wm_delete_window,
+        wm_motif_hints: wm_motif_hints,
+        wm_transient_for: wm_transient_for,
+        wm_net_type: wm_net_type,
+        wm_net_type_utility: wm_net_type_utility,
+        wm_net_type_dropdown_menu: wm_net_type_dropdown_menu,
+        wm_net_state: wm_net_state,
+        wm_net_state_above: wm_net_state_above,
+    }
+}
+
 impl System {
-    /// Create new system context.
-    /// 
-    /// **Returns**
-    /// 
-    /// * `Ok(System)` - The new system context.
-    /// * `Err(SystemError)` - The system context could not be created.
+
     pub fn new() -> Option<Rc<System>> {
 
-        let connection = unsafe { xcb_connect(null_mut(),null_mut()) };
-        if connection == null_mut() {
+        let xcb_connection = unsafe { xcb_connect(null_mut(),null_mut()) };
+        if xcb_connection == null_mut() {
 #[cfg(feature="debug_output")]
             println!("Unable to connect to X server.");
             return None;
         }
-
-        let fd = unsafe { xcb_get_file_descriptor(connection) };
-
-        let protocols_cookie = xcb_intern_atom_(connection,"WM_PROTOCOLS");
-        let delete_window_cookie = xcb_intern_atom_(connection,"WM_DELETE_WINDOW");
-        let motif_hints_cookie = xcb_intern_atom_(connection,"_MOTIF_WM_HINTS");
-        let transient_for_cookie = xcb_intern_atom_(connection,"WM_TRANSIENT_FOR");
-        let net_type_cookie = xcb_intern_atom_(connection,"_NET_WM_TYPE");
-        let net_type_utility_cookie = xcb_intern_atom_(connection,"_NET_WM_TYPE_UTILITY");
-        let net_type_dropdown_menu_cookie = xcb_intern_atom_(connection,"_NET_WM_TYPE_DROPDOWN_MENU");
-        let net_state_cookie = xcb_intern_atom_(connection,"_NET_WM_STATE");
-        let net_state_above_cookie = xcb_intern_atom_(connection,"_NET_WM_STATE_ABOVE");
-        let e_window_pointer_cookie = xcb_intern_atom_(connection,"E_WINDOW_POINTER");
-
-        let wm_protocols = unsafe { (*xcb_intern_atom_reply(connection,protocols_cookie,null_mut())).atom };
-        let wm_delete_window = unsafe { (*xcb_intern_atom_reply(connection,delete_window_cookie,null_mut())).atom };
-        let wm_motif_hints = unsafe { (*xcb_intern_atom_reply(connection,motif_hints_cookie,null_mut())).atom };
-        let wm_transient_for = unsafe { (*xcb_intern_atom_reply(connection,transient_for_cookie,null_mut())).atom };
-        let wm_net_type = unsafe { (*xcb_intern_atom_reply(connection,net_type_cookie,null_mut())).atom };
-        let wm_net_type_utility = unsafe { (*xcb_intern_atom_reply(connection,net_type_utility_cookie,null_mut())).atom };
-        let wm_net_type_dropdown_menu = unsafe { (*xcb_intern_atom_reply(connection,net_type_dropdown_menu_cookie,null_mut())).atom };
-        let wm_net_state = unsafe { (*xcb_intern_atom_reply(connection,net_state_cookie,null_mut())).atom };
-        let wm_net_state_above = unsafe { (*xcb_intern_atom_reply(connection,net_state_above_cookie,null_mut())).atom };
-        let e_window_pointer = unsafe { (*xcb_intern_atom_reply(connection,e_window_pointer_cookie,null_mut())).atom };
-
-        let setup = unsafe { xcb_get_setup(connection) };
-        if setup == null_mut() {
-#[cfg(feature="debug_output")]
-            println!("Unable to obtain X server setup.");
-            return None;
-        }
-        let screen = unsafe { xcb_setup_roots_iterator(setup).data };
-        if screen == null_mut() {
-#[cfg(feature="debug_output")]
-            println!("Unable to obtain X root screen.");
-            return None;
-        }
+        let fd = unsafe { xcb_get_file_descriptor(xcb_connection) };
 
         let epfd = unsafe { epoll_create1(0) };
         let mut epe = [epoll_event { events: EPOLLIN as u32,u64: 0, }];
@@ -111,93 +112,59 @@ impl System {
 
 #[cfg(feature="gpu_vulkan")]
         let vk_instance = {
-            let app_info = VkApplicationInfo {
-                sType: VkStructureType_VK_STRUCTURE_TYPE_APPLICATION_INFO,
+            let application = VkApplicationInfo {
+                sType: VK_STRUCTURE_TYPE_APPLICATION_INFO,
                 pNext: null_mut(),
-                pApplicationName: null_mut(),
+                pApplicationName: b"E::System\0".as_ptr() as *const i8,
                 applicationVersion: (1 << 22) as u32,
-                pEngineName: null_mut(),
+                pEngineName: b"E::GPU\0".as_ptr() as *const i8,
                 engineVersion: (1 << 22) as u32,
                 apiVersion: ((1 << 22) | (2 << 11)) as u32,
             };
             let extension_names = [
                 VK_KHR_SURFACE_EXTENSION_NAME.as_ptr(),
                 VK_KHR_XCB_SURFACE_EXTENSION_NAME.as_ptr(),
-                VK_EXT_DEBUG_REPORT_EXTENSION_NAME.as_ptr(),
             ];
-            let layer_names = [
-                b"VK_LAYER_KHRONOS_validation\0",
-            ];
-            let create_info = VkInstanceCreateInfo {
-                sType: VkStructureType_VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-                pApplicationInfo: &app_info,
+            let info = VkInstanceCreateInfo {
+                sType: VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+                //pApplicationInfo: &application,
+                pApplicationInfo: &VkApplicationInfo {
+                    sType: VK_STRUCTURE_TYPE_APPLICATION_INFO,
+                    pNext: null_mut(),
+                    pApplicationName: b"E::System\0".as_ptr() as *const i8,
+                    applicationVersion: (1 << 22) as u32,
+                    pEngineName: b"E::GPU\0".as_ptr() as *const i8,
+                    engineVersion: (1 << 22) as u32,
+                    apiVersion: ((1 << 22) | (2 << 11)) as u32,
+                },
                 enabledExtensionCount: extension_names.len() as u32,
                 ppEnabledExtensionNames: extension_names.as_ptr() as *const *const i8,
-                enabledLayerCount: layer_names.len() as u32,
+                enabledLayerCount: 0,
                 flags: 0,
                 pNext: null_mut(),
-                ppEnabledLayerNames: layer_names.as_ptr() as *const *const i8,
+                ppEnabledLayerNames: null_mut(),
             };
-            let mut instance = MaybeUninit::uninit();
-            match unsafe { vkCreateInstance(&create_info,null_mut(),instance.as_mut_ptr()) } {
-                VkResult_VK_SUCCESS => { },
+            let mut vk_instance = MaybeUninit::uninit();
+            match unsafe { vkCreateInstance(&info,null_mut(),vk_instance.as_mut_ptr()) } {
+                VK_SUCCESS => {
+                    unsafe { vk_instance.assume_init() }
+                },
                 code => {
 #[cfg(feature="debug_output")]
                     println!("Unable to create Vulkan instance (error {}).",code);
                     return None;
                 },
             }
-            unsafe { instance.assume_init() }
-        };
-
-#[cfg(feature="gpu_vulkan")]
-        let vk_physical_devices = {
-            // find physical devices
-            let mut count = 0u32;
-            unsafe { vkEnumeratePhysicalDevices(vk_instance,&mut count,null_mut()) };
-            if count == 0 {
-#[cfg(feature="debug_output")]
-                println!("Unable to find Vulkan physical devices.");
-                return None;
-            }
-            let mut devices = vec![null_mut() as VkPhysicalDevice; count as usize];
-            unsafe { vkEnumeratePhysicalDevices(vk_instance,&mut count,devices.as_mut_ptr()) };
-            devices
         };
 
         Some(Rc::new(System {
-            connection: connection,
-            screen: screen,
-            wm_protocols: wm_protocols,
-            wm_delete_window: wm_delete_window,
-            wm_motif_hints: wm_motif_hints,
-            _wm_transient_for: wm_transient_for,
-            _wm_net_type: wm_net_type,
-            _wm_net_type_utility: wm_net_type_utility,
-            _wm_net_type_dropdown_menu: wm_net_type_dropdown_menu,
-            wm_net_state: wm_net_state,
-            wm_net_state_above: wm_net_state_above,
-            e_window_pointer: e_window_pointer,
+            xcb_connection: xcb_connection,
             epfd: epfd,
+            xcb_window_pointers: RefCell::new(HashMap::new()),
+            xcb_atoms: xcb_obtain_atoms(xcb_connection),
 #[cfg(feature="gpu_vulkan")]
             vk_instance: vk_instance,
-#[cfg(feature="gpu_vulkan")]
-            vk_physical_devices: vk_physical_devices,
         }))
-    }
-
-    pub fn enumerate_gpu_names(&self) -> Vec<String> {
-        let mut gpu_names = Vec::<String>::new();
-#[cfg(feature="gpu_vulkan")]
-        for device in &self.vk_physical_devices {
-            let mut properties = MaybeUninit::uninit();
-            unsafe { vkGetPhysicalDeviceProperties(*device,properties.as_mut_ptr()) };
-            let properties = unsafe { properties.assume_init() };
-            let slice: &[u8] = unsafe { &*(&properties.deviceName as *const [i8] as *const [u8]) };
-            let name = std::str::from_utf8(slice).unwrap();
-            gpu_names.push(name.to_string());
-        }
-        gpu_names
     }
 
     // translate X11 events to Event events that can be handled by the windows
@@ -272,12 +239,13 @@ impl System {
             XCB_CLIENT_MESSAGE => {
                 let client_message = xcb_event as *const xcb_client_message_event_t;
                 let atom = unsafe { (*client_message).data.data32[0] };
-                if atom == self.wm_delete_window {
+                if atom == self.xcb_atoms.wm_delete_window {
                     let xcb_window = unsafe { *client_message }.window;
                     return Some((xcb_window,Event::Close));
                 }
             },
-            _ => { },
+            _ => {
+            },
         }
         None
     }
@@ -287,16 +255,19 @@ impl System {
     /// This processes each pending event from the system's event queue by
     /// calling `handle` on the associated handlers.
     pub fn flush(&self) {
-        let mut event = unsafe { xcb_poll_for_event(self.connection) };
-        while event != null_mut() {
-            if let Some((xcb_window,event)) = self.translate_event(event) {
-                let cookie = unsafe { xcb_get_property(self.connection,0u8,xcb_window,self.e_window_pointer,xcb_atom_enum_t_XCB_ATOM_ANY,0,2) };
-                let reply = unsafe { xcb_get_property_reply(self.connection,cookie,null_mut()) };  // assuming no errors
-                let encoded_pointer = unsafe { xcb_get_property_value(reply) };
-                let window_pointer = encoded_pointer as *const Window;
-                unsafe { (*window_pointer).handle_event(event); }
+        loop {
+            let event = unsafe { xcb_poll_for_event(self.xcb_connection) };
+            if event != null_mut() {
+                if let Some((xcb_window,event)) = self.translate_event(event) {
+                    let window_pointers = self.xcb_window_pointers.borrow();
+                    if window_pointers.contains_key(&xcb_window) {
+                        unsafe { (*window_pointers[&xcb_window]).handle_event(event); }
+                    }
+                }
             }
-            event = unsafe { xcb_poll_for_event(self.connection) };
+            else {
+                break;
+            }
         }
     }
 
