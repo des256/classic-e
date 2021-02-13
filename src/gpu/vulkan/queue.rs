@@ -18,33 +18,33 @@ pub struct Queue {
 
 impl Session {
 
-    pub fn get_queue(self: &Rc<Self>,family: QueueFamilyID,index: usize) -> Option<Queue> {
+    pub fn get_queue(self: &Rc<Self>,family: QueueFamilyID,index: usize) -> Option<Rc<Queue>> {
         let mut vk_queue = MaybeUninit::uninit();
         unsafe { vkGetDeviceQueue(self.vk_device,family,index as u32,vk_queue.as_mut_ptr()) };
         let vk_queue = unsafe { vk_queue.assume_init() };
-        Some(Queue {
+        Some(Rc::new(Queue {
             session: Rc::clone(&self),
             vk_queue: vk_queue,
-        })
+        }))
     }
 }
 
 impl Queue {
 
-    pub fn submit(&self,command_buffer: &CommandBuffer,wait_semaphore: &Semaphore,signal_semaphore: &Semaphore) -> bool {
-        let wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    pub fn submit(&self,command_buffer: &CommandBuffer,wait_semaphore: &Semaphore,signal_semaphore: &Semaphore,signal_fence: &Fence) -> bool {
+        let wait_stages = [VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT];
         let info = VkSubmitInfo {
             sType: VK_STRUCTURE_TYPE_SUBMIT_INFO,
             pNext: null_mut(),
             waitSemaphoreCount: 1,
             pWaitSemaphores: &wait_semaphore.vk_semaphore,
-            pWaitDstStageMask: &wait_stage,
+            pWaitDstStageMask: wait_stages.as_ptr(),
             commandBufferCount: 1,
             pCommandBuffers: &command_buffer.vk_command_buffer,
             signalSemaphoreCount: 1,
             pSignalSemaphores: &signal_semaphore.vk_semaphore,
         };
-        match unsafe { vkQueueSubmit(self.vk_queue,1,&info,null_mut()) } {
+        match unsafe { vkQueueSubmit(self.vk_queue,1,&info,signal_fence.vk_fence) } {
             VK_SUCCESS => true,
             code => {
 #[cfg(feature="debug_output")]
@@ -67,5 +67,9 @@ impl Queue {
             pResults: null_mut(),
         };
         unsafe { vkQueuePresentKHR(self.vk_queue,&info) };
+    }
+
+    pub fn wait_idle(&self) {
+        unsafe { vkQueueWaitIdle(self.vk_queue) };
     }
 }

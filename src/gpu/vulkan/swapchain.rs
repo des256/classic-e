@@ -20,7 +20,7 @@ pub struct SwapChain {
 
 impl Session {
 
-    pub fn create_swapchain(self: &Rc<Self>,window: &Rc<Window>) -> Option<SwapChain> {
+    pub fn create_swapchain(self: &Rc<Self>,window: &Rc<Window>) -> Option<Rc<SwapChain>> {
 
         let mut capabilities = MaybeUninit::uninit();
         unsafe { vkGetPhysicalDeviceSurfaceCapabilitiesKHR(self.gpu.vk_physical_device,window.vk_surface,capabilities.as_mut_ptr()) };
@@ -127,21 +127,32 @@ impl Session {
         }
         let vk_swapchain = unsafe { vk_swapchain.assume_init() };
 
-        Some(SwapChain {
+        Some(Rc::new(SwapChain {
             session: Rc::clone(self),
             window: Rc::clone(window),
             extent: vec2![vk_extent.width as usize,vk_extent.height as usize],
             vk_swapchain: vk_swapchain,
-        })
+        }))
     }
+}
+
+pub enum Next {
+    Image(usize),
+    OutOfDate,
+    Suboptimal,
+    Error,
 }
 
 impl SwapChain {
 
-    pub fn next(&self,semaphore: &Semaphore) -> usize {
+    pub fn next(&self,semaphore: &Semaphore) -> Next {
         let mut image_index = 0u32;
-        unsafe { vkAcquireNextImageKHR(self.session.vk_device,self.vk_swapchain,0xFFFFFFFFFFFFFFFF,semaphore.vk_semaphore,null_mut(),&mut image_index) };
-        image_index as usize
+        match unsafe { vkAcquireNextImageKHR(self.session.vk_device,self.vk_swapchain,0xFFFFFFFFFFFFFFFF,semaphore.vk_semaphore,null_mut(),&mut image_index) } {
+            VK_SUCCESS => Next::Image(image_index as usize),
+            VK_ERROR_OUT_OF_DATE_KHR => Next::OutOfDate,
+            VK_SUBOPTIMAL_KHR => Next::Suboptimal,
+            _ => Next::Error,
+        }
     }
 }
 

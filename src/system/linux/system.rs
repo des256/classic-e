@@ -112,22 +112,12 @@ impl System {
 
 #[cfg(feature="gpu_vulkan")]
         let vk_instance = {
-            let application = VkApplicationInfo {
-                sType: VK_STRUCTURE_TYPE_APPLICATION_INFO,
-                pNext: null_mut(),
-                pApplicationName: b"E::System\0".as_ptr() as *const i8,
-                applicationVersion: (1 << 22) as u32,
-                pEngineName: b"E::GPU\0".as_ptr() as *const i8,
-                engineVersion: (1 << 22) as u32,
-                apiVersion: ((1 << 22) | (2 << 11)) as u32,
-            };
             let extension_names = [
                 VK_KHR_SURFACE_EXTENSION_NAME.as_ptr(),
                 VK_KHR_XCB_SURFACE_EXTENSION_NAME.as_ptr(),
             ];
             let info = VkInstanceCreateInfo {
                 sType: VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-                //pApplicationInfo: &application,
                 pApplicationInfo: &VkApplicationInfo {
                     sType: VK_STRUCTURE_TYPE_APPLICATION_INFO,
                     pNext: null_mut(),
@@ -261,6 +251,13 @@ impl System {
                 if let Some((xcb_window,event)) = self.translate_event(event) {
                     let window_pointers = self.xcb_window_pointers.borrow();
                     if window_pointers.contains_key(&xcb_window) {
+
+                        // set rectangle, so the client doesn't need to do that as well
+                        if let &Event::Configure(r) = &event {
+                            unsafe { (*window_pointers[&xcb_window]).r.set(r); }
+                        }
+
+                        // call the handler
                         unsafe { (*window_pointers[&xcb_window]).handle_event(event); }
                     }
                 }

@@ -156,6 +156,13 @@ impl GPU {
     }
 }
 
+impl Session {
+
+    pub fn wait_idle(&self) {
+        unsafe { vkDeviceWaitIdle(self.vk_device) };
+    }
+}
+
 impl Drop for Session {
     fn drop(&mut self) {
         for vk_command_pool in &self.vk_command_pools {

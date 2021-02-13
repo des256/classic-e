@@ -19,7 +19,7 @@ pub struct GraphicsPipeline {
 
 impl Session {
 
-    pub fn create_graphics_pipeline(self: &Rc<Self>,pipeline_layout: &Rc<PipelineLayout>,render_pass: &Rc<RenderPass>,vertex_shader: &Rc<Shader>,fragment_shader: &Rc<Shader>) -> Option<Rc<GraphicsPipeline>> {
+    pub fn create_graphics_pipeline(self: &Rc<Self>,window: &Rc<Window>,pipeline_layout: &Rc<PipelineLayout>,render_pass: &Rc<RenderPass>,vertex_shader: &Rc<Shader>,fragment_shader: &Rc<Shader>) -> Option<Rc<GraphicsPipeline>> {
 
         let create_info = VkGraphicsPipelineCreateInfo {
             sType: VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -76,8 +76,8 @@ impl Session {
                 pViewports: &VkViewport {
                     x: 0.0,
                     y: 0.0,
-                    width: 640.0,
-                    height: 480.0,
+                    width: window.r.get().s.x as f32,
+                    height: window.r.get().s.y as f32,
                     minDepth: 0.0,
                     maxDepth: 1.0,
                 },
@@ -88,8 +88,8 @@ impl Session {
                         y: 0,
                     },
                     extent: VkExtent2D {
-                        width: 640,
-                        height: 480,
+                        width: window.r.get().s.x as u32,
+                        height: window.r.get().s.y as u32,
                     },
                 },
             },

@@ -31,6 +31,9 @@ pub use commandbuffer::*;
 mod semaphore;
 pub use semaphore::*;
 
+mod fence;
+pub use fence::*;
+
 mod image;
 pub use image::*;
 
