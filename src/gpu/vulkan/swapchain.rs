@@ -15,7 +15,10 @@ pub struct SwapChain {
     pub session: Rc<Session>,
     pub window: Rc<Window>,
     pub extent: Vec2<usize>,
+#[doc(hidden)]
     pub(crate) vk_swapchain: VkSwapchainKHR,
+#[doc(hidden)]
+    pub(crate) vk_format: VkFormat,
 }
 
 impl Session {
@@ -132,6 +135,7 @@ impl Session {
             window: Rc::clone(window),
             extent: vec2![vk_extent.width as usize,vk_extent.height as usize],
             vk_swapchain: vk_swapchain,
+            vk_format: VK_FORMAT_B8G8R8A8_SRGB,
         }))
     }
 }

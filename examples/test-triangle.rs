@@ -11,6 +11,17 @@ use std::{
 
 const MAX_FRAMES_IN_FLIGHT: usize = 2;
 
+/*struct Vertex {
+    pos: Vec2<f32>,
+    color: Vec3<f32>,
+}
+
+const vertices: Vec<Vertex> = vec![
+    Vertex { pos: vec2!(0.0,-0.5),color: vec3!(1.0,0.0,0.0) },
+    Vertex { pos: vec2!(0.5,0.5),color: vec3!(0.0,1.0,0.0) },
+    Vertex { pos: vec2!(-0.5,0.5),color: vec3!(0.0,0.0,1.0) },
+];*/
+
 struct SwapChainResources {
     swapchain: Rc<SwapChain>,
     command_buffers: Vec<Rc<CommandBuffer>>,
@@ -32,17 +43,58 @@ impl SwapChainResources {
         fragment_shader: &Rc<Shader>
     ) -> SwapChainResources {
 
-        // create render pass
-        let render_pass = session.create_render_pass().expect("Unable to create render pass.");
-
-        // create graphics pipeline
-        let graphics_pipeline = session.create_graphics_pipeline(&window,&pipeline_layout,&render_pass,&vertex_shader,&fragment_shader).expect("Unable to create graphics pipeline.");
-
         // create swap chain for the window
         let swapchain = session.create_swapchain(&window).expect("Unable to create swap chain.");
 
         // get images from the swap chain
         let images = swapchain.get_images();
+
+        // create render pass
+        let render_pass = session.create_render_pass(
+            AttachmentDescription {
+                image: &images[0],
+                samples: 1,
+                load_op: LoadOp::Clear,
+                store_op: StoreOp::Store,
+                stencil_load_op: LoadOp::DontCare,
+                stencil_store_op: StoreOp::DontCare,
+                initial_layout: ImageLayout::Undefined,
+                final_layout: ImageLayout::Present,
+            }
+        ).expect("Unable to create render pass.");
+
+        // create graphics pipeline
+        let r = window.r.get();
+        let graphics_pipeline = session.create_graphics_pipeline(
+            &pipeline_layout,
+            &render_pass,
+            &vertex_shader,
+            &fragment_shader,
+            // TODO: vertex bindings
+            Topology::Triangles,
+            PrimitiveRestart::Disabled,
+            // TODO: tesselation state
+            rect!(vec2!(r.o.x as f32,r.o.y as f32),vec2!(r.s.x as f32,r.s.y as f32)),  // viewport
+            (0.0,1.0),  // depth range
+            r, // scissor
+            DepthClamp::Disabled,
+            Discard::Disabled,
+            PolygonMode::Fill,
+            CullMode::Back,
+            FrontFace::Clockwise,
+            DepthBias::Disabled,
+            1.0,  // line width
+            1,  // rasterization samples
+            // TODO: sample mask
+            SampleShading::Disabled,
+            AlphaToCoverage::Disabled,
+            AlphaToOne::Disabled,
+            // TODO: depth/stencil
+            LogicOp::Disabled,
+            Blend::Disabled,
+            (true,true,true,true),  // write mask
+
+        ).expect("Unable to create graphics pipeline.");
 
         // create framebuffer and command buffer for each image, as well as image used fences
         let mut framebuffers = Vec::<Rc<Framebuffer>>::new();

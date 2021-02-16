@@ -510,30 +510,30 @@ fn clampf(v: f32,min: f32,max: f32) -> f32 {
     }
 }
 
-fn make_lf<T: pixel::Pixel>(l: f32,gamma: f32) -> T {
+fn set_lf<T: pixel::Pixel>(p: &mut T,l: f32,gamma: f32) {
     let ul = (clampf(l.powf(gamma),0.0,1.0) * 255.0) as u8;
-    T::from_rgba(ul,ul,ul,255)
+    p.set(ul,ul,ul,255);
 }
 
-fn make_rgbaf<T: pixel::Pixel>(r: f32,g: f32,b: f32,a: f32,gamma: f32) -> T {
+fn set_rgbaf<T: pixel::Pixel>(p: &mut T,r: f32,g: f32,b: f32,a: f32,gamma: f32) {
     let ur = (clampf(r.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ug = (clampf(g.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ub = (clampf(b.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ua = (clampf(a.powf(gamma),0.0,1.0) * 255.0) as u8;
-    T::from_rgba(ur,ug,ub,ua)
+    p.set(ur,ug,ub,ua);
 }
 
-fn make_c<T: pixel::Pixel>(c: T,gamma: f32) -> T {
-    let p = c.as_vec4();
-    let r = (p.x as f32) / 255.0;
-    let g = (p.y as f32) / 255.0;
-    let b = (p.z as f32) / 255.0;
-    let a = (p.w as f32) / 255.0;
+fn set_c<T: pixel::Pixel>(p: &mut T,c: T,gamma: f32) {
+    let (r,g,b,a) = c.get();
+    let r = (r as f32) / 255.0;
+    let g = (g as f32) / 255.0;
+    let b = (b as f32) / 255.0;
+    let a = (a as f32) / 255.0;
     let ur = (clampf(r.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ug = (clampf(g.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ub = (clampf(b.powf(gamma),0.0,1.0) * 255.0) as u8;
     let ua = (clampf(a.powf(gamma),0.0,1.0) * 255.0) as u8;
-    T::from_rgba(ur,ug,ub,ua)
+    p.set(ur,ug,ub,ua);
 }
 
 fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,height: usize,stride: usize,x0: usize,y0: usize,dx: usize,dy: usize,itype: Type,palette: &[T; 256],gamma: f32) {
@@ -546,7 +546,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     sp += 1;
                     for i in 0..8 {
                         let l = if(d & (0x80 >> i)) != 0 { 1.0 } else { 0.0 };
-                        dst[(y0 + y * dy) * stride + x0 + (x * 8 + i) * dx] = make_lf(l,gamma);
+                        set_lf(&mut dst[(y0 + y * dy) * stride + x0 + (x * 8 + i) * dx],l,gamma);
                     }
                 }
                 if (width & 7) != 0 {
@@ -554,7 +554,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     sp += 1;
                     for i in 0..8 {
                         let l = if(d & (0x80 >> i)) != 0 { 1.0 } else { 0.0 };
-                        dst[(y0 + y * dy) * stride + x0 + ((width & 0xFFFFFFF8) + i) * dx] = make_lf(l,gamma);
+                        set_lf(&mut dst[(y0 + y * dy) * stride + x0 + ((width & 0xFFFFFFF8) + i) * dx],l,gamma);
                     }
                 }
             }
@@ -566,7 +566,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     sp += 1;
                     for i in 0..8 {
                         let c = if (d & (0x80 >> i)) != 0 { palette[1] } else { palette[0] };
-                        dst[(y0 + y * dy) * stride + x0 + (x * 8 + i) * dx] = make_c(c,gamma);
+                        set_c(&mut dst[(y0 + y * dy) * stride + x0 + (x * 8 + i) * dx],c,gamma);
                     }
                 }
                 if (width & 7) != 0 {
@@ -574,7 +574,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     sp += 1;
                     for i in 0..(width & 7) {
                         let c = if (d & (0x80 >> i)) != 0 { palette[1] } else { palette[0] };
-                        dst[(y0 + y * dy) * stride + x0 + ((width & 0xFFFFFFF8) + i) * dx] = make_c(c,gamma);
+                        set_c(&mut dst[(y0 + y * dy) * stride + x0 + ((width & 0xFFFFFFF8) + i) * dx],c,gamma);
                     }
                 }
             }
@@ -585,14 +585,14 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let d = src[sp];
                     sp += 1;
                     for i in 0..4 {
-                        dst[(y0 + y * dy) * stride + x0 + (x * 4 + i) * dx] = make_lf(GRAY2[((d >> ((3 - i) * 2)) & 3) as usize],gamma);
+                        set_lf(&mut dst[(y0 + y * dy) * stride + x0 + (x * 4 + i) * dx],GRAY2[((d >> ((3 - i) * 2)) & 3) as usize],gamma);
                     }
                 }
                 if(width & 3) != 0 {
                     let d = src[sp];
                     sp += 1;
                     for i in 0..(width & 3) {
-                        dst[(y0 + y * dy) * stride + x0 + ((width & 0xFFFFFFFC) + i) * dx] = make_lf(GRAY2[((d >> ((3 - i) * 2)) & 3) as usize],gamma);
+                        set_lf(&mut dst[(y0 + y * dy) * stride + x0 + ((width & 0xFFFFFFFC) + i) * dx],GRAY2[((d >> ((3 - i) * 2)) & 3) as usize],gamma);
                     }
                 }
             }
@@ -603,14 +603,14 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let d = src[sp];
                     sp += 1;
                     for i in 0..4 {
-                        dst[(y0 + y * dy) * stride + x0 + (x * 4 + i) * dx] = make_c(palette[((d >> ((3 - i) * 2)) & 3) as usize],gamma);
+                        set_c(&mut dst[(y0 + y * dy) * stride + x0 + (x * 4 + i) * dx],palette[((d >> ((3 - i) * 2)) & 3) as usize],gamma);
                     }
                 }
                 if(width & 3) != 0 {
                     let d = src[sp];
                     sp += 1;
                     for i in 0..(width & 3) {
-                        dst[(y0 + y * dy) * stride + x0 + ((width & 0xFFFFFFFC) + i) * dx] = make_c(palette[((d >> ((3 - i) * 2)) & 3) as usize],gamma);
+                        set_c(&mut dst[(y0 + y * dy) * stride + x0 + ((width & 0xFFFFFFFC) + i) * dx],palette[((d >> ((3 - i) * 2)) & 3) as usize],gamma);
                     }
                 }
             }
@@ -621,11 +621,11 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let d = src[sp];
                     sp += 1;
                     for i in 0..2 {
-                        dst[(y0 + y * dy) * stride + x0 + (x * 2 + i) * dx] = make_lf(GRAY4[((d >> ((1 >> i) * 4)) & 15) as usize],gamma);
+                        set_lf(&mut dst[(y0 + y * dy) * stride + x0 + (x * 2 + i) * dx],GRAY4[((d >> ((1 >> i) * 4)) & 15) as usize],gamma);
                     }
                 }
                 if (width & 1) != 0 {
-                    dst[(y0 + y * dy) * stride + x0 + (width & 0xFFFFFFFE) * dx] = make_lf(GRAY4[(src[sp] >> 4) as usize],gamma);
+                    set_lf(&mut dst[(y0 + y * dy) * stride + x0 + (width & 0xFFFFFFFE) * dx],GRAY4[(src[sp] >> 4) as usize],gamma);
                     sp += 1;
                 }
             }
@@ -636,11 +636,11 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let d = src[sp];
                     sp += 1;
                     for i in 0..2 {
-                        dst[(y0 + y * dy) * stride + x0 + (x * 2 + i) * dx] = make_c(palette[((d >> ((1 >> i) * 4)) & 15) as usize],gamma);
+                        set_c(&mut dst[(y0 + y * dy) * stride + x0 + (x * 2 + i) * dx],palette[((d >> ((1 >> i) * 4)) & 15) as usize],gamma);
                     }
                 }
                 if (width & 1) != 0 {
-                    dst[(y0 + y * dy) * stride + x0 + (width & 0xFFFFFFFE) * dx] = make_c(palette[(src[sp] >> 4) as usize],gamma);
+                    set_c(&mut dst[(y0 + y * dy) * stride + x0 + (width & 0xFFFFFFFE) * dx],palette[(src[sp] >> 4) as usize],gamma);
                     sp += 1;
                 }
             }
@@ -650,7 +650,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                 for x in 0..width {
                     let l = (src[sp] as f32) / 255.0;
                     sp += 1;
-                    dst[(y0 + y * dy) * stride + x0 + x * dx] = make_lf(l,gamma);
+                    set_lf(&mut dst[(y0 + y * dy) * stride + x0 + x * dx],l,gamma);
                 }
             }
         },
@@ -661,7 +661,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let g = (src[sp + 1] as f32) / 255.0;
                     let b = (src[sp + 2] as f32) / 255.0;
                     sp += 3;
-                    dst[(y0 + y * dy) * stride + x0 + x * dx] = make_rgbaf(r,g,b,1.0,gamma);
+                    set_rgbaf(&mut dst[(y0 + y * dy) * stride + x0 + x * dx],r,g,b,1.0,gamma);
                 }
             }
         },
@@ -670,7 +670,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                 for x in 0..width {
                     let c = src[sp];
                     sp += 1;
-                    dst[(y0 + y * dy) * stride + x0 + x * dx] = make_c(palette[c as usize],gamma);
+                    set_c(&mut dst[(y0 + y * dy) * stride + x0 + x * dx],palette[c as usize],gamma);
                 }
             }
         },
@@ -680,7 +680,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let l = (src[sp] as f32) / 255.0;
                     let a = (src[sp + 1] as f32) / 255.0;
                     sp += 2;
-                    dst[(y0 + y * dy) * stride + x0 + x * dx] = make_rgbaf(l,l,l,a,gamma);
+                    set_rgbaf(&mut dst[(y0 + y * dy) * stride + x0 + x * dx],l,l,l,a,gamma);
                 }
             }
         },
@@ -692,7 +692,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let b = (src[sp + 2] as f32) / 255.0;
                     let a = (src[sp + 3] as f32) / 255.0;
                     sp += 4;
-                    dst[(y0 + y * dy) * stride + x0 + x * dx] = make_rgbaf(r,g,b,a,gamma);
+                    set_rgbaf(&mut dst[(y0 + y * dy) * stride + x0 + x * dx],r,g,b,a,gamma);
                 }
             }
         },
@@ -701,7 +701,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                 for x in 0..width {
                     let l = (src[sp] as f32) / 255.0;
                     sp += 2;
-                    dst[(y0 + y * dy) * stride + x0 + x * dx] = make_lf(l,gamma);
+                    set_lf(&mut dst[(y0 + y * dy) * stride + x0 + x * dx],l,gamma);
                 }
             }
         },
@@ -712,7 +712,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let g = (src[sp + 2] as f32) / 255.0;
                     let b = (src[sp + 4] as f32) / 255.0;
                     sp += 6;
-                    dst[(y0 + y * dy) * stride + x0 + x * dx] = make_rgbaf(r,g,b,1.0,gamma);
+                    set_rgbaf(&mut dst[(y0 + y * dy) * stride + x0 + x * dx],r,g,b,1.0,gamma);
                 }
             }
         },
@@ -722,7 +722,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let l = (src[sp] as f32) / 255.0;
                     let a = (src[sp + 2] as f32) / 255.0;
                     sp += 4;
-                    dst[(y0 + y * dy) * stride + x0 + x * dx] = make_rgbaf(l,l,l,a,gamma);
+                    set_rgbaf(&mut dst[(y0 + y * dy) * stride + x0 + x * dx],l,l,l,a,gamma);
                 }
             }
         },
@@ -734,7 +734,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let b = (src[sp + 4] as f32) / 255.0;
                     let a = (src[sp + 6] as f32) / 255.0;
                     sp += 8;
-                    dst[(y0 + y * dy) * stride + x0 + x * dx] = make_rgbaf(r,g,b,a,gamma);
+                    set_rgbaf(&mut dst[(y0 + y * dy) * stride + x0 + x * dx],r,g,b,a,gamma);
                 }
             }
         },
@@ -894,7 +894,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
                     let g = src[sp + 1];
                     let b = src[sp + 2];
                     sp += 3;
-                    palette[i] = T::from_rgba(r,g,b,255);
+                    palette[i].set(r,g,b,255);
                 }
             },
             0x624B4744 => { // bKGD
@@ -904,13 +904,13 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
                     },
                     Type::L1 | Type::L2 | Type::L4 | Type::L8 | Type::LA8 | Type::L16 | Type::LA16 => {
                         let level = src[sp];
-                        _background = T::from_rgba(level,level,level,255);
+                        _background.set(level,level,level,255);
                     },
                     _ => {
                         let r = src[sp];
                         let g = src[sp + 2];
                         let b = src[sp + 4];
-                        _background = T::from_rgba(r,g,b,255);
+                        _background.set(r,g,b,255);
                     },
                 }
                 sp += chunk_length;

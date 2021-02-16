@@ -16,9 +16,89 @@ pub struct RenderPass {
     pub(crate) vk_render_pass: VkRenderPass,
 }
 
+pub enum LoadOp {
+    Load,
+    Clear,
+    DontCare,
+}
+
+pub enum StoreOp {
+    Store,
+    DontCare,
+}
+
+pub enum ImageLayout {
+    Undefined,
+    General,
+    Color,
+    Depth,
+    DepthRead,
+    Stencil,
+    StencilRead,
+    DepthStencil,
+    DepthReadStencil,
+    DepthStencilRead,
+    DepthReadStencilRead,
+    ShaderRead,
+    TransferSrc,
+    TransferDst,
+    Preinitialized,
+    Present,
+}
+
+pub struct AttachmentDescription<'a> {
+    pub image: &'a Image,
+    pub samples: u32,
+    pub load_op: LoadOp,
+    pub store_op: StoreOp,
+    pub stencil_load_op: LoadOp,
+    pub stencil_store_op: StoreOp,
+    pub initial_layout: ImageLayout,
+    pub final_layout: ImageLayout,
+}
+
+pub enum PipelineBindPoint {
+    Graphics,
+    Compute,
+}
+
+pub struct AttachmentReference {
+    index: usize,
+    layout: ImageLayout,
+}
+
+pub struct SubpassDescription {
+    bind_point: PipelineBindPoint,
+    input_attachments: Vec<AttachmentReference>,
+    color_attachments: Vec<AttachmentReference>,
+    resolve_attachments: Vec<AttachmentReference>,
+    depth_stencil_attachments: Vec<AttachmentReference>,
+    preserve_attachments: Vec<AttachmentReference>,
+}
+
+pub enum PipelineStage {
+    TopOfPipe,
+    DrawIndirect,
+    VertexInput,
+    VertexShader,
+    TesselationControlShader,
+    TesselationEvaluationShader,
+    GeometryShader,
+    FragmentShader,
+    EarlyFragmentTests,
+    LateFragmentTests,
+    ColorAttachmentOutput,
+    ComputeShader,
+    Transfer,
+    BottomOfPipe,
+    Host,
+    AllGraphics,
+    AllCommands,
+}
+
 impl Session {
 
-    pub fn create_render_pass(self: &Rc<Self>) -> Option<Rc<RenderPass>> {
+    pub fn create_render_pass<'a>(self: &Rc<Self>,attachment_description: AttachmentDescription<'a>) -> Option<Rc<RenderPass>> {
 
         let info = VkRenderPassCreateInfo {
             sType: VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
@@ -27,14 +107,62 @@ impl Session {
             attachmentCount: 1,
             pAttachments: &VkAttachmentDescription {
                 flags: 0,
-                format: VK_FORMAT_B8G8R8A8_SRGB,
-                samples: VK_SAMPLE_COUNT_1_BIT,
-                loadOp: VK_ATTACHMENT_LOAD_OP_CLEAR,
-                storeOp: VK_ATTACHMENT_STORE_OP_STORE,
-                stencilLoadOp: VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                stencilStoreOp: VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                initialLayout: VK_IMAGE_LAYOUT_UNDEFINED,
-                finalLayout: VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                format: attachment_description.image.vk_format,
+                samples: attachment_description.samples,
+                loadOp: match attachment_description.load_op {
+                    LoadOp::Load => VK_ATTACHMENT_LOAD_OP_LOAD,
+                    LoadOp::Clear => VK_ATTACHMENT_LOAD_OP_CLEAR,
+                    LoadOp::DontCare => VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                },
+                storeOp: match attachment_description.store_op {
+                    StoreOp::Store => VK_ATTACHMENT_STORE_OP_STORE,
+                    StoreOp::DontCare => VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                },
+                stencilLoadOp: match attachment_description.stencil_load_op {
+                    LoadOp::Load => VK_ATTACHMENT_LOAD_OP_LOAD,
+                    LoadOp::Clear => VK_ATTACHMENT_LOAD_OP_CLEAR,
+                    LoadOp::DontCare => VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                },
+                stencilStoreOp: match attachment_description.stencil_store_op {
+                    StoreOp::Store => VK_ATTACHMENT_STORE_OP_STORE,
+                    StoreOp::DontCare => VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                },
+                initialLayout: match attachment_description.initial_layout {
+                    ImageLayout::Undefined => VK_IMAGE_LAYOUT_UNDEFINED,
+                    ImageLayout::General => VK_IMAGE_LAYOUT_GENERAL,
+                    ImageLayout::Color => VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    ImageLayout::Depth => VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                    ImageLayout::DepthRead => VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL,
+                    ImageLayout::Stencil => VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL,
+                    ImageLayout::StencilRead => VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL,
+                    ImageLayout::DepthStencil => VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                    ImageLayout::DepthReadStencil => VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,
+                    ImageLayout::DepthStencilRead => VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,
+                    ImageLayout::DepthReadStencilRead => VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                    ImageLayout::ShaderRead => VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    ImageLayout::TransferSrc => VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    ImageLayout::TransferDst => VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    ImageLayout::Preinitialized => VK_IMAGE_LAYOUT_PREINITIALIZED,
+                    ImageLayout::Present => VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                },
+                finalLayout: match attachment_description.final_layout {
+                    ImageLayout::Undefined => VK_IMAGE_LAYOUT_UNDEFINED,
+                    ImageLayout::General => VK_IMAGE_LAYOUT_GENERAL,
+                    ImageLayout::Color => VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    ImageLayout::Depth => VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                    ImageLayout::DepthRead => VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL,
+                    ImageLayout::Stencil => VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL,
+                    ImageLayout::StencilRead => VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL,
+                    ImageLayout::DepthStencil => VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                    ImageLayout::DepthReadStencil => VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,
+                    ImageLayout::DepthStencilRead => VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,
+                    ImageLayout::DepthReadStencilRead => VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                    ImageLayout::ShaderRead => VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    ImageLayout::TransferSrc => VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    ImageLayout::TransferDst => VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    ImageLayout::Preinitialized => VK_IMAGE_LAYOUT_PREINITIALIZED,
+                    ImageLayout::Present => VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                },
             },
             subpassCount: 1,
             pSubpasses: &VkSubpassDescription {

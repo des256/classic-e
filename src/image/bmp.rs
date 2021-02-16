@@ -328,7 +328,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     g = (g << 3) | (g >> 2);
                     b = (b << 3) | (b >> 2);
                     //println!("{},{}: {:04X} - a{} r{} g{} b{}",x,line,d,a,r,g,b);
-                    dst[dp] = T::from_rgba(r as u8,g as u8,b as u8,255);
+                    dst[dp].set(r as u8,g as u8,b as u8,0xFF);
                     dp += 1;
                 }
                 let rest = (width * 2) & 3;
@@ -348,7 +348,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let g = green.get(d,0);
                     let b = blue.get(d,0);
                     let a = if alphamask == 0 { 255 } else { alpha.get(d,255) };
-                    dst[dp] = T::from_rgba(r as u8,g as u8,b as u8,a as u8);
+                    dst[dp].set(r,g,b,a);
                     dp += 1;
                 }
                 let rest = (width * 2) & 3;
@@ -366,7 +366,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let g = src[sp + 1];
                     let r = src[sp + 2];
                     sp += 3;
-                    dst[dp] = T::from_rgba(r as u8,g as u8,b as u8,255);
+                    dst[dp].set(r,g,b,0xFF);
                     dp += 1;
                 }
                 let rest = (width * 3) & 3;
@@ -386,7 +386,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let g = (d >> 8) & 255;
                     let b = d & 255;
                     let a = if alphamask == 0 { 255 } else { d >> 24 };
-                    dst[dp] = T::from_rgba(r as u8,g as u8,b as u8,a as u8);
+                    dst[dp].set(r as u8,g as u8,b as u8,a as u8);
                     dp += 1;
                 }
                 line = (line as isize + dline) as usize;
@@ -402,7 +402,7 @@ fn decode_pixels<T: pixel::Pixel>(dst: &mut Mat<T>,src: &[u8],width: usize,heigh
                     let g = green.get(d,0);
                     let b = blue.get(d,0);
                     let a = if alphamask == 0 { 255 } else { alpha.get(d,255) };
-                    dst[dp] = T::from_rgba(r as u8,g as u8,b as u8,a as u8);
+                    dst[dp].set(r,g,b,a);
                     dp += 1;
                 }
                 line = (line as isize + dline) as usize;
@@ -654,7 +654,7 @@ pub fn decode<T: pixel::Pixel>(src: &[u8]) -> Option<Mat<T>> {
                     let b = src[sp];
                     let g = src[sp + 1];
                     let r = src[sp + 2];
-                    palette[i as usize] = T::from_rgba(r,g,b,255);
+                    palette[i as usize].set(r,g,b,0xFF);
                 }
             },
             Type::B16 | Type::B32 => {
@@ -758,11 +758,11 @@ pub fn encode<T: pixel::Pixel>(image: &Mat<T>) -> Option<Vec<u8>> {
     dst.push32(0);  // 118
     for y in 0..image.size.y {
         for x in 0..image.size.x {
-            let d: Vec4<u8> = image[(x,y)].as_vec4();
-            dst.push(d.z);
-            dst.push(d.y);
-            dst.push(d.x);
-            dst.push(d.w);
+            let (r,g,b,a) = image[(x,y)].get();
+            dst.push(r);
+            dst.push(g);
+            dst.push(b);
+            dst.push(a);
         }
     }
     Some(dst)
